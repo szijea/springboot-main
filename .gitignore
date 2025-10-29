@@ -1,0 +1,80 @@
+# 构建产物
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven临时文件
+.mvn/timing.properties
+.mvn/wrapper/dists/
+
+# 环境配置（含敏感信息）
+src/main/resources/application*.properties
+src/main/resources/application*.yml
+!src/main/resources/application.yml.template  # 保留配置模板（无敏感信息）
+
+# Docker相关
+.dockerignore
+docker-compose.override.yml
+docker-compose.local.yml
+*.dockerfile.bak
+.idea/docker/
+
+# 日志文件
+logs/
+*.log
+*.trace
+*.gz
+
+# 操作系统文件
+.DS_Store  # macOS
+Thumbs.db  # Windows
+*.swp      # Vim临时文件
+*.swo      # Vim临时文件
+
+# IDE配置
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+*.code-workspace
+.history/
+
+# 测试报告
+surefire-reports/
+test-results/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.bak

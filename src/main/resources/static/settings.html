@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧药房收银系统 - 系统设置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 配置Tailwind（与其他页面一致） -->
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                primary: '#165DFF',
+                secondary: '#36B37E',
+                accent: '#FF5630',
+              },
+              fontFamily: {
+                inter: ['Inter', 'system-ui', 'sans-serif'],
+              },
+            },
+          }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+          .sidebar-item {
+            @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer;
+          }
+          .sidebar-item.active {
+            @apply bg-primary text-white;
+          }
+          .sidebar-item:not(.active):hover {
+            @apply bg-gray-100;
+          }
+          .card {
+            @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
+          }
+          .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
+          }
+          .btn-primary {
+            @apply bg-primary text-white hover:bg-primary/90;
+          }
+          .btn-outline {
+            @apply border border-gray-300 hover:bg-gray-50;
+          }
+          .input {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
+          }
+          .modal-backdrop {
+            @apply fixed inset-0 bg-black/50 z-40 hidden;
+          }
+          .modal {
+            @apply fixed inset-0 z-50 flex items-center justify-center hidden;
+          }
+          .modal-content {
+            @apply bg-white rounded-xl w-full max-w-md mx-4 shadow-lg transform transition-all;
+          }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
+<!-- 侧边栏（与其他页面保持一致） -->
+<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
+    <div class="p-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <i class="fa fa-medkit text-primary"></i>
+            </div>
+            <h1 class="font-bold text-lg">智慧药房系统</h1>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-4 px-3">
+        <nav class="space-y-1">
+            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
+
+            <a href="medicine-management.html" class="sidebar-item block">
+                <i class="fa fa-dashboard w-5 text-center"></i>
+                <span>控制台</span>
+            </a>
+
+            <a href="cashier.html" class="sidebar-item block">
+                <i class="fa fa-shopping-cart w-5 text-center"></i>
+                <span>收银管理</span>
+            </a>
+
+            <a href="stock-in.html" class="sidebar-item block">
+                <i class="fa fa-box w-5 text-center"></i>
+                <span>药品入库</span>
+            </a>
+
+            <a href="inventory.html" class="sidebar-item block">
+                <i class="fa fa-warehouse w-5 text-center"></i>
+                <span>库存管理</span>
+            </a>
+
+            <a href="members.html" class="sidebar-item block">
+                <i class="fa fa-users w-5 text-center"></i>
+                <span>会员管理</span>
+            </a>
+
+            <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">系统管理</p>
+
+            <a href="products.html" class="sidebar-item block">
+                <i class="fa fa-pills w-5 text-center"></i>
+                <span>药品档案</span>
+            </a>
+
+            <a href="staff.html" class="sidebar-item block">
+                <i class="fa fa-user-md w-5 text-center"></i>
+                <span>员工管理</span>
+            </a>
+
+            <a href="settings.html" class="sidebar-item active block">
+                <i class="fa fa-cog w-5 text-center"></i>
+                <span>系统设置</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center gap-3">
+            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
+            <div>
+                <p class="font-medium text-sm">张药师</p>
+                <p class="text-xs text-gray-500">管理员</p>
+            </div>
+            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
+                <i class="fa fa-sign-out"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<!-- 主内容区 -->
+<main class="flex-1 flex flex-col overflow-hidden">
+    <!-- 顶部导航（与其他页面一致） -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+            <div class="relative">
+                <input type="text" placeholder="搜索设置项..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
+                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
+                <i class="fa fa-bell text-xl"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+            </button>
+
+            <div class="text-right hidden md:block">
+                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
+                <p class="text-xs text-gray-500" id="current-time"></p>
+            </div>
+        </div>
+    </header>
+
+    <!-- 内容区域 -->
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div class="mb-6">
+            <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">系统设置</h2>
+            <p class="text-gray-500">配置系统基础信息与参数</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 左侧导航 -->
+            <div class="lg:col-span-1">
+                <div class="card sticky top-6">
+                    <div class="p-4 border-b border-gray-100">
+                        <h3 class="font-bold">设置分类</h3>
+                    </div>
+                    <div class="p-2">
+                        <button class="w-full text-left sidebar-item active" data-tab="basic">
+                            <i class="fa fa-info-circle w-5 text-center"></i>
+                            <span>基本设置</span>
+                        </button>
+                        <button class="w-full text-left sidebar-item" data-tab="inventory">
+                            <i class="fa fa-warehouse w-5 text-center"></i>
+                            <span>库存设置</span>
+                        </button>
+                        <button class="w-full text-left sidebar-item" data-tab="member">
+                            <i class="fa fa-users w-5 text-center"></i>
+                            <span>会员设置</span>
+                        </button>
+                        <button class="w-full text-left sidebar-item" data-tab="security">
+                            <i class="fa fa-lock w-5 text-center"></i>
+                            <span>安全设置</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧内容 -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- 基本设置 -->
+                <div class="setting-tab active" id="basic-tab">
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg mb-6">店铺基本信息</h3>
+                        <form id="basic-settings-form" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">店铺名称</label>
+                                    <input type="text" id="store-name" class="input" placeholder="请输入店铺名称" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                                    <input type="tel" id="store-phone" class="input" placeholder="请输入联系电话" required>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">店铺地址</label>
+                                    <textarea id="store-address" class="input h-20" placeholder="请输入店铺详细地址" required></textarea>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">店铺简介</label>
+                                    <textarea id="store-desc" class="input h-16" placeholder="请输入店铺简介"></textarea>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 库存设置 -->
+                <div class="setting-tab hidden" id="inventory-tab">
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg mb-6">库存预警设置</h3>
+                        <form id="inventory-settings-form" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">低库存预警阈值</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="number" id="low-stock-threshold" class="input max-w-xs" min="1" placeholder="例如：10" required>
+                                    <span class="text-gray-500">当药品库存低于此值时触发预警</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">库存预警通知方式</label>
+                                <div class="flex flex-wrap gap-4 mt-2">
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" class="rounded text-primary focus:ring-primary" checked>
+                                        <span>系统消息</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" class="rounded text-primary focus:ring-primary">
+                                        <span>邮件通知</span>
+                                    </label>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" class="rounded text-primary focus:ring-primary" checked>
+                                        <span>手机短信</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 会员设置 -->
+                <div class="setting-tab hidden" id="member-tab">
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg mb-6">会员规则设置</h3>
+                        <form id="member-settings-form" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">会员积分规则</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="number" id="points-rule" class="input max-w-xs" min="0.1" step="0.1" value="1" required>
+                                    <span class="text-gray-500">消费1元可获得的积分（例如：1）</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">积分抵现规则</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="number" id="cash-rule" class="input max-w-xs" min="10" step="10" value="100" required>
+                                    <span class="text-gray-500">多少积分可抵扣1元（例如：100）</span>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 安全设置 -->
+                <div class="setting-tab hidden" id="security-tab">
+                    <div class="card p-6">
+                        <h3 class="font-bold text-lg mb-6">账户安全设置</h3>
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center p-4 border rounded-lg">
+                                <div>
+                                    <h4 class="font-medium">修改登录密码</h4>
+                                    <p class="text-sm text-gray-500">定期修改密码可提高账户安全性</p>
+                                </div>
+                                <button class="btn btn-outline" id="change-pwd-btn">
+                                    <i class="fa fa-key"></i> 立即修改
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center p-4 border rounded-lg">
+                                <div>
+                                    <h4 class="font-medium">操作日志设置</h4>
+                                    <p class="text-sm text-gray-500">记录系统关键操作，保障数据安全</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 密码修改模态框 -->
+<div class="modal-backdrop" id="pwd-modal-backdrop"></div>
+<div class="modal" id="pwd-modal">
+    <div class="modal-content p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">修改密码</h3>
+            <button class="text-gray-400 hover:text-gray-600" id="close-pwd-modal">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <form id="change-pwd-form">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">当前密码</label>
+                    <input type="password" id="old-pwd" class="input" placeholder="请输入当前密码" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
+                    <input type="password" id="new-pwd" class="input" placeholder="请输入新密码（至少6位）" minlength="6" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
+                    <input type="password" id="confirm-pwd" class="input" placeholder="请再次输入新密码" minlength="6" required>
+                </div>
+            </div>
+            <div class="mt-6 flex gap-3 justify-end">
+                <button type="button" class="btn btn-outline" id="cancel-pwd">取消</button>
+                <button type="submit" class="btn btn-primary">确认修改</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化日期时间显示
+        initDateTime();
+
+        // 初始化侧边栏切换
+        initSidebarToggle();
+
+        // 初始化设置标签页切换
+        initSettingTabs();
+
+        // 初始化密码修改模态框
+        initModal('change-pwd-btn', 'pwd-modal', 'close-pwd-modal', 'pwd-modal-backdrop', 'cancel-pwd');
+
+        // 加载系统设置
+        async function loadSettings() {
+            try {
+                const settings = await api.settingAPI.get();
+                // 填充基本设置表单
+                document.getElementById('store-name').value = settings.storeName || '';
+                document.getElementById('store-phone').value = settings.storePhone || '';
+                document.getElementById('store-address').value = settings.storeAddress || '';
+                document.getElementById('store-desc').value = settings.storeDesc || '';
+
+                // 填充库存设置表单
+                document.getElementById('low-stock-threshold').value = settings.lowStockThreshold || 10;
+
+                // 填充会员设置表单
+                document.getElementById('points-rule').value = settings.pointsRule || 1;
+                document.getElementById('cash-rule').value = settings.cashRule || 100;
+            } catch (error) {
+                api.showMessage('加载设置失败', 'error');
+            }
+        }
+
+        // 保存基本设置
+        document.getElementById('basic-settings-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const settingsData = {
+                storeName: document.getElementById('store-name').value,
+                storePhone: document.getElementById('store-phone').value,
+                storeAddress: document.getElementById('store-address').value,
+                storeDesc: document.getElementById('store-desc').value
+            };
+
+            try {
+                await api.settingAPI.update(settingsData);
+                api.showMessage('基本设置保存成功');
+            } catch (error) {
+                api.showMessage('保存失败，请重试', 'error');
+            }
+        });
+
+        // 保存库存设置
+        document.getElementById('inventory-settings-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const settingsData = {
+                lowStockThreshold: parseInt(document.getElementById('low-stock-threshold').value)
+            };
+
+            try {
+                await api.settingAPI.update(settingsData);
+                api.showMessage('库存设置保存成功');
+            } catch (error) {
+                api.showMessage('保存失败，请重试', 'error');
+            }
+        });
+
+        // 保存会员设置
+        document.getElementById('member-settings-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const settingsData = {
+                pointsRule: parseFloat(document.getElementById('points-rule').value),
+                cashRule: parseInt(document.getElementById('cash-rule').value)
+            };
+
+            try {
+                await api.settingAPI.update(settingsData);
+                api.showMessage('会员设置保存成功');
+            } catch (error) {
+                api.showMessage('保存失败，请重试', 'error');
+            }
+        });
+
+        // 密码修改提交
+        document.getElementById('change-pwd-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const oldPwd = document.getElementById('old-pwd').value;
+            const newPwd = document.getElementById('new-pwd').value;
+            const confirmPwd = document.getElementById('confirm-pwd').value;
+
+            if (newPwd !== confirmPwd) {
+                return api.showMessage('两次输入的新密码不一致', 'warning');
+            }
+
+            if (newPwd.length < 6) {
+                return api.showMessage('新密码长度不能少于6位', 'warning');
+            }
+
+            try {
+                await api.userAPI.changePassword(oldPwd, newPwd);
+                api.showMessage('密码修改成功，请重新登录');
+                closeModal('pwd-modal', 'pwd-modal-backdrop');
+                this.reset();
+                // 延迟跳转登录页
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            } catch (error) {
+                api.showMessage('修改失败，当前密码可能不正确', 'error');
+            }
+        });
+
+        // 初始化标签页切换
+        function initSettingTabs() {
+            const tabButtons = document.querySelectorAll('[data-tab]');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // 移除所有活跃状态
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.setting-tab').forEach(tab => tab.classList.add('hidden'));
+
+                    // 设置当前活跃状态
+                    button.classList.add('active');
+                    const tabId = `${button.dataset.tab}-tab`;
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+        }
+
+        // 初始化加载
+        loadSettings();
+    });
+
+    // 公共函数（与员工管理页面共用，实际项目中可提取到common.js）
+    function initDateTime() {
+        const dateEl = document.getElementById('current-date');
+        const timeEl = document.getElementById('current-time');
+        const updateDateTime = () => {
+            const now = new Date();
+            dateEl.textContent = now.toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'});
+            timeEl.textContent = now.toLocaleTimeString('zh-CN');
+        };
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    }
+
+    function initSidebarToggle() {
+        const toggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('aside');
+        toggle?.addEventListener('click', () => {
+            sidebar.classList.toggle('w-64');
+            sidebar.classList.toggle('w-0');
+            sidebar.classList.toggle('hidden');
+        });
+    }
+
+    function initModal(triggerId, modalId, closeId, backdropId, cancelId) {
+        const trigger = document.getElementById(triggerId);
+        const modal = document.getElementById(modalId);
+        const closeBtn = document.getElementById(closeId);
+        const backdrop = document.getElementById(backdropId);
+        const cancelBtn = document.getElementById(cancelId);
+
+        trigger?.addEventListener('click', () => openModal(modalId, backdropId));
+        closeBtn?.addEventListener('click', () => closeModal(modalId, backdropId));
+        cancelBtn?.addEventListener('click', () => closeModal(modalId, backdropId));
+        backdrop?.addEventListener('click', () => closeModal(modalId, backdropId));
+    }
+
+    function openModal(modalId, backdropId) {
+        document.getElementById(modalId).classList.remove('hidden');
+        document.getElementById(backdropId)?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId, backdropId) {
+        document.getElementById(modalId).classList.add('hidden');
+        document.getElementById(backdropId)?.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+</script>
+</body>
+</html>

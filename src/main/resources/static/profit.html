@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧药房收银系统 - 毛利率分析</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- 配置Tailwind -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#36B37E',
+            accent: '#FF5630',
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .sidebar-item {
+        @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer;
+      }
+      .sidebar-item.active {
+        @apply bg-primary text-white;
+      }
+      .sidebar-item:not(.active):hover {
+        @apply bg-gray-100;
+      }
+      .card {
+        @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
+      }
+      .btn {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
+      }
+      .btn-primary {
+        @apply bg-primary text-white hover:bg-primary/90;
+      }
+      .btn-outline {
+        @apply border border-gray-300 hover:bg-gray-50;
+      }
+      .input {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
+      }
+      .badge {
+        @apply px-2 py-1 rounded-full text-xs font-medium;
+      }
+    }
+  </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
+  <!-- 侧边栏（添加收银台导航项） -->
+  <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
+    <div class="p-4 border-b border-gray-200">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+          <i class="fa fa-medkit text-primary"></i>
+        </div>
+        <h1 class="font-bold text-lg">智慧药房系统</h1>
+      </div>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto py-4 px-3">
+      <nav class="space-y-1">
+        <!-- 新增：核心操作区（含收银台入口） -->
+        <p class="text-xs font-medium text-gray-500 px-4 mb-2">核心操作</p>
+        
+        <a href="cashier.html" class="sidebar-item block">
+          <i class="fa fa-shopping-cart w-5 text-center"></i>
+          <span>收银台</span>
+        </a>
+        
+        <!-- 原有：数据分析区 -->
+        <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">数据分析</p>
+        
+        <a href="profit.html" class="sidebar-item active block">
+          <i class="fa fa-line-chart w-5 text-center"></i>
+          <span>毛利率分析</span>
+        </a>
+        
+        <a href="sales.html" class="sidebar-item block">
+          <i class="fa fa-bar-chart w-5 text-center"></i>
+          <span>销售统计</span>
+        </a>
+      </nav>
+    </div>
+    
+    <div class="p-4 border-t border-gray-200">
+      <div class="flex items-center gap-3">
+        <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
+        <div>
+          <p class="font-medium text-sm">张药师</p>
+          <p class="text-xs text-gray-500">管理员</p>
+        </div>
+        <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
+          <i class="fa fa-sign-out"></i>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主内容区 -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    <!-- 顶部导航（添加收银台快捷按钮） -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+      <div class="flex items-center gap-4">
+        <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
+          <i class="fa fa-bars text-xl"></i>
+        </button>
+        <div class="relative">
+          <input type="text" placeholder="搜索药品类别、时间段..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
+          <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
+          <i class="fa fa-bell text-xl"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+        </button>
+        
+        <!-- 新增：收银台快捷按钮 -->
+        <a href="cashier.html" class="btn btn-primary hidden md:flex">
+          <i class="fa fa-shopping-cart"></i> 收银台
+        </a>
+        
+        <div class="text-right hidden md:block">
+          <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
+          <p class="text-xs text-gray-500" id="current-time"></p>
+        </div>
+      </div>
+    </header>
+
+    <!-- 内容区域（保持原有功能不变） -->
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+        <div>
+          <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">毛利率分析</h2>
+          <p class="text-gray-500">药品利润与毛利率趋势分析</p>
+        </div>
+        <div class="flex gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-sm font-medium">时间范围:</label>
+            <select class="input w-auto">
+              <option value="month">本月</option>
+              <option value="quarter" selected>本季度</option>
+              <option value="year">本年</option>
+              <option value="custom">自定义</option>
+            </select>
+          </div>
+          <button class="btn btn-primary">
+            <i class="fa fa-download"></i> 导出报表
+          </button>
+        </div>
+      </div>
+      
+      <!-- 利润概览卡片 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="card p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-gray-500 text-sm">总销售额</p>
+              <h3 class="text-2xl font-bold mt-1">¥328,560</h3>
+            </div>
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+              <i class="fa fa-money"></i>
+            </div>
+          </div>
+          <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 15.2%
+            </span>
+            <span class="text-gray-500 ml-2">较上季度</span>
+          </div>
+        </div>
+        
+        <div class="card p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-gray-500 text-sm">总成本</p>
+              <h3 class="text-2xl font-bold mt-1">¥215,680</h3>
+            </div>
+            <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center text-accent">
+              <i class="fa fa-shopping-cart"></i>
+            </div>
+          </div>
+          <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 8.7%
+            </span>
+            <span class="text-gray-500 ml-2">较上季度</span>
+          </div>
+        </div>
+        
+        <div class="card p-6">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <p class="text-gray-500 text-sm">平均毛利率</p>
+              <h3 class="text-2xl font-bold mt-1">34.3%</h3>
+            </div>
+            <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary">
+              <i class="fa fa-percent"></i>
+            </div>
+          </div>
+          <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 2.1%
+            </span>
+            <span class="text-gray-500 ml-2">较上季度</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 图表区域 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold">毛利率趋势</h3>
+            <div class="flex gap-2">
+              <button class="btn btn-outline text-sm px-3 py-1">月</button>
+              <button class="btn btn-primary text-sm px-3 py-1">季</button>
+              <button class="btn btn-outline text-sm px-3 py-1">年</button>
+            </div>
+          </div>
+          <div class="h-80">
+            <canvas id="profit-trend-chart"></canvas>
+          </div>
+        </div>
+        
+        <div class="card p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="font-bold">各类别毛利率</h3>
+            <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
+          </div>
+          <div class="h-80">
+            <canvas id="category-profit-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 高利润与低利润药品 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card">
+          <div class="p-6 border-b border-gray-100">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold">高毛利率药品 TOP10</h3>
+              <span class="text-sm text-gray-500">毛利率 > 40%</span>
+            </div>
+          </div>
+          <div class="divide-y divide-gray-100">
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">阿胶糕</h4>
+                <p class="text-sm text-gray-500">保健品 | 销售: ¥28,560</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-secondary">58.6%</p>
+                <p class="text-xs text-gray-500">利润: ¥16,730</p>
+              </div>
+            </div>
+            
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">蛋白粉</h4>
+                <p class="text-sm text-gray-500">保健品 | 销售: ¥24,320</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-secondary">52.3%</p>
+                <p class="text-xs text-gray-500">利润: ¥12,720</p>
+              </div>
+            </div>
+            
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">维生素E软胶囊</h4>
+                <p class="text-sm text-gray-500">维生素类 | 销售: ¥18,750</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-secondary">48.5%</p>
+                <p class="text-xs text-gray-500">利润: ¥9,090</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="p-6 border-b border-gray-100">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold">低毛利率药品 TOP10</h3>
+              <span class="text-sm text-gray-500">毛利率 < 20%</span>
+            </div>
+          </div>
+          <div class="divide-y divide-gray-100">
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">胰岛素注射液</h4>
+                <p class="text-sm text-gray-500">慢性病药 | 销售: ¥32,560</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-accent">12.5%</p>
+                <p class="text-xs text-gray-500">利润: ¥4,070</p>
+              </div>
+            </div>
+            
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">硝苯地平缓释片</h4>
+                <p class="text-sm text-gray-500">慢性病药 | 销售: ¥28,320</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-accent">15.8%</p>
+                <p class="text-xs text-gray-500">利润: ¥4,470</p>
+              </div>
+            </div>
+            
+            <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+              <div>
+                <h4 class="font-medium">阿司匹林肠溶片</h4>
+                <p class="text-sm text-gray-500">心脑血管 | 销售: ¥21,750</p>
+              </div>
+              <div class="text-right">
+                <p class="font-bold text-accent">18.2%</p>
+                <p class="text-xs text-gray-500">利润: ¥3,960</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 初始化日期和时间
+    function updateDateTime() {
+      const now = new Date();
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+      
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', timeOptions);
+    }
+    
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
+    // 侧边栏切换（移动端）
+    document.getElementById('sidebar-toggle').addEventListener('click', function() {
+      const sidebar = document.querySelector('aside');
+      sidebar.classList.toggle('-translate-x-full');
+    });
+    
+    // 初始化图表
+    function initCharts() {
+      // 毛利率趋势图
+      const profitTrendCtx = document.getElementById('profit-trend-chart').getContext('2d');
+      new Chart(profitTrendCtx, {
+        type: 'line',
+        data: {
+          labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Q1', 'Q2'],
+          datasets: [
+            {
+              label: '毛利率',
+              data: [30.2, 31.5, 32.8, 33.1, 32.5, 34.3],
+              borderColor: '#36B37E',
+              backgroundColor: 'rgba(54, 179, 126, 0.1)',
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y1'
+            },
+            {
+              label: '利润额',
+              data: [85000, 92000, 98000, 105000, 112000, 112880],
+              borderColor: '#165DFF',
+              backgroundColor: 'transparent',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top' } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '利润额 (¥)' }
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'right',
+              title: { display: true, text: '毛利率 (%)' },
+              grid: { drawOnChartArea: false },
+              ticks: { callback: function(value) { return value + '%'; } }
+            }
+          }
+        }
+      });
+      
+      // 类别毛利率图
+      const categoryProfitCtx = document.getElementById('category-profit-chart').getContext('2d');
+      new Chart(categoryProfitCtx, {
+        type: 'bar',
+        data: {
+          labels: ['保健品', '维生素类', '中药饮片', '感冒药', '消炎药', '慢性病药'],
+          datasets: [{
+            label: '毛利率',
+            data: [48.5, 42.3, 38.7, 35.2, 30.6, 22.8],
+            backgroundColor: [
+              '#36B37E', '#165DFF', '#722ED1', '#FFAB00', '#F5222D', '#86909C'
+            ],
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { callback: function(value) { return value + '%'; } }
+            }
+          }
+        }
+      });
+    }
+    
+    // 页面加载完成后初始化图表
+    window.addEventListener('load', initCharts);
+  </script>
+</body>
+</html>

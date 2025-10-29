@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧药房收银系统 - 控制台</title>
+    <!-- 外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36B37E',
+                        accent: '#FF5630'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 滚动样式修复（核心） -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .sidebar-item {
+                @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer;
+            }
+            .sidebar-item.active {
+                @apply bg-primary text-white;
+            }
+            .sidebar-item:not(.active):hover {
+                @apply bg-gray-100;
+            }
+            .card {
+                @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90;
+            }
+            .btn-outline {
+                @apply border border-gray-300 hover:bg-gray-50;
+            }
+            /* 滚动容器：确保高度正确且滚动不被截断 */
+            .main-content {
+                @apply flex-1 p-6 bg-gray-50;
+                height: calc(100vh - 64px); /* 精确计算：视口高度 - 顶部导航栏64px（h-16=4rem=64px） */
+                overflow-y: scroll; /* 强制显示滚动条 */
+                scrollbar-width: thin; /* Firefox兼容 */
+            }
+            /* 滚动条美化（Chrome/Edge） */
+            .main-content::-webkit-scrollbar {
+                width: 8px;
+            }
+            .main-content::-webkit-scrollbar-track {
+                background: #f5f5f5;
+            }
+            .main-content::-webkit-scrollbar-thumb {
+                background: #d1d5db;
+                border-radius: 4px;
+            }
+            .main-content::-webkit-scrollbar-thumb:hover {
+                background: #9ca3af;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex">
+<!-- 侧边栏导航 -->
+<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen z-10">
+    <!-- 系统标题 -->
+    <div class="p-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <i class="fa fa-medkit text-primary"></i>
+            </div>
+            <h1 class="font-bold text-lg">智慧药房系统</h1>
+        </div>
+    </div>
+
+    <!-- 导航菜单 -->
+    <div class="flex-1 overflow-y-auto py-4 px-3">
+        <nav class="space-y-1">
+            <!-- 主功能区 -->
+            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
+            <a href="medicine-management.html" class="sidebar-item active block">
+                <i class="fa fa-dashboard w-5 text-center"></i>
+                <span>控制台</span>
+            </a>
+            <a href="cashier.html" class="sidebar-item block">
+                <i class="fa fa-shopping-cart w-5 text-center"></i>
+                <span>收银管理</span>
+            </a>
+            <a href="stock-in.html" class="sidebar-item block">
+                <i class="fa fa-box w-5 text-center"></i>
+                <span>药品入库</span>
+            </a>
+            <a href="inventory.html" class="sidebar-item block">
+                <i class="fa fa-warehouse w-5 text-center"></i>
+                <span>库存管理</span>
+            </a>
+            <a href="members.html" class="sidebar-item block">
+                <i class="fa fa-users w-5 text-center"></i>
+                <span>会员管理</span>
+            </a>
+            <a href="order-history.html" class="sidebar-item block">
+                <i class="fa fa-history w-5 text-center"></i>
+                <span>历史订单</span>
+            </a>
+
+            <!-- 系统管理区 -->
+            <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">系统管理</p>
+            <a href="products.html" class="sidebar-item block">
+                <i class="fa fa-pills w-5 text-center"></i>
+                <span>药品档案</span>
+            </a>
+            <a href="staff.html" class="sidebar-item block">
+                <i class="fa fa-user-md w-5 text-center"></i>
+                <span>员工管理</span>
+            </a>
+            <a href="settings.html" class="sidebar-item block">
+                <i class="fa fa-cog w-5 text-center"></i>
+                <span>系统设置</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- 用户信息 -->
+    <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center gap-3">
+            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full">
+            <div>
+                <p class="font-medium text-sm">张药师</p>
+                <p class="text-xs text-gray-500">管理员</p>
+            </div>
+            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent">
+                <i class="fa fa-sign-out"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<!-- 主内容区（移除overflow-hidden限制） -->
+<main class="flex-1 flex flex-col">
+    <!-- 顶部导航栏（固定高度64px） -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+            <div class="relative">
+                <input
+                        type="text"
+                        placeholder="搜索数据..."
+                        class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                >
+                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full" id="notification-btn">
+                <i class="fa fa-bell text-xl"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+            </button>
+
+            <div class="text-right hidden md:block">
+                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
+                <p class="text-xs text-gray-500" id="current-time"></p>
+            </div>
+        </div>
+    </header>
+
+    <!-- 可滚动内容区（核心修复） -->
+    <div class="main-content">
+        <!-- 页面标题与操作按钮 -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <div>
+                <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">控制台概览</h2>
+                <p class="text-gray-500">实时监控药房运营数据</p>
+            </div>
+            <div class="flex gap-3">
+                <button class="btn btn-outline" id="export-report">
+                    <i class="fa fa-download"></i> 导出报表
+                </button>
+                <button class="btn btn-primary" id="refresh-data">
+                    <i class="fa fa-refresh"></i> 刷新数据
+                </button>
+            </div>
+        </div>
+
+        <!-- 数据统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- 今日销售额 -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">今日销售额</p>
+                        <h3 class="text-2xl font-bold mt-1" id="todaySales">¥12,580</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                        <i class="fa fa-money"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+                        <span class="text-secondary flex items-center" id="salesChange">
+                            <i class="fa fa-arrow-up mr-1"></i> 12.5%
+                        </span>
+                    <span class="text-gray-500 ml-2">较昨日</span>
+                </div>
+            </div>
+
+            <!-- 今日订单 -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">今日订单</p>
+                        <h3 class="text-2xl font-bold mt-1" id="todayOrders">86</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                        <i class="fa fa-shopping-cart"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+                        <span class="text-secondary flex items-center" id="ordersChange">
+                            <i class="fa fa-arrow-up mr-1"></i> 8.2%
+                        </span>
+                    <span class="text-gray-500 ml-2">较昨日</span>
+                </div>
+            </div>
+
+            <!-- 会员消费 -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">会员消费</p>
+                        <h3 class="text-2xl font-bold mt-1" id="memberConsumption">32 人</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                        <i class="fa fa-users"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+                        <span class="text-secondary flex items-center" id="memberChange">
+                            <i class="fa fa-arrow-up mr-1"></i> 5.3%
+                        </span>
+                    <span class="text-gray-500 ml-2">较昨日</span>
+                </div>
+            </div>
+
+            <!-- 库存预警 -->
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">库存预警</p>
+                        <h3 class="text-2xl font-bold mt-1" id="lowStockCount">5 种</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center text-accent">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+                        <span class="text-accent flex items-center" id="stockChange">
+                            <i class="fa fa-arrow-up mr-1"></i> 2 种
+                        </span>
+                    <span class="text-gray-500 ml-2">较昨日</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- 销售趋势图表 -->
+            <div class="card p-6 lg:col-span-2">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold">销售趋势</h3>
+                    <div class="flex gap-2">
+                        <button class="btn btn-outline text-sm px-3 py-1" data-period="day">日</button>
+                        <button class="btn btn-primary text-sm px-3 py-1" data-period="week">周</button>
+                        <button class="btn btn-outline text-sm px-3 py-1" data-period="month">月</button>
+                    </div>
+                </div>
+                <div class="h-80">
+                    <canvas id="sales-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- 药品分类占比图表 -->
+            <div class="card p-6">
+                <h3 class="font-bold mb-6">药品分类占比</h3>
+                <div class="h-80">
+                    <canvas id="category-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 近效期药品提醒 -->
+        <div class="card mb-6">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold">近效期药品提醒</h3>
+                <a href="inventory.html" class="text-primary hover:underline text-sm">查看全部</a>
+            </div>
+            <div class="divide-y divide-gray-100" id="expiring-medicines">
+                <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium">盐酸氨溴索口服溶液</h4>
+                        <p class="text-sm text-gray-500">规格: 100ml/瓶 | 有效期至: 2023-06-15</p>
+                        <p class="text-sm text-accent mt-1">剩余 12 盒</p>
+                    </div>
+                    <button class="btn btn-outline text-sm" onclick="location.href='inventory.html'">处理</button>
+                </div>
+                <div class="p-4 hover:bg-gray-50 transition-colors flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium">布洛芬缓释胶囊</h4>
+                        <p class="text-sm text-gray-500">规格: 20粒/盒 | 有效期至: 2023-07-20</p>
+                        <p class="text-sm text-accent mt-1">剩余 8 盒</p>
+                    </div>
+                    <button class="btn btn-outline text-sm" onclick="location.href='inventory.html'">处理</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 今日热销药品 -->
+        <div class="card mb-6">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold">今日热销药品</h3>
+                <a href="products.html" class="text-primary hover:underline text-sm">查看全部</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">药品名称</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">规格</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">单价</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">今日销量</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">销售额</th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="hot-products">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">复方感冒灵颗粒</td>
+                        <td class="px-6 py-4 whitespace-nowrap">10袋/盒</td>
+                        <td class="px-6 py-4 whitespace-nowrap">¥28.50</td>
+                        <td class="px-6 py-4 whitespace-nowrap">26</td>
+                        <td class="px-6 py-4 whitespace-nowrap">¥741.00</td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">创可贴</td>
+                        <td class="px-6 py-4 whitespace-nowrap">100片/盒</td>
+                        <td class="px-6 py-4 whitespace-nowrap">¥15.80</td>
+                        <td class="px-6 py-4 whitespace-nowrap">32</td>
+                        <td class="px-6 py-4 whitespace-nowrap">¥505.60</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 通知面板 -->
+<div id="notification-panel" class="fixed top-16 right-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden">
+    <div class="p-4 border-b border-gray-200">
+        <h3 class="font-bold">通知消息</h3>
+    </div>
+    <div class="max-h-96 overflow-y-auto" id="notification-list">
+        <div class="p-4 text-center text-gray-500">暂无通知</div>
+    </div>
+    <div class="p-2 border-t border-gray-200 text-center">
+        <a href="#" class="text-sm text-primary hover:underline">查看全部</a>
+    </div>
+</div>
+
+<!-- 功能脚本 -->
+<script>
+    // 错误处理
+    window.addEventListener('error', function(e) {
+        console.error('全局错误:', e.error);
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('Promise 错误:', e.reason);
+    });
+
+    // 安全的DOM元素获取
+    function getSafeElement(id) {
+        const element = document.getElementById(id);
+        if (!element) {
+            console.warn(`元素 #${id} 不存在`);
+            return null;
+        }
+        return element;
+    }
+
+    // 全局变量
+    let currentPeriod = 'week';
+    let salesChart = null;
+    let categoryChart = null;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('=== 控制台页面初始化开始 ===');
+
+        initDateTime();
+        initSidebar();
+        initCharts();
+        initEvents();
+        loadDashboardData();
+
+        console.log('=== 控制台页面初始化完成 ===');
+    });
+
+    // 日期时间
+    function initDateTime() {
+        const update = () => {
+            const now = new Date();
+            const dateElement = getSafeElement('current-date');
+            const timeElement = getSafeElement('current-time');
+
+            if (dateElement) dateElement.textContent = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
+            if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN');
+        };
+        update();
+        setInterval(update, 1000);
+    }
+
+    // 侧边栏切换
+    function initSidebar() {
+        const toggleBtn = getSafeElement('sidebar-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const sidebar = document.querySelector('aside');
+                if (sidebar) {
+                    sidebar.classList.toggle('w-64');
+                    sidebar.classList.toggle('w-0');
+                    sidebar.classList.toggle('hidden');
+                }
+            });
+        }
+    }
+
+    // 图表初始化
+    function initCharts() {
+        // 销售趋势图
+        const salesChartCanvas = document.getElementById('sales-chart');
+        if (salesChartCanvas) {
+            salesChart = new Chart(salesChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: ['周一','周二','周三','周四','周五','周六','周日'],
+                    datasets: [{
+                        label: '销售额',
+                        data: [1580, 1820, 1650, 2100, 2350, 2080, 1000],
+                        borderColor: '#165DFF',
+                        backgroundColor: 'rgba(22,93,255,0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '销售额 (¥)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 分类占比图
+        const categoryChartCanvas = document.getElementById('category-chart');
+        if (categoryChartCanvas) {
+            categoryChart = new Chart(categoryChartCanvas, {
+                type: 'pie',
+                data: {
+                    labels: ['处方药','非处方药','保健品','医疗器械'],
+                    datasets: [{
+                        data: [35,45,15,5],
+                        backgroundColor: ['#165DFF', '#36B37E', '#FFAB00', '#FF5630']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
+
+    // 事件绑定
+    function initEvents() {
+        // 刷新数据
+        const refreshBtn = getSafeElement('refresh-data');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                const btn = this;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 刷新中...';
+                btn.disabled = true;
+                setTimeout(() => {
+                    loadDashboardData();
+                    btn.innerHTML = '<i class="fa fa-refresh"></i> 刷新数据';
+                    btn.disabled = false;
+                }, 800);
+            });
+        }
+
+        // 导出报表
+        const exportBtn = getSafeElement('export-report');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function() {
+                const btn = this;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 导出中...';
+                btn.disabled = true;
+                setTimeout(() => {
+                    alert('报表导出成功');
+                    btn.innerHTML = '<i class="fa fa-download"></i> 导出报表';
+                    btn.disabled = false;
+                }, 1000);
+            });
+        }
+
+        // 周期切换
+        document.querySelectorAll('[data-period]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-period]').forEach(b => {
+                    b.classList.toggle('btn-primary', b === btn);
+                    b.classList.toggle('btn-outline', b !== btn);
+                });
+                currentPeriod = this.getAttribute('data-period');
+                updateSalesChartByPeriod();
+            });
+        });
+
+        // 通知面板
+        const panel = getSafeElement('notification-panel');
+        const notificationBtn = getSafeElement('notification-btn');
+
+        if (notificationBtn && panel) {
+            notificationBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                panel.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', () => panel.classList.add('hidden'));
+            panel.addEventListener('click', e => e.stopPropagation());
+        }
+    }
+
+    // 加载数据
+    function loadDashboardData() {
+        console.log('加载控制台数据...');
+        // 数据已在页面初始化时填充，此处模拟刷新效果
+    }
+
+    // 按周期更新销售图表
+    function updateSalesChartByPeriod() {
+        if (!salesChart) return;
+
+        const data = {
+            day: {
+                labels: ['00:00','03:00','06:00','09:00','12:00','15:00','18:00','21:00'],
+                values: [320, 150, 80, 650, 1200, 980, 1500, 850]
+            },
+            week: {
+                labels: ['周一','周二','周三','周四','周五','周六','周日'],
+                values: [1580, 1820, 1650, 2100, 2350, 2080, 1000]
+            },
+            month: {
+                labels: ['1月','2月','3月','4月','5月','6月'],
+                values: [15000, 21000, 18000, 24000, 23000, 28000]
+            }
+        };
+
+        const periodData = data[currentPeriod];
+        if (periodData) {
+            salesChart.data.labels = periodData.labels;
+            salesChart.data.datasets[0].data = periodData.values;
+            salesChart.update();
+        }
+    }
+
+    // 触发默认周期点击事件
+    const weekBtn = document.querySelector('[data-period="week"]');
+    if (weekBtn) {
+        weekBtn.click();
+    }
+
+    // 加载所有控制台数据
+    async function loadAllDashboardData() {
+        try {
+            console.log('开始加载所有控制台数据...');
+
+            // 检查API是否可用
+            if (!window.api) {
+                console.warn('API未就绪，使用模拟数据');
+                updateWithMockData();
+                return;
+            }
+
+            // 加载概览统计数据
+            if (window.api.statsAPI && typeof window.api.statsAPI.getDashboardStats === 'function') {
+                try {
+                    const dashboardStats = await window.api.statsAPI.getDashboardStats();
+                    updateSummaryCards(dashboardStats);
+                } catch (error) {
+                    console.error('加载统计数据失败:', error);
+                    updateWithMockData();
+                }
+            }
+
+            // 初始化销售趋势图表
+            initSalesChart();
+
+            // 初始化药品分类占比图表
+            initCategoryChart();
+
+        } catch (error) {
+            console.error('加载数据失败:', error);
+            if (window.api && window.api.showMessage) {
+                window.api.showMessage('加载数据失败，请重试', 'error');
+            }
+        }
+    }
+
+    // 使用模拟数据
+    function updateWithMockData() {
+        console.log('使用模拟数据更新界面');
+
+        // 更新统计卡片
+        const mockData = {
+            todaySales: 12580,
+            salesChange: 12.5,
+            todayOrders: 86,
+            ordersChange: 8.2,
+            memberConsumption: 32,
+            memberChange: 5.3,
+            stockAlerts: 5
+        };
+
+        updateSummaryCards(mockData);
+    }
+
+    // 更新统计卡片数据
+    function updateSummaryCards(data) {
+        if (!data) return;
+
+        // 今日销售额
+        const todaySalesEl = getSafeElement('todaySales');
+        if (todaySalesEl) todaySalesEl.textContent = `¥${data.todaySales?.toLocaleString() || '0'}`;
+
+        // 销售额变化
+        const salesChangeEl = getSafeElement('salesChange');
+        if (salesChangeEl) {
+            const isPositive = data.salesChange >= 0;
+            salesChangeEl.innerHTML = `
+                <i class="fa fa-arrow-${isPositive ? 'up' : 'down'} mr-1 ${isPositive ? 'text-green-500' : 'text-red-500'}"></i>
+                ${Math.abs(data.salesChange || 0)}%
+            `;
+        }
+
+        // 今日订单
+        const todayOrdersEl = getSafeElement('todayOrders');
+        if (todayOrdersEl) todayOrdersEl.textContent = data.todayOrders || '0';
+
+        // 订单变化
+        const ordersChangeEl = getSafeElement('ordersChange');
+        if (ordersChangeEl) {
+            const isPositive = data.ordersChange >= 0;
+            ordersChangeEl.innerHTML = `
+                <i class="fa fa-arrow-${isPositive ? 'up' : 'down'} mr-1 ${isPositive ? 'text-green-500' : 'text-red-500'}"></i>
+                ${Math.abs(data.ordersChange || 0)}%
+            `;
+        }
+
+        // 会员消费
+        const memberConsumptionEl = getSafeElement('memberConsumption');
+        if (memberConsumptionEl) memberConsumptionEl.textContent = `${data.memberConsumption || 0} 人`;
+
+        // 会员变化
+        const memberChangeEl = getSafeElement('memberChange');
+        if (memberChangeEl) {
+            const isPositive = data.memberChange >= 0;
+            memberChangeEl.innerHTML = `
+                <i class="fa fa-arrow-${isPositive ? 'up' : 'down'} mr-1 ${isPositive ? 'text-green-500' : 'text-red-500'}"></i>
+                ${Math.abs(data.memberChange || 0)}%
+            `;
+        }
+
+        // 库存预警
+        const lowStockCountEl = getSafeElement('lowStockCount');
+        if (lowStockCountEl) lowStockCountEl.textContent = `${data.stockAlerts || 0} 种`;
+
+        // 库存变化
+        const stockChangeEl = getSafeElement('stockChange');
+        if (stockChangeEl) {
+            stockChangeEl.innerHTML = `
+                <i class="fa fa-arrow-up mr-1 text-accent"></i>
+                ${data.stockAlerts || 0} 种
+            `;
+        }
+    }
+
+    // 销售趋势图表
+    function initSalesChart() {
+        const ctx = document.getElementById('sales-chart');
+        if (!ctx) return;
+
+        // 如果已有图表实例，先销毁
+        if (salesChart) {
+            salesChart.destroy();
+        }
+
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['周一','周二','周三','周四','周五','周六','周日'],
+                datasets: [{
+                    label: '销售额',
+                    data: [1580, 1820, 1650, 2100, 2350, 2080, 1000],
+                    borderColor: '#165DFF',
+                    backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+    }
+
+    // 药品分类占比图表
+    function initCategoryChart() {
+        const ctx = document.getElementById('category-chart');
+        if (!ctx) return;
+
+        // 如果已有图表实例，先销毁
+        if (categoryChart) {
+            categoryChart.destroy();
+        }
+
+        categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['处方药','非处方药','保健品','医疗器械'],
+                datasets: [{
+                    data: [35, 45, 15, 5],
+                    backgroundColor: ['#165DFF', '#36B37E', '#FFAB00', '#FF5630']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    // 导出报表功能
+    async function exportDashboardData() {
+        try {
+            const button = getSafeElement('export-report');
+            if (button) {
+                button.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 导出中...';
+            }
+
+            // 模拟导出过程
+            setTimeout(() => {
+                if (button) {
+                    button.innerHTML = '<i class="fa fa-download"></i> 导出报表';
+                }
+                alert('报表导出成功！');
+            }, 1500);
+
+        } catch (error) {
+            console.error('导出失败:', error);
+            const button = getSafeElement('export-report');
+            if (button) {
+                button.innerHTML = '<i class="fa fa-download"></i> 导出报表';
+            }
+            alert('导出失败，请重试');
+        }
+    }
+
+    // 绑定导出按钮事件
+    const exportBtn = getSafeElement('export-report');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportDashboardData);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧药房收银系统 - 会员管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- 配置Tailwind（与其他页面一致） -->
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                primary: '#165DFF',
+                secondary: '#36B37E',
+                accent: '#FF5630',
+              },
+              fontFamily: {
+                inter: ['Inter', 'system-ui', 'sans-serif'],
+              },
+            },
+          }
+        }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化新增会员模态框
+    initModal('add-member', 'member-modal', 'close-modal');
+
+    // 会员数据加载
+    let membersData = [];
+    const memberTableBody = document.querySelector('#members-table tbody');
+    const searchInput = document.querySelector('input[placeholder="搜索会员姓名、手机号..."]');
+
+    // 加载会员数据
+    async function loadMembers() {
+        try {
+            // 模拟API调用
+            const response = await api.memberAPI.getAll();
+            membersData = response;
+            renderMemberTable(membersData);
+            updateMemberStats(membersData);
+        } catch (error) {
+            api.showMessage('加载会员数据失败', 'error');
+        }
+    }
+
+    // 渲染会员表格
+    function renderMemberTable(members) {
+        memberTableBody.innerHTML = '';
+        members.forEach(member => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 transition-colors';
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">${member.id}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${member.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${member.phone}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${member.memberLevel}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${member.points}</td>
+                <td class="px-6 py-4 whitespace-nowrap">${api.utils.formatDate(member.joinDate)}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="text-primary hover:underline mr-3" onclick="editMember(${member.id})">编辑</button>
+                    <button class="text-red-500 hover:underline" onclick="deleteMember(${member.id})">删除</button>
+                </td>
+            `;
+            memberTableBody.appendChild(row);
+        });
+    }
+
+    // 更新会员统计数据
+    function updateMemberStats(members) {
+        const total = members.length;
+        const vipCount = members.filter(m => m.memberLevel === 'VIP').length;
+        const newCount = members.filter(m => {
+            const joinDate = new Date(m.joinDate);
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            return joinDate >= thirtyDaysAgo;
+        }).length;
+
+        // 更新统计卡片
+        document.querySelector('.text-2xl.font-bold').textContent = `${total.toLocaleString()} 人`;
+        document.querySelectorAll('.text-2xl.font-bold')[1].textContent = `${vipCount} 人`;
+        document.querySelectorAll('.text-2xl.font-bold')[2].textContent = `${newCount} 人`;
+    }
+
+    // 搜索功能
+    searchInput.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase().trim();
+        const filtered = membersData.filter(member =>
+            member.name.toLowerCase().includes(keyword) ||
+            member.phone.includes(keyword)
+        );
+        renderMemberTable(filtered);
+    });
+
+    // 新增会员提交
+    document.getElementById('save-member').addEventListener('click', async function() {
+        const memberData = {
+            name: document.getElementById('member-name').value,
+            phone: document.getElementById('member-phone').value,
+            memberLevel: document.getElementById('member-level').value,
+            joinDate: new Date().toISOString().split('T')[0]
+        };
+
+        try {
+            await api.memberAPI.create(memberData);
+            api.showMessage('会员添加成功');
+            document.getElementById('member-modal').classList.add('hidden');
+            loadMembers(); // 重新加载数据
+        } catch (error) {
+            api.showMessage('添加失败，请重试', 'error');
+        }
+    });
+
+    // 初始化加载
+    loadMembers();
+});
+
+// 编辑会员
+function editMember(id) {
+    // 实现编辑逻辑，类似新增功能
+    document.getElementById('member-modal').classList.remove('hidden');
+    // 填充表单数据...
+}
+
+// 删除会员
+function deleteMember(id) {
+    if (confirm('确定要删除该会员吗？')) {
+        api.memberAPI.delete(id)
+            .then(() => {
+                api.showMessage('删除成功');
+                loadMembers();
+            })
+            .catch(() => api.showMessage('删除失败', 'error'));
+    }
+}
+
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+          .sidebar-item {
+            @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer;
+          }
+          .sidebar-item.active {
+            @apply bg-primary text-white;
+          }
+          .sidebar-item:not(.active):hover {
+            @apply bg-gray-100;
+          }
+          .card {
+            @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
+          }
+          .btn {
+            @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
+          }
+          .btn-primary {
+            @apply bg-primary text-white hover:bg-primary/90;
+          }
+          .btn-outline {
+            @apply border border-gray-300 hover:bg-gray-50;
+          }
+          .input {
+            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
+          }
+          .badge {
+            @apply px-2 py-1 rounded-full text-xs font-medium;
+          }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
+<!-- 侧边栏（与其他页面一致） -->
+<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
+    <div class="p-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <i class="fa fa-medkit text-primary"></i>
+            </div>
+            <h1 class="font-bold text-lg">智慧药房系统</h1>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto py-4 px-3">
+        <nav class="space-y-1">
+            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
+
+            <a href="dashboard.html" class="sidebar-item block">
+                <i class="fa fa-dashboard w-5 text-center"></i>
+                <span>控制台</span>
+            </a>
+
+            <a href="cashier.html" class="sidebar-item block">
+                <i class="fa fa-shopping-cart w-5 text-center"></i>
+                <span>收银管理</span>
+            </a>
+
+            <a href="stock-in.html" class="sidebar-item block">
+                <i class="fa fa-box w-5 text-center"></i>
+                <span>药品入库</span>
+            </a>
+
+            <a href="inventory.html" class="sidebar-item block">
+                <i class="fa fa-warehouse w-5 text-center"></i>
+                <span>库存管理</span>
+            </a>
+
+            <a href="members.html" class="sidebar-item active block">
+                <i class="fa fa-users w-5 text-center"></i>
+                <span>会员管理</span>
+            </a>
+
+            <a href="order-history.html" class="sidebar-item block">
+                <i class="fa fa-history w-5 text-center"></i>
+                <span>历史订单</span>
+            </a>
+
+            <!-- 其他导航项省略 -->
+        </nav>
+    </div>
+
+    <div class="p-4 border-t border-gray-200">
+        <div class="flex items-center gap-3">
+            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
+            <div>
+                <p class="font-medium text-sm">张药师</p>
+                <p class="text-xs text-gray-500">管理员</p>
+            </div>
+            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
+                <i class="fa fa-sign-out"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<!-- 主内容区 -->
+<main class="flex-1 flex flex-col overflow-hidden">
+    <!-- 顶部导航（与其他页面一致） -->
+    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+            <div class="relative">
+                <input type="text" placeholder="搜索会员姓名、手机号..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
+                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
+                <i class="fa fa-bell text-xl"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+            </button>
+
+            <div class="text-right hidden md:block">
+                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
+                <p class="text-xs text-gray-500" id="current-time"></p>
+            </div>
+        </div>
+    </header>
+
+    <!-- 内容区域 -->
+    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <div>
+                <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">会员管理</h2>
+                <p class="text-gray-500">会员信息与消费记录管理</p>
+            </div>
+            <div class="flex gap-3">
+                <button class="btn btn-outline">
+                    <i class="fa fa-upload"></i> 导入会员
+                </button>
+                <button class="btn btn-outline">
+                    <i class="fa fa-download"></i> 导出会员
+                </button>
+                <button class="btn btn-primary" id="add-member">
+                    <i class="fa fa-plus"></i> 新增会员
+                </button>
+            </div>
+        </div>
+
+        <!-- 会员统计卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">总会员数</p>
+                        <h3 class="text-2xl font-bold mt-1">1,256 人</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                        <i class="fa fa-users"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 32 人
+            </span>
+                    <span class="text-gray-500 ml-2">本月新增</span>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">今日消费会员</p>
+                        <h3 class="text-2xl font-bold mt-1">89 人</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary">
+                        <i class="fa fa-shopping-cart"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 12 人
+            </span>
+                    <span class="text-gray-500 ml-2">较昨日</span>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">会员总消费</p>
+                        <h3 class="text-2xl font-bold mt-1">¥328,560</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                        <i class="fa fa-money"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-up mr-1"></i> 15.2%
+            </span>
+                    <span class="text-gray-500 ml-2">较上月</span>
+                </div>
+            </div>
+
+            <div class="card p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">沉睡会员</p>
+                        <h3 class="text-2xl font-bold mt-1">128 人</h3>
+                    </div>
+                    <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-yellow-600">
+                        <i class="fa fa-clock-o"></i>
+                    </div>
+                </div>
+                <div class="flex items-center text-sm">
+            <span class="text-secondary flex items-center">
+              <i class="fa fa-arrow-down mr-1"></i> 18 人
+            </span>
+                    <span class="text-gray-500 ml-2">较上月</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 会员筛选 -->
+        <div class="card p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">会员姓名</label>
+                    <input type="text" class="input" placeholder="请输入会员姓名">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">手机号码</label>
+                    <input type="text" class="input" placeholder="请输入手机号码">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">会员等级</label>
+                    <select class="input">
+                        <option value="">全部等级</option>
+                        <option value="normal">普通会员</option>
+                        <option value="silver">白银会员</option>
+                        <option value="gold">黄金会员</option>
+                        <option value="platinum">铂金会员</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">注册日期</label>
+                    <input type="date" class="input">
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button class="btn btn-outline">重置</button>
+                <button class="btn btn-primary">查询</button>
+            </div>
+        </div>
+
+        <!-- 会员列表 -->
+        <div class="card">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold">会员列表</h3>
+                    <div class="text-sm text-gray-500">共 1,256 位会员</div>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员信息</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">手机号码</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员等级</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">累计积分</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">消费次数</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最近消费</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="https://picsum.photos/40/40?random=40" alt="会员头像" class="w-10 h-10 rounded-full mr-3">
+                                <div>
+                                    <div class="text-sm font-medium">王女士</div>
+                                    <div class="text-xs text-gray-500">注册于 2022-03-15</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">138****5678</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge bg-yellow-100 text-yellow-800">黄金会员</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">1,258</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">36次</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">2023-05-17</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button class="text-primary hover:underline mr-3">详情</button>
+                            <button class="text-secondary hover:underline">编辑</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="https://picsum.photos/40/40?random=41" alt="会员头像" class="w-10 h-10 rounded-full mr-3">
+                                <div>
+                                    <div class="text-sm font-medium">李先生</div>
+                                    <div class="text-xs text-gray-500">注册于 2022-05-20</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">139****1234</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge bg-gray-100 text-gray-800">白银会员</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">856</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">24次</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">2023-05-18</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button class="text-primary hover:underline mr-3">详情</button>
+                            <button class="text-secondary hover:underline">编辑</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img src="https://picsum.photos/40/40?random=42" alt="会员头像" class="w-10 h-10 rounded-full mr-3">
+                                <div>
+                                    <div class="text-sm font-medium">张先生</div>
+                                    <div class="text-xs text-gray-500">注册于 2021-11-08</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">136****8765</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="badge bg-purple-100 text-purple-800">铂金会员</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">3,250</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">78次</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">2023-05-16</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button class="text-primary hover:underline mr-3">详情</button>
+                            <button class="text-secondary hover:underline">编辑</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex justify-between items-center">
+                <div class="text-sm text-gray-500">显示 1-3 条，共 1,256 条</div>
+                <div class="flex gap-1">
+                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50" disabled>
+                        <i class="fa fa-chevron-left text-xs"></i>
+                    </button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-white">1</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">2</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">3</button>
+                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">
+                        <i class="fa fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 新增会员弹窗 -->
+<div id="member-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="card w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-bold text-lg">新增会员</h3>
+            <button id="close-member-modal" class="text-gray-400 hover:text-gray-600">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">会员姓名 <span class="text-accent">*</span></label>
+                        <input type="text" class="input" placeholder="请输入会员姓名" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">手机号码 <span class="text-accent">*</span></label>
+                        <input type="tel" class="input" placeholder="请输入手机号码" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">会员等级</label>
+                    <select class="input">
+                        <option value="normal">普通会员</option>
+                        <option value="silver">白银会员</option>
+                        <option value="gold">黄金会员</option>
+                        <option value="platinum">铂金会员</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2">
+                                <input type="radio" name="gender" value="male" class="text-primary focus:ring-primary/30" checked>
+                                <span>男</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="radio" name="gender" value="female" class="text-primary focus:ring-primary/30">
+                                <span>女</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">出生日期</label>
+                        <input type="date" class="input">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">家庭住址</label>
+                    <input type="text" class="input" placeholder="请输入家庭住址">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">过敏史</label>
+                    <textarea class="input" rows="3" placeholder="请输入药品过敏史（如有）"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                    <textarea class="input" rows="2" placeholder="请输入备注信息"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
+            <button class="btn btn-outline" id="cancel-member">取消</button>
+            <button class="btn btn-primary">保存会员</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 初始化日期和时间
+    function updateDateTime() {
+      const now = new Date();
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' };
+      document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
+
+      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', timeOptions);
+    }
+
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // 侧边栏切换（移动端）
+    document.getElementById('sidebar-toggle').addEventListener('click', function() {
+      const sidebar = document.querySelector('aside');
+      sidebar.classList.toggle('-translate-x-full');
+    });
+
+    // 会员弹窗控制
+    document.getElementById('add-member').addEventListener('click', function() {
+      document.getElementById('member-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('close-member-modal').addEventListener('click', function() {
+      document.getElementById('member-modal').classList.add('hidden');
+    });
+
+    document.getElementById('cancel-member').addEventListener('click', function() {
+      document.getElementById('member-modal').classList.add('hidden');
+    });
+</script>
+</body>
+</html>
