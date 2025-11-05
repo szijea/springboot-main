@@ -10,7 +10,6 @@
 
     <!-- 配置Tailwind -->
     <script>
-
         tailwind.config = {
           theme: {
             extend: {
@@ -132,12 +131,10 @@
                 <i class="fa fa-users w-5 text-center"></i>
                 <span>会员管理</span>
 
-            <a href="order-history.html" class="sidebar-item block">
+                <a href="order-history.html" class="sidebar-item block">
                     <i class="fa fa-history w-5 text-center"></i>
                     <span>历史订单</span>
-            </a>
-
-
+                </a>
             </a>
         </nav>
     </div>
@@ -279,7 +276,7 @@
                     <!-- 添加客户姓名输入 -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">客户姓名 *</label>
-
+                        <input type="text" class="input" id="customerName" placeholder="请输入客户姓名">
                         <p class="text-xs text-gray-500 mt-1">如不填写将自动生成匿名客户</p>
                     </div>
 
@@ -390,26 +387,6 @@
 </div>
 
 <script>
-    // 在 cashier.html 的 script 标签开头添加
-    console.log('页面加载完成，检查全局对象:');
-    console.log('window.api:', window.api);
-    console.log('window.api.medicineAPI:', window.api?.medicineAPI);
-    console.log('window.api.orderAPI:', window.api?.orderAPI);
-    console.log('window.api.orderAPI.create:', window.api?.orderAPI?.create);
-
-    // 检查 common.js 是否加载
-    if (typeof api === 'undefined') {
-        console.error('common.js 未正确加载！');
-        // 可以尝试重新加载
-        const script = document.createElement('script');
-        script.src = 'js/common.js';
-        script.onload = function() {
-            console.log('common.js 重新加载完成');
-            console.log('window.api:', window.api);
-        };
-        document.head.appendChild(script);
-    }
-
     // 全局变量
     let cart = [];
     let currentMember = null;
@@ -475,125 +452,127 @@
 
     // ========== 购物车相关函数 ==========
     function updateCart() {
-    const cartItems = document.getElementById('cart-items');
-    const cartCount = document.getElementById('cart-count');
-    const totalPrice = document.getElementById('total-price');
-    const discount = document.getElementById('discount');
-    const pointsDiscount = document.getElementById('points-discount');
-    const payableAmount = document.getElementById('payable-amount');
-    const payBtn = document.getElementById('pay-btn');
+        const cartItems = document.getElementById('cart-items');
+        const cartCount = document.getElementById('cart-count');
+        const totalPrice = document.getElementById('total-price');
+        const discount = document.getElementById('discount');
+        const pointsDiscount = document.getElementById('points-discount');
+        const payableAmount = document.getElementById('payable-amount');
+        const payBtn = document.getElementById('pay-btn');
 
-    if (!cartItems) return;
+        if (!cartItems) return;
 
-    if (cart.length === 0) {
-        cartItems.innerHTML = `
-            <div class="flex flex-col items-center justify-center p-8 text-gray-500">
-                <i class="fa fa-shopping-cart text-4xl mb-3 opacity-30"></i>
-                <p>购物车为空，请添加药品</p>
-            </div>
-        `;
-        if (cartCount) cartCount.textContent = '0种药品';
-        if (totalPrice) totalPrice.textContent = '¥0.00';
-        if (discount) discount.textContent = '-¥0.00';
-        if (pointsDiscount) pointsDiscount.textContent = '-¥0.00';
-        if (payableAmount) payableAmount.textContent = '¥0.00';
-        if (payBtn) payBtn.disabled = true;
-        return;
-    }
+        if (cart.length === 0) {
+            cartItems.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-8 text-gray-500">
+                    <i class="fa fa-shopping-cart text-4xl mb-3 opacity-30"></i>
+                    <p>购物车为空，请添加药品</p>
+                </div>
+            `;
+            if (cartCount) cartCount.textContent = '0种药品';
+            if (totalPrice) totalPrice.textContent = '¥0.00';
+            if (discount) discount.textContent = '-¥0.00';
+            if (pointsDiscount) pointsDiscount.textContent = '-¥0.00';
+            if (payableAmount) payableAmount.textContent = '¥0.00';
+            if (payBtn) payBtn.disabled = true;
+            return;
+        }
 
-    let html = '';
-    let total = 0;
-    let discountAmount = 0;
+        let html = '';
+        let total = 0;
+        let originalTotal = 0;
+        let discountAmount = 0;
 
-    cart.forEach(item => {
-        const actualPrice = currentMember && item.memberPrice ? item.memberPrice : item.price;
-        const itemTotal = actualPrice * item.quantity;
-        const originalTotal = item.price * item.quantity;
+        cart.forEach(item => {
+            const actualPrice = currentMember && item.memberPrice ? item.memberPrice : item.price;
+            const itemTotal = actualPrice * item.quantity;
+            const itemOriginalTotal = item.price * item.quantity;
 
-        total += itemTotal;
-        discountAmount += (originalTotal - itemTotal);
+            total += itemTotal;
+            originalTotal += itemOriginalTotal;
+            discountAmount += (itemOriginalTotal - itemTotal);
 
-        // 检查库存状态
-        const stockStatus = item.quantity > item.stock ? 'text-red-600' : 'text-gray-500';
-        const stockWarning = item.quantity > item.stock ?
-            `<div class="text-xs text-red-600 mt-1">超出库存! 库存: ${item.stock}</div>` : '';
+            // 检查库存状态
+            const stockStatus = item.quantity > item.stock ? 'text-red-600' : 'text-gray-500';
+            const stockWarning = item.quantity > item.stock ?
+                `<div class="text-xs text-red-600 mt-1">超出库存! 库存: ${item.stock}</div>` : '';
 
-        html += `
-            <div class="p-4 border-b border-gray-100">
-                <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                        <h4 class="font-medium">${item.name}</h4>
-                        <p class="text-sm text-gray-500">${item.spec}</p>
-                        ${item.isRx ? '<span class="inline-block mt-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">处方药</span>' : ''}
-                        <div class="flex items-center mt-2">
-                            <button class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 decrease-qty" data-id="${item.id}">-</button>
-                            <span class="mx-2">${item.quantity}</span>
-                            <button class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 increase-qty" data-id="${item.id}">+</button>
+            html += `
+                <div class="p-4 border-b border-gray-100">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h4 class="font-medium">${item.name}</h4>
+                            <p class="text-sm text-gray-500">${item.spec}</p>
+                            ${item.isRx ? '<span class="inline-block mt-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">处方药</span>' : ''}
+                            <div class="flex items-center mt-2">
+                                <button class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 decrease-qty" data-id="${item.id}">-</button>
+                                <span class="mx-2">${item.quantity}</span>
+                                <button class="w-6 h-6 flex items-center justify-center rounded border border-gray-300 increase-qty" data-id="${item.id}">+</button>
+                            </div>
+                            ${stockWarning}
                         </div>
-                        ${stockWarning}
-                    </div>
-                    <div class="text-right">
-                        <p class="font-medium">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(itemTotal) : '¥' + itemTotal.toFixed(2)}</p>
-                        ${currentMember && item.memberPrice ?
-                            `<p class="text-xs text-gray-500 line-through">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(originalTotal) : '¥' + originalTotal.toFixed(2)}</p>` : ''}
-                        <button class="text-red-500 text-sm mt-1 remove-item" data-id="${item.id}">删除</button>
+                        <div class="text-right">
+                            <p class="font-medium">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(itemTotal) : '¥' + itemTotal.toFixed(2)}</p>
+                            ${currentMember && item.memberPrice ?
+                                `<p class="text-xs text-gray-500 line-through">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(itemOriginalTotal) : '¥' + itemOriginalTotal.toFixed(2)}</p>` : ''}
+                            <button class="text-red-500 text-sm mt-1 remove-item" data-id="${item.id}">删除</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    });
+            `;
+        });
 
-    cartItems.innerHTML = html;
-    if (cartCount) cartCount.textContent = `${cart.length}种药品`;
-    if (totalPrice) totalPrice.textContent = window.api?.utils?.formatPrice ? window.api.utils.formatPrice(total + discountAmount) : '¥' + (total + discountAmount).toFixed(2);
-    if (discount) discount.textContent = `-${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(discountAmount) : '¥' + discountAmount.toFixed(2)}`;
-    if (payableAmount) payableAmount.textContent = window.api?.utils?.formatPrice ? window.api.utils.formatPrice(total) : '¥' + total.toFixed(2);
+        cartItems.innerHTML = html;
+        if (cartCount) cartCount.textContent = `${cart.length}种药品`;
+        if (totalPrice) totalPrice.textContent = window.api?.utils?.formatPrice ? window.api.utils.formatPrice(originalTotal) : '¥' + originalTotal.toFixed(2);
+        if (discount) discount.textContent = `-${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(discountAmount) : '¥' + discountAmount.toFixed(2)}`;
+        if (payableAmount) payableAmount.textContent = window.api?.utils?.formatPrice ? window.api.utils.formatPrice(total) : '¥' + total.toFixed(2);
 
-    // 检查是否有商品超出库存
-    const hasOverstock = cart.some(item => item.quantity > item.stock);
-    if (payBtn) {
-        payBtn.disabled = hasOverstock || !selectedPaymentMethod;
-        if (hasOverstock) {
-            payBtn.title = '有商品数量超出库存，请调整数量';
+        // 检查是否有商品超出库存
+        const hasOverstock = cart.some(item => item.quantity > item.stock);
+        if (payBtn) {
+            payBtn.disabled = hasOverstock || !selectedPaymentMethod;
+            if (hasOverstock) {
+                payBtn.title = '有商品数量超出库存，请调整数量';
+            }
         }
-    }
 
-    // 重新绑定事件
-    document.querySelectorAll('.decrease-qty').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const item = cart.find(item => item.id === id);
-            if (item && item.quantity > 1) {
-                item.quantity -= 1;
-                updateCart();
-            }
-        });
-    });
-
-    document.querySelectorAll('.increase-qty').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            const item = cart.find(item => item.id === id);
-            if (item) {
-                // 检查库存
-                if (item.quantity >= item.stock) {
-                    showMessage(`${item.name} 库存不足，当前库存: ${item.stock}`, 'error');
-                    return;
+        // 重新绑定事件
+        document.querySelectorAll('.decrease-qty').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const item = cart.find(item => item.id === id);
+                if (item && item.quantity > 1) {
+                    item.quantity -= 1;
+                    updateCart();
                 }
-                item.quantity += 1;
-                updateCart();
-            }
+            });
         });
-    });
 
-    document.querySelectorAll('.remove-item').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            cart = cart.filter(item => item.id !== id);
-            updateCart();
+        document.querySelectorAll('.increase-qty').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const item = cart.find(item => item.id === id);
+                if (item) {
+                    // 检查库存
+                    if (item.quantity >= item.stock) {
+                        showMessage(`${item.name} 库存不足，当前库存: ${item.stock}`, 'error');
+                        return;
+                    }
+                    item.quantity += 1;
+                    updateCart();
+                }
+            });
         });
-    });
-}
+
+        document.querySelectorAll('.remove-item').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                cart = cart.filter(item => item.id !== id);
+                updateCart();
+            });
+        });
+    }
 
     function clearCart() {
         if (cart.length > 0 && confirm('确定要清空购物车吗？')) {
@@ -627,47 +606,99 @@
     }
 
     // ========== 搜索和分页相关函数 ==========
-   async function performMedicineSearch() {
-    try {
-        console.log('=== 开始搜索药品（包含库存信息）===');
+    async function performMedicineSearch() {
+        try {
+            console.log('=== 开始搜索药品（包含库存信息）===');
 
-        const searchInput = document.getElementById('medicine-search-input');
-        const categoryFilter = document.getElementById('category-filter');
+            const searchInput = document.getElementById('medicine-search-input');
+            const categoryFilter = document.getElementById('category-filter');
 
-        if (!searchInput || !categoryFilter) {
-            throw new Error('搜索元素未找到');
+            if (!searchInput || !categoryFilter) {
+                throw new Error('搜索元素未找到');
+            }
+
+            const searchParams = {
+                keyword: searchInput.value,
+                category: categoryFilter.value,
+                page: 1
+            };
+
+            console.log('搜索参数:', searchParams);
+
+            // 检查 API 对象
+            console.log('API对象状态:', {
+                api: typeof window.api,
+                medicineAPI: typeof window.api?.medicineAPI,
+                searchWithStock: typeof window.api?.medicineAPI?.searchWithStock
+            });
+
+            // 方法1: 直接使用 searchWithStock
+            if (window.api?.medicineAPI?.searchWithStock && typeof window.api.medicineAPI.searchWithStock === 'function') {
+                console.log('使用方法1: medicineAPI.searchWithStock');
+                const response = await window.api.medicineAPI.searchWithStock(
+                    searchParams.keyword,
+                    searchParams.category,
+                    searchParams.page,
+                    100
+                );
+                handleSearchResponse(response);
+            }
+            // 方法2: 使用普通的 search 方法
+            else if (window.api?.medicineAPI?.search && typeof window.api.medicineAPI.search === 'function') {
+                console.log('使用方法2: medicineAPI.search (备用方案)');
+                const response = await window.api.medicineAPI.search(
+                    searchParams.keyword,
+                    searchParams.category,
+                    searchParams.page,
+                    100
+                );
+                handleSearchResponse(response);
+            }
+            // 方法3: 直接调用 API
+            else {
+                console.log('使用方法3: 直接 API 调用');
+                let url = `http://localhost:8080/api/medicines/search-with-stock?page=1&size=100`;
+                if (searchParams.keyword) {
+                    url += `&keyword=${encodeURIComponent(searchParams.keyword)}`;
+                }
+                if (searchParams.category) {
+                    url += `&category=${encodeURIComponent(searchParams.category)}`;
+                }
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                handleSearchResponse(result);
+            }
+
+        } catch (error) {
+            console.error('搜索出错:', error);
+            console.error('错误详情:', {
+                message: error.message,
+                stack: error.stack
+            });
+
+            let errorMessage = '搜索失败: ' + error.message;
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
+            }
+
+            showMessage(errorMessage, 'error');
+            updateMedicineList([]);
         }
+    }
 
-        const searchParams = {
-            keyword: searchInput.value,
-            category: categoryFilter.value,
-            page: 1
-        };
-
-        console.log('搜索参数:', searchParams);
-        console.log('完整的请求URL:', `http://localhost:8080/api/medicines/search-with-stock?page=1&size=100&keyword=${encodeURIComponent(searchParams.keyword)}`);
-
-        // 检查 API 对象
-        console.log('API对象状态:', {
-            api: typeof window.api,
-            medicineAPI: typeof window.api?.medicineAPI,
-            searchWithStock: typeof window.api?.medicineAPI?.searchWithStock
-        });
-
-        if (!window.api || !window.api.medicineAPI) {
-            throw new Error('API 对象未正确初始化，请检查 common.js 是否已加载');
-        }
-
-        console.log('正在调用 medicineAPI.searchWithStock...');
-
-        // 调用新的包含库存的搜索接口
-        const response = await window.api.medicineAPI.searchWithStock(
-            searchParams.keyword,
-            searchParams.category,
-            searchParams.page,
-            100
-        );
-
+    // 添加响应处理函数
+    function handleSearchResponse(response) {
         console.log('完整的搜索响应:', response);
         console.log('响应数据:', response.data);
         console.log('数据长度:', response.data ? response.data.length : 0);
@@ -676,111 +707,90 @@
         if (response.code === 200) {
             updateMedicineList(response.data);
 
-            // 如果没有结果，显示可能的建议
             if (!response.data || response.data.length === 0) {
-                console.log('没有搜索结果，建议:');
-                console.log('1. 检查数据库是否有相关药品');
-                console.log('2. 检查搜索关键词是否正确');
-                console.log('3. 检查后端搜索逻辑');
+                console.log('没有搜索结果');
             }
         } else {
             throw new Error(response.message || '搜索失败');
         }
-
-    } catch (error) {
-        console.error('搜索出错:', error);
-        console.error('错误详情:', {
-            message: error.message,
-            stack: error.stack
-        });
-
-        // 显示更详细的错误信息
-        let errorMessage = '搜索失败: ' + error.message;
-        if (error.message.includes('Failed to fetch')) {
-            errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
-        }
-
-        showMessage(errorMessage, 'error');
-        updateMedicineList([]);
     }
-}
 
     function updateMedicineList(medicines) {
-    const tbody = document.getElementById('medicine-list-body');
-    const indicator = document.getElementById('loading-indicator');
-    const empty = document.getElementById('empty-state');
-    const resultInfo = document.getElementById('search-result-info');
+        const tbody = document.getElementById('medicine-list-body');
+        const indicator = document.getElementById('loading-indicator');
+        const empty = document.getElementById('empty-state');
+        const resultInfo = document.getElementById('search-result-info');
 
-    // 隐藏加载状态
-    if (indicator) indicator.classList.add('hidden');
+        // 隐藏加载状态
+        if (indicator) indicator.classList.add('hidden');
 
-    console.log('更新药品列表，数据:', medicines);
+        console.log('更新药品列表，数据:', medicines);
 
-    if (!medicines || medicines.length === 0) {
-        console.log('没有找到药品，显示空状态');
-        if (empty) empty.classList.remove('hidden');
-        if (tbody) tbody.classList.add('hidden');
-        if (resultInfo) resultInfo.textContent = '未找到相关药品';
-        return;
-    }
+        if (!medicines || medicines.length === 0) {
+            console.log('没有找到药品，显示空状态');
+            if (empty) empty.classList.remove('hidden');
+            if (tbody) tbody.classList.add('hidden');
+            if (resultInfo) resultInfo.textContent = '未找到相关药品';
+            return;
+        }
 
-    if (empty) empty.classList.add('hidden');
-    if (tbody) tbody.classList.remove('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (tbody) tbody.classList.remove('hidden');
 
-    console.log('找到药品数量:', medicines.length);
+        console.log('找到药品数量:', medicines.length);
 
-    // 生成药品列表HTML - 使用新的库存字段
-    const html = medicines.map((medicine, index) => {
-        const price = medicine.retailPrice || medicine.price;
-        const memberPrice = medicine.memberPrice;
-        const stockQuantity = medicine.stockQuantity || medicine.totalStock || 0;
-        const unit = medicine.unit || '盒';
+        // 生成药品列表HTML - 使用新的库存字段
+        const html = medicines.map((medicine, index) => {
+            const price = medicine.retailPrice || medicine.price;
+            const memberPrice = medicine.memberPrice;
+            const stockQuantity = medicine.stockQuantity || medicine.totalStock || 0;
+            const unit = medicine.unit || '盒';
 
-        return `
-        <tr class="hover:bg-gray-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fa fa-pills text-primary"></i>
+            return `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fa fa-pills text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium">${medicine.genericName || medicine.name || '未知药品'}</div>
+                            <div class="text-xs text-gray-500">${medicine.tradeName || ''}</div>
+                            ${medicine.isRx ? '<span class="inline-block mt-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">处方药</span>' : ''}
+                        </div>
                     </div>
-                    <div>
-                        <div class="text-sm font-medium">${medicine.genericName || medicine.name || '未知药品'}</div>
-                        <div class="text-xs text-gray-500">${medicine.tradeName || ''}</div>
-                        ${medicine.isRx ? '<span class="inline-block mt-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">处方药</span>' : ''}
-                    </div>
-                </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.spec || medicine.specification || '暂无规格'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.manufacturer || '未知厂家'}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(price) : '¥' + (price || 0).toFixed(2)}</div>
-                ${memberPrice ? `<div class="text-xs text-secondary">会员 ${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(memberPrice) : '¥' + memberPrice.toFixed(2)}</div>` : ''}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                <span class="${getStockStatusClass(stockQuantity)} font-medium">
-                    ${stockQuantity} ${unit}
-                </span>
-                ${stockQuantity <= 10 && stockQuantity > 0 ?
-                    '<span class="ml-1 text-xs text-yellow-600">(低库存)</span>' : ''}
-                ${stockQuantity === 0 ?
-                    '<span class="ml-1 text-xs text-red-600">(缺货)</span>' : ''}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <button class="btn btn-primary text-sm px-3 py-1 add-to-cart"
-                        data-id="${medicine.medicineId || medicine.id}"
-                        data-name="${medicine.genericName || medicine.name}"
-                        data-price="${medicine.retailPrice || medicine.price}"
-                        data-member-price="${medicine.memberPrice}"
-                        data-spec="${medicine.spec || medicine.specification}"
-                        data-is-rx="${medicine.isRx}"
-                        data-stock="${stockQuantity}"
-                        ${stockQuantity <= 0 ? 'disabled' : ''}>
-                    <i class="fa fa-plus-circle"></i>
-                    ${stockQuantity <= 0 ? '缺货' : '加入购物车'}
-                </button>
-            </td>
-        </tr>
-    `}).join('');
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.spec || medicine.specification || '暂无规格'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.manufacturer || '未知厂家'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(price) : '¥' + (price || 0).toFixed(2)}</div>
+                    ${memberPrice ? `<div class="text-xs text-secondary">会员 ${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(memberPrice) : '¥' + memberPrice.toFixed(2)}</div>` : ''}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span class="${getStockStatusClass(stockQuantity)} font-medium">
+                        ${stockQuantity} ${unit}
+                    </span>
+                    ${stockQuantity <= 10 && stockQuantity > 0 ?
+                        '<span class="ml-1 text-xs text-yellow-600">(低库存)</span>' : ''}
+                    ${stockQuantity === 0 ?
+                        '<span class="ml-1 text-xs text-red-600">(缺货)</span>' : ''}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button class="btn btn-primary text-sm px-3 py-1 add-to-cart"
+                            data-id="${medicine.medicineId || medicine.id}"
+                            data-name="${medicine.genericName || medicine.name}"
+                            data-price="${medicine.retailPrice || medicine.price}"
+                            data-member-price="${medicine.memberPrice}"
+                            data-spec="${medicine.spec || medicine.specification}"
+                            data-is-rx="${medicine.isRx}"
+                            data-stock="${stockQuantity}"
+                            ${stockQuantity <= 0 ? 'disabled' : ''}>
+                        <i class="fa fa-plus-circle"></i>
+                        ${stockQuantity <= 0 ? '缺货' : '加入购物车'}
+                    </button>
+                </td>
+            </tr>
+        `}).join('');
 
         if (tbody) tbody.innerHTML = html;
         if (resultInfo) resultInfo.textContent = `找到 ${medicines.length} 个药品`;
@@ -790,460 +800,414 @@
     }
 
     function rebindAddToCartEvents() {
-    document.querySelectorAll('.add-to-cart').forEach(button => {
-        button.addEventListener('click', function() {
-            if (this.disabled) return;
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.disabled) return;
 
-            const id = this.getAttribute('data-id');
-            const name = this.getAttribute('data-name');
-            const price = parseFloat(this.getAttribute('data-price'));
-            const memberPrice = this.getAttribute('data-member-price') ? parseFloat(this.getAttribute('data-member-price')) : null;
-            const spec = this.getAttribute('data-spec');
-            const isRx = this.getAttribute('data-is-rx') === 'true';
-            const stock = parseInt(this.getAttribute('data-stock'));
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const price = parseFloat(this.getAttribute('data-price'));
+                const memberPrice = this.getAttribute('data-member-price') ? parseFloat(this.getAttribute('data-member-price')) : null;
+                const spec = this.getAttribute('data-spec');
+                const isRx = this.getAttribute('data-is-rx') === 'true';
+                const stock = parseInt(this.getAttribute('data-stock'));
 
-            // 检查库存
-            if (stock <= 0) {
-                showMessage(`${name} 已缺货，无法添加`, 'error');
-                return;
-            }
-
-            // 检查是否已在购物车中
-            const existingItem = cart.find(item => item.id === id);
-            if (existingItem) {
-                // 检查库存是否足够
-                if (existingItem.quantity >= stock) {
-                    showMessage(`${name} 库存不足，当前库存: ${stock}`, 'error');
+                // 检查库存
+                if (stock <= 0) {
+                    showMessage(`${name} 已缺货，无法添加`, 'error');
                     return;
                 }
-                existingItem.quantity += 1;
-            } else {
-                // 检查库存是否足够
-                if (1 > stock) {
-                    showMessage(`${name} 库存不足，当前库存: ${stock}`, 'error');
-                    return;
+
+                // 检查是否已在购物车中
+                const existingItem = cart.find(item => item.id === id);
+                if (existingItem) {
+                    // 检查库存是否足够
+                    if (existingItem.quantity >= stock) {
+                        showMessage(`${name} 库存不足，当前库存: ${stock}`, 'error');
+                        return;
+                    }
+                    existingItem.quantity += 1;
+                } else {
+                    // 检查库存是否足够
+                    if (1 > stock) {
+                        showMessage(`${name} 库存不足，当前库存: ${stock}`, 'error');
+                        return;
+                    }
+                    cart.push({
+                        id,
+                        name,
+                        price,
+                        memberPrice,
+                        spec,
+                        isRx,
+                        stock, // 保存库存信息用于后续检查
+                        quantity: 1
+                    });
                 }
-                cart.push({
-                    id,
-                    name,
-                    price,
-                    memberPrice,
-                    spec,
-                    isRx,
-                    stock, // 保存库存信息用于后续检查
-                    quantity: 1
-                });
-            }
 
-            updateCart();
-            showAddToCartFeedback(name);
-        });
-    });
-}
-
-// 在 cashier.html 的 performMedicineSearch 函数中添加备用方案
-async function performMedicineSearch() {
-    try {
-        console.log('=== 开始搜索药品（包含库存信息）===');
-
-        const searchInput = document.getElementById('medicine-search-input');
-        const categoryFilter = document.getElementById('category-filter');
-
-        if (!searchInput || !categoryFilter) {
-            throw new Error('搜索元素未找到');
-        }
-
-        const searchParams = {
-            keyword: searchInput.value,
-            category: categoryFilter.value,
-            page: 1
-        };
-
-        console.log('搜索参数:', searchParams);
-        console.log('完整的请求URL:', `http://localhost:8080/api/medicines/search-with-stock?page=1&size=100&keyword=${encodeURIComponent(searchParams.keyword)}`);
-
-        // 检查 API 对象
-        console.log('API对象状态:', {
-            api: typeof window.api,
-            medicineAPI: typeof window.api?.medicineAPI,
-            searchWithStock: typeof window.api?.medicineAPI?.searchWithStock
-        });
-
-        // 方法1: 直接使用 searchWithStock
-        if (window.api?.medicineAPI?.searchWithStock && typeof window.api.medicineAPI.searchWithStock === 'function') {
-            console.log('使用方法1: medicineAPI.searchWithStock');
-            const response = await window.api.medicineAPI.searchWithStock(
-                searchParams.keyword,
-                searchParams.category,
-                searchParams.page,
-                100
-            );
-            handleSearchResponse(response);
-        }
-        // 方法2: 使用普通的 search 方法
-        else if (window.api?.medicineAPI?.search && typeof window.api.medicineAPI.search === 'function') {
-            console.log('使用方法2: medicineAPI.search (备用方案)');
-            const response = await window.api.medicineAPI.search(
-                searchParams.keyword,
-                searchParams.category,
-                searchParams.page,
-                100
-            );
-            handleSearchResponse(response);
-        }
-        // 方法3: 直接调用 API
-        else {
-            console.log('使用方法3: 直接 API 调用');
-            let url = `http://localhost:8080/api/medicines/search-with-stock?page=1&size=100`;
-            if (searchParams.keyword) {
-                url += `&keyword=${encodeURIComponent(searchParams.keyword)}`;
-            }
-            if (searchParams.category) {
-                url += `&category=${encodeURIComponent(searchParams.category)}`;
-            }
-
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                updateCart();
+                showAddToCartFeedback(name);
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            handleSearchResponse(result);
-        }
-
-    } catch (error) {
-        console.error('搜索出错:', error);
-        console.error('错误详情:', {
-            message: error.message,
-            stack: error.stack
-        });
-
-        let errorMessage = '搜索失败: ' + error.message;
-        if (error.message.includes('Failed to fetch')) {
-            errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
-        }
-
-        showMessage(errorMessage, 'error');
-        updateMedicineList([]);
-    }
-}
-
-// 添加响应处理函数
-function handleSearchResponse(response) {
-    console.log('完整的搜索响应:', response);
-    console.log('响应数据:', response.data);
-    console.log('数据长度:', response.data ? response.data.length : 0);
-    console.log('响应消息:', response.message);
-
-    if (response.code === 200) {
-        updateMedicineList(response.data);
-
-        if (!response.data || response.data.length === 0) {
-            console.log('没有搜索结果');
-        }
-    } else {
-        throw new Error(response.message || '搜索失败');
-    }
-}
-// ========== 会员相关函数 ==========
-async function searchMember() {
-    const searchInput = document.getElementById('member-search-input');
-    if (!searchInput) return;
-
-    const keyword = searchInput.value.trim();
-    if (!keyword) {
-        showMessage('请输入会员姓名、手机号或卡号', 'error');
-        return;
-    }
-
-    console.log('=== 开始搜索会员 ===');
-    console.log('搜索关键词:', keyword);
-
-    try {
-        let response;
-
-        // 检查 API 对象
-        console.log('API对象状态:', {
-            api: typeof window.api,
-            memberAPI: typeof window.api?.memberAPI,
-            search: typeof window.api?.memberAPI?.search
-        });
-
-        // 方法1: 使用 memberAPI.search
-        if (window.api?.memberAPI?.search && typeof window.api.memberAPI.search === 'function') {
-            console.log('使用方法1: memberAPI.search');
-            response = await window.api.memberAPI.search(keyword);
-        }
-        // 方法2: 直接调用 API
-        else {
-            console.log('使用方法2: 直接 API 调用');
-            const url = `http://localhost:8080/api/members/search?keyword=${encodeURIComponent(keyword)}&page=1&size=10`;
-            console.log('请求URL:', url);
-
-            const apiResponse = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            if (!apiResponse.ok) {
-                throw new Error(`HTTP error! status: ${apiResponse.status}`);
-            }
-
-            response = await apiResponse.json();
-        }
-
-        console.log('会员搜索响应:', response);
-
-        if (response.code === 200 && response.data && response.data.length > 0) {
-            currentMember = response.data[0];
-            displayMemberInfo(currentMember);
-            updateCart();
-            showMessage(`找到会员: ${currentMember.name}`);
-        } else {
-            showMessage('未找到匹配的会员', 'error');
-            clearMemberInfo();
-        }
-    } catch (error) {
-        console.error('搜索会员失败:', error);
-        console.error('错误详情:', error.message);
-
-        let errorMessage = '搜索会员失败: ' + error.message;
-        if (error.message.includes('Failed to fetch')) {
-            errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
-        }
-
-        showMessage(errorMessage, 'error');
-        clearMemberInfo();
-    }
-}
-
-function displayMemberInfo(member) {
-    console.log('=== 显示会员信息 ===');
-    console.log('会员数据:', member);
-
-    const container = document.getElementById('member-info');
-    const nameEl = document.getElementById('member-name');
-    const levelEl = document.getElementById('member-level');
-    const pointsEl = document.getElementById('member-points');
-
-    if (!container || !nameEl || !levelEl || !pointsEl) {
-        console.error('会员信息显示元素未找到');
-        return;
-    }
-
-    if (nameEl) nameEl.textContent = member.name || '未知';
-    if (levelEl) levelEl.textContent = getMemberLevelText(member.level || 0);
-    if (pointsEl) pointsEl.textContent = member.points || 0;
-    if (container) container.classList.remove('hidden');
-
-    console.log('会员信息显示完成');
-}
-
-function getMemberLevelText(level) {
-    switch(level) {
-        case 0: return '普通会员';
-        case 1: return '银卡会员';
-        case 2: return '金卡会员';
-        case 3: return '白金会员';
-        default: return '普通会员';
-    }
-}
-
-function clearMemberInfo() {
-    currentMember = null;
-    const container = document.getElementById('member-info');
-    const searchInput = document.getElementById('member-search-input');
-
-    if (container) container.classList.add('hidden');
-    if (searchInput) searchInput.value = '';
-    updateCart();
-}
-
-// 初始化事件绑定
-function initEvents() {
-    // ... 其他事件绑定 ...
-
-    // 会员搜索
-    const memberSearchBtn = document.getElementById('search-member-btn');
-    const memberSearchInput = document.getElementById('member-search-input');
-    const clearMemberBtn = document.getElementById('clear-member-btn');
-
-    if (memberSearchBtn) memberSearchBtn.addEventListener('click', searchMember);
-    if (memberSearchInput) {
-        memberSearchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') searchMember();
         });
     }
-    if (clearMemberBtn) clearMemberBtn.addEventListener('click', clearMemberInfo);
-}
-// ========== 订单创建函数 ==========
-async function createOrder(orderData) {
-    console.log('=== 创建订单 ===');
-    console.log('订单数据:', orderData);
 
-    // 首先尝试使用 window.api.orderAPI
-    if (window.api && window.api.orderAPI && typeof window.api.orderAPI.create === 'function') {
-        console.log('使用 window.api.orderAPI.create');
-        try {
-            return await window.api.orderAPI.create(orderData);
-        } catch (error) {
-            console.error('window.api.orderAPI.create 调用失败:', error);
-            // 继续尝试直接调用
-        }
-    }
+    // ========== 会员相关函数 ==========
+    async function searchMember() {
+        const searchInput = document.getElementById('member-search-input');
+        if (!searchInput) return;
 
-    // 如果 orderAPI 不可用，尝试直接调用 API
-    console.log('使用直接 API 调用');
-
-    try {
-        const response = await fetch('http://localhost:8080/api/orders', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(orderData)
-        });
-
-        console.log('API响应状态:', response.status);
-
-        if (!response.ok) {
-            // 尝试获取详细的错误信息
-            let errorDetail = '';
-            try {
-                const errorResponse = await response.json();
-                errorDetail = JSON.stringify(errorResponse);
-                console.error('API错误响应:', errorResponse);
-
-                // 提取具体的错误消息
-                if (errorResponse.message) {
-                    errorDetail = errorResponse.message;
-                } else if (errorResponse.errors) {
-                    errorDetail = Object.values(errorResponse.errors).join(', ');
-                }
-            } catch (e) {
-                errorDetail = await response.text();
-                console.error('API错误文本:', errorDetail);
-            }
-
-            throw new Error(`HTTP error! status: ${response.status}, 详情: ${errorDetail}`);
-        }
-
-        const result = await response.json();
-        console.log('API成功响应:', result);
-        return result;
-    } catch (error) {
-        console.error('创建订单请求失败:', error);
-        throw error;
-    }
-}
-
-
-    // ========== 支付相关函数 ==========
-function processPayment() {
-    console.log('=== 开始处理支付 ===');
-
-    try {
-        // 获取客户姓名
-        const customerNameInput = document.getElementById('customerName');
-        let customerName = customerNameInput ? customerNameInput.value.trim() : '';
-
-        if (!customerName) {
-            customerName = "匿名客户_" + Date.now();
-        }
-
-        // 检查购物车
-        if (!cart || cart.length === 0) {
-            alert('购物车为空，请添加商品！');
+        const keyword = searchInput.value.trim();
+        if (!keyword) {
+            showMessage('请输入会员姓名、手机号或卡号', 'error');
             return;
         }
 
-      // 在 processPayment 函数中修改
-// 构建订单数据 - 使用原始字符串ID
-const orderData = {
-    customerName: customerName,
-    items: cart.map(item => {
-        // 使用原始的字符串药品ID，不要转换为数字
-        const medicineId = item.id; // 直接使用原始ID，如 "M00010"
+        console.log('=== 开始搜索会员 ===');
+        console.log('搜索关键词:', keyword);
 
-        console.log(`商品ID: "${medicineId}" (类型: ${typeof medicineId})`);
+        try {
+            let response;
 
-        return {
-            productId: medicineId,  // 使用字符串ID
-            productName: item.name,
-            quantity: Number(item.quantity),
-            unitPrice: Number(item.price)
-        };
-    })
-};
-        console.log('发送的订单数据:', orderData);
-        console.log('JSON 字符串:', JSON.stringify(orderData));
-
-        // 显示加载状态
-        const payBtn = document.getElementById('pay-btn');
-        const originalText = payBtn ? payBtn.innerHTML : '';
-        if (payBtn) {
-            payBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 支付中...';
-            payBtn.disabled = true;
-        }
-
-        // 创建订单
-        createOrder(orderData)
-            .then(response => {
-                console.log('订单创建成功:', response);
-
-                // 清空购物车
-                cart = [];
-                updateCart();
-
-                // 清空客户姓名
-                if (customerNameInput) {
-                    customerNameInput.value = '';
-                }
-
-                // 重置支付方式
-                selectedPaymentMethod = null;
-                document.querySelectorAll('.payment-method').forEach(btn => {
-                    btn.classList.remove('bg-primary/10', 'border-primary');
-                    btn.classList.add('btn-outline');
-                });
-
-                showMessage(`下单成功！订单号: ${response.orderId || response.id || '未知'}`);
-            })
-            .catch(error => {
-                console.error('下单失败:', error);
-                // 显示更详细的错误信息
-                const errorMsg = error.message.includes('详情:') ?
-                    error.message :
-                    `下单失败: ${error.message}`;
-                alert(errorMsg);
-            })
-            .finally(() => {
-                // 恢复按钮状态
-                if (payBtn) {
-                    payBtn.innerHTML = originalText;
-                    payBtn.disabled = false;
-                }
+            // 检查 API 对象
+            console.log('API对象状态:', {
+                api: typeof window.api,
+                memberAPI: typeof window.api?.memberAPI,
+                search: typeof window.api?.memberAPI?.search
             });
 
-    } catch (error) {
-        console.error('processPayment 函数执行出错:', error);
-        alert('支付处理出错: ' + error.message);
+            // 方法1: 使用 memberAPI.search
+            if (window.api?.memberAPI?.search && typeof window.api.memberAPI.search === 'function') {
+                console.log('使用方法1: memberAPI.search');
+                response = await window.api.memberAPI.search(keyword);
+            }
+            // 方法2: 直接调用 API
+            else {
+                console.log('使用方法2: 直接 API 调用');
+                const url = `http://localhost:8080/api/members/search?keyword=${encodeURIComponent(keyword)}&page=1&size=10`;
+                console.log('请求URL:', url);
 
-        const payBtn = document.getElementById('pay-btn');
-        if (payBtn) {
-            payBtn.innerHTML = '<i class="fa fa-credit-card"></i> 确认支付';
-            payBtn.disabled = false;
+                const apiResponse = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (!apiResponse.ok) {
+                    throw new Error(`HTTP error! status: ${apiResponse.status}`);
+                }
+
+                response = await apiResponse.json();
+            }
+
+            console.log('会员搜索响应:', response);
+
+            if (response.code === 200 && response.data && response.data.length > 0) {
+                currentMember = response.data[0];
+                // 确保会员对象有ID字段
+                if (!currentMember.id && currentMember.memberId) {
+                    currentMember.id = currentMember.memberId;
+                }
+                // 同步更新客户姓名
+                const customerNameInput = document.getElementById('customerName');
+                if (customerNameInput) {
+                    customerNameInput.value = currentMember.name;
+                }
+
+                displayMemberInfo(currentMember);
+                updateCart();
+                showMessage(`找到会员: ${currentMember.name}`);
+            } else {
+                showMessage('未找到匹配的会员', 'error');
+                clearMemberInfo();
+            }
+        } catch (error) {
+            console.error('搜索会员失败:', error);
+            console.error('错误详情:', error.message);
+
+            let errorMessage = '搜索会员失败: ' + error.message;
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
+            }
+
+            showMessage(errorMessage, 'error');
+            clearMemberInfo();
         }
     }
-}
+
+    function displayMemberInfo(member) {
+        console.log('=== 显示会员信息 ===');
+        console.log('会员数据:', member);
+
+        const container = document.getElementById('member-info');
+        const nameEl = document.getElementById('member-name');
+        const levelEl = document.getElementById('member-level');
+        const pointsEl = document.getElementById('member-points');
+
+        if (!container || !nameEl || !levelEl || !pointsEl) {
+            console.error('会员信息显示元素未找到');
+            return;
+        }
+
+        if (nameEl) nameEl.textContent = member.name || '未知';
+        if (levelEl) levelEl.textContent = getMemberLevelText(member.level || 0);
+        if (pointsEl) pointsEl.textContent = member.points || 0;
+        if (container) container.classList.remove('hidden');
+
+        console.log('会员信息显示完成');
+    }
+
+    function getMemberLevelText(level) {
+        switch(level) {
+            case 0: return '普通会员';
+            case 1: return '银卡会员';
+            case 2: return '金卡会员';
+            case 3: return '白金会员';
+            default: return '普通会员';
+        }
+    }
+
+    function clearMemberInfo() {
+        currentMember = null;
+        const container = document.getElementById('member-info');
+        const searchInput = document.getElementById('member-search-input');
+
+        if (container) container.classList.add('hidden');
+        if (searchInput) searchInput.value = '';
+        updateCart();
+    }
+
+    // ========== 订单创建函数 ==========
+    async function createOrder(orderData) {
+        console.log('=== 创建订单 ===');
+        console.log('订单数据:', orderData);
+
+        // 首先尝试使用 window.api.orderAPI
+        if (window.api && window.api.orderAPI && typeof window.api.orderAPI.create === 'function') {
+            console.log('使用 window.api.orderAPI.create');
+            try {
+                const response = await window.api.orderAPI.create(orderData);
+                console.log('orderAPI.create 响应:', response);
+                return response;
+            } catch (error) {
+                console.error('window.api.orderAPI.create 调用失败:', error);
+                // 继续尝试直接调用
+            }
+        }
+
+        // 如果 orderAPI 不可用，尝试直接调用 API
+        console.log('使用直接 API 调用');
+
+        try {
+            const response = await fetch('http://localhost:8080/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            console.log('API响应状态:', response.status);
+
+            if (!response.ok) {
+                // 尝试获取详细的错误信息
+                let errorDetail = '';
+                try {
+                    const errorResponse = await response.json();
+                    errorDetail = JSON.stringify(errorResponse);
+                    console.error('API错误响应:', errorResponse);
+
+                    // 提取具体的错误消息
+                    if (errorResponse.message) {
+                        errorDetail = errorResponse.message;
+                    } else if (errorResponse.errors) {
+                        errorDetail = Object.values(errorResponse.errors).join(', ');
+                    } else if (errorResponse.detail) {
+                        errorDetail = errorResponse.detail;
+                    }
+                } catch (e) {
+                    errorDetail = await response.text();
+                    console.error('API错误文本:', errorDetail);
+                }
+
+                throw new Error(`HTTP error! status: ${response.status}, 详情: ${errorDetail}`);
+            }
+
+            const result = await response.json();
+            console.log('API成功响应:', result);
+            return result;
+        } catch (error) {
+            console.error('创建订单请求失败:', error);
+            throw error;
+        }
+    }
+
+    // ========== 支付相关函数 ==========
+    function processPayment() {
+        console.log('=== 开始处理支付 ===');
+
+        try {
+            // 获取客户姓名
+            const customerNameInput = document.getElementById('customerName');
+            let customerName = customerNameInput ? customerNameInput.value.trim() : '';
+
+            if (!customerName) {
+                customerName = "匿名客户_" + Date.now();
+            }
+
+            // 检查购物车
+            if (!cart || cart.length === 0) {
+                alert('购物车为空，请添加商品！');
+                return;
+            }
+
+            // 计算折扣金额
+            let originalTotal = 0;
+            let discountAmount = 0;
+            let finalTotal = 0;
+
+            cart.forEach(item => {
+                const itemOriginalTotal = item.price * item.quantity;
+                const itemFinalTotal = currentMember && item.memberPrice ?
+                    item.memberPrice * item.quantity : itemOriginalTotal;
+
+                originalTotal += itemOriginalTotal;
+                finalTotal += itemFinalTotal;
+                discountAmount += (itemOriginalTotal - itemFinalTotal);
+            });
+
+            // 构建订单数据 - 修复会员ID问题并添加折扣信息
+            const orderData = {
+                customerName: customerName,
+                items: cart.map(item => {
+                    console.log(`商品ID: "${item.id}" (类型: ${typeof item.id})`);
+
+                    return {
+                        productId: item.id,  // 使用字符串ID
+                        productName: item.name,
+                        quantity: Number(item.quantity),
+                        unitPrice: Number(item.price),
+                        // 添加会员价，让后端知道折扣
+                        memberPrice: currentMember && item.memberPrice ?
+                            Number(item.memberPrice) : null,
+                        // 添加其他必要字段
+                        specification: item.spec || '',
+                        isRx: item.isRx || false
+                    };
+                }),
+                // 关键修复：确保会员ID正确传递
+                memberId: currentMember ? (currentMember.memberId || currentMember.id) : null,
+                // 添加支付方式
+                paymentMethod: selectedPaymentMethod || 'cash',
+                // 计算总金额 - 使用前端计算的折扣后金额
+                totalAmount: finalTotal,
+                // 添加折扣金额，让后端知道折扣
+                discountAmount: discountAmount,
+                // 原始总金额
+                originalAmount: originalTotal
+            };
+
+            console.log('发送的订单数据:', orderData);
+            console.log('当前会员信息:', currentMember);
+            console.log('会员ID:', currentMember ? (currentMember.memberId || currentMember.id) : '无会员');
+            console.log('折扣金额:', discountAmount);
+
+            // 验证数据完整性
+            const validationError = validateOrderData(orderData);
+            if (validationError) {
+                alert(validationError);
+                return;
+            }
+
+            // 显示加载状态
+            const payBtn = document.getElementById('pay-btn');
+            const originalText = payBtn ? payBtn.innerHTML : '';
+            if (payBtn) {
+                payBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 支付中...';
+                payBtn.disabled = true;
+            }
+
+            // 创建订单
+            createOrder(orderData)
+                .then(response => {
+                    console.log('订单创建成功:', response);
+
+                    // 清空购物车
+                    cart = [];
+                    updateCart();
+
+                    // 清空客户姓名
+                    if (customerNameInput) {
+                        customerNameInput.value = '';
+                    }
+
+                    // 清空会员信息
+                    clearMemberInfo();
+
+                    // 重置支付方式
+                    selectedPaymentMethod = null;
+                    document.querySelectorAll('.payment-method').forEach(btn => {
+                        btn.classList.remove('bg-primary/10', 'border-primary');
+                        btn.classList.add('btn-outline');
+                    });
+
+                    showMessage(`下单成功！订单号: ${response.orderId || response.id || '未知'}`);
+                })
+                .catch(error => {
+                    console.error('下单失败:', error);
+                    // 显示更详细的错误信息
+                    const errorMsg = error.message.includes('详情:') ?
+                        error.message :
+                        `下单失败: ${error.message}`;
+                    alert(errorMsg);
+                })
+                .finally(() => {
+                    // 恢复按钮状态
+                    if (payBtn) {
+                        payBtn.innerHTML = originalText;
+                        payBtn.disabled = false;
+                    }
+                });
+
+        } catch (error) {
+            console.error('processPayment 函数执行出错:', error);
+            alert('支付处理出错: ' + error.message);
+
+            const payBtn = document.getElementById('pay-btn');
+            if (payBtn) {
+                payBtn.innerHTML = '<i class="fa fa-credit-card"></i> 确认支付';
+                payBtn.disabled = false;
+            }
+        }
+    }
+
+    // 添加订单数据验证函数
+    function validateOrderData(orderData) {
+        if (!orderData.customerName) {
+            return '客户姓名不能为空';
+        }
+
+        if (!orderData.items || orderData.items.length === 0) {
+            return '订单商品不能为空';
+        }
+
+        // 检查每个商品项的ID
+        for (let i = 0; i < orderData.items.length; i++) {
+            const item = orderData.items[i];
+            if (!item.productId) {
+                return `第 ${i + 1} 个商品ID为空`;
+            }
+            if (item.quantity <= 0) {
+                return `商品 "${item.productName}" 数量必须大于0`;
+            }
+            if (item.unitPrice <= 0) {
+                return `商品 "${item.productName}" 价格必须大于0`;
+            }
+        }
+
+        return null; // 验证通过
+    }
+
     // ========== 挂单相关函数 ==========
     async function hangOrder() {
         try {
