@@ -30,4 +30,12 @@ public interface StockAlertRepository extends JpaRepository<StockAlert, Long> {
 
     // 根据药品ID查询预警
     List<StockAlert> findByMedicineId(String medicineId);
+
+    // 根据预警类型查找未处理的预警
+    List<StockAlert> findByAlertTypeAndIsHandledFalse(Integer alertType);
+
+    // 在 StockAlertRepository.java 中添加这个方法
+    List<StockAlert> findByMedicineIdAndAlertTypeAndIsHandledFalse(String medicineId, Integer alertType);
+
+
 }

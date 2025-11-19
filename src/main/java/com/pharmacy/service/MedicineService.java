@@ -44,4 +44,11 @@ public interface MedicineService {
     Medicine createMedicine(Medicine medicine);
     Medicine updateMedicine(String id, Medicine medicine);
     void deleteMedicine(String id);
+    void restoreMedicine(String id);
+
+    // 根据批准文号查找药品（用于创建时去重）
+    Medicine findByApprovalNo(String approvalNo);
+
+    // 根据通用名+规格+厂家查找药品（当 approvalNo 缺失时用于去重）
+    Medicine findByGenericSpecManufacturer(String genericName, String spec, String manufacturer);
 }

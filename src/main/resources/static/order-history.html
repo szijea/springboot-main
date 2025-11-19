@@ -83,88 +83,10 @@
 </head>
 
 <body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex">
-<!-- 侧边栏 -->
-<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen z-10">
-    <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <i class="fa fa-medkit text-primary"></i>
-            </div>
-            <h1 class="font-bold text-lg">智慧药房系统</h1>
-        </div>
-    </div>
+<!-- 注入统一导航（侧边栏 + 顶部） -->
+<div id="common-nav" data-active="order-history"></div>
 
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-        <nav class="space-y-1">
-            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
-            <a href="medicine-management.html" class="sidebar-item block">
-                <i class="fa fa-dashboard w-5 text-center"></i>
-                <span>控制台</span>
-            </a>
-            <a href="cashier.html" class="sidebar-item block">
-                <i class="fa fa-shopping-cart w-5 text-center"></i>
-                <span>收银管理</span>
-            </a>
-            <a href="order-history.html" class="sidebar-item active block">
-                <i class="fa fa-history w-5 text-center"></i>
-                <span>历史订单</span>
-            </a>
-            <a href="stock-in.html" class="sidebar-item block">
-                <i class="fa fa-box w-5 text-center"></i>
-                <span>药品入库</span>
-            </a>
-            <a href="inventory.html" class="sidebar-item block">
-                <i class="fa fa-warehouse w-5 text-center"></i>
-                <span>库存管理</span>
-            </a>
-            <a href="members.html" class="sidebar-item block">
-                <i class="fa fa-users w-5 text-center"></i>
-                <span>会员管理</span>
-            </a>
-        </nav>
-    </div>
-
-    <div class="p-4 border-t border-gray-200">
-        <div class="flex items-center gap-3">
-            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
-            <div>
-                <p class="font-medium text-sm">张药师</p>
-                <p class="text-xs text-gray-500">管理员</p>
-            </div>
-            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
-                <i class="fa fa-sign-out"></i>
-            </a>
-        </div>
-    </div>
-</aside>
-
-<!-- 主内容区 -->
-<main class="flex-1 flex flex-col">
-    <!-- 顶部导航 -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div class="flex items-center gap-4">
-            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
-                <i class="fa fa-bars text-xl"></i>
-            </button>
-            <div class="relative">
-                <input type="text" placeholder="搜索订单号、会员..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all" id="global-search">
-                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4">
-            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
-                <i class="fa fa-bell text-xl"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-            </button>
-
-            <div class="text-right hidden md:block">
-                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
-                <p class="text-xs text-gray-500" id="current-time"></p>
-            </div>
-        </div>
-    </header>
-
+<main class="flex-1 flex flex-col pt-16">
     <!-- 可滚动内容区 -->
     <div class="main-content">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -244,6 +166,10 @@
                     </tbody>
                 </table>
             </div>
+            <!-- 新增订单金额合计显示 -->
+            <div id="orders-amount-total" class="p-4 border-t border-gray-100 text-right text-sm text-gray-700">
+                本页订单金额合计：¥0.00；筛选结果订单金额合计：¥0.00
+            </div>
 
             <!-- 加载状态 -->
             <div id="loading-orders" class="hidden text-center py-8">
@@ -268,6 +194,9 @@
         </div>
     </div>
 </main>
+
+<!-- 注入统一导航脚本 -->
+<script src="js/common-nav.js"></script>
 
 <!-- 订单详情模态框 -->
 <div id="order-detail-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -329,22 +258,60 @@
     let totalOrders = 0;
     let allOrders = [];
     let filteredOrders = [];
-    let currentOrderDetail = null; // 当前查看详情的订单
+    let currentOrderDetail = null;
 
-    // 初始化
+    // 等待DOM完全加载
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM完全加载，开始初始化...');
+        initializeApp();
+    });
+
+    // 初始化应用
+    function initializeApp() {
+        // 检查必要的DOM元素是否存在
+        if (!checkRequiredElements()) {
+            console.error('必要的DOM元素未找到，等待重试...');
+            setTimeout(initializeApp, 100);
+            return;
+        }
+
+        console.log('所有必要元素已找到，继续初始化...');
         initDateTime();
         initSidebar();
         initOrderEvents();
         loadOrders();
-    });
+    }
+
+    // 检查必要的DOM元素
+    function checkRequiredElements() {
+        const requiredElements = [
+            'order-date-filter',
+            'order-status-filter',
+            'payment-type-filter',
+            'member-filter',
+            'orders-list-body',
+            'loading-orders',
+            'empty-orders'
+        ];
+
+        for (const id of requiredElements) {
+            if (!document.getElementById(id)) {
+                console.warn(`必要元素 #${id} 未找到`);
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     // 日期时间初始化
     function initDateTime() {
         const update = () => {
             const now = new Date();
-            document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
-            document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN');
+            const dateEl = document.getElementById('current-date');
+            const timeEl = document.getElementById('current-time');
+            if (dateEl) dateEl.textContent = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString('zh-CN');
         };
         update();
         setInterval(update, 1000);
@@ -352,25 +319,27 @@
 
     // 侧边栏切换
     function initSidebar() {
-        document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-            const sidebar = document.querySelector('aside');
-            sidebar.classList.toggle('w-64');
-            sidebar.classList.toggle('w-0');
-            sidebar.classList.toggle('hidden');
-        });
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                const sidebar = document.querySelector('aside');
+                if (sidebar) {
+                    sidebar.classList.toggle('w-64');
+                    sidebar.classList.toggle('w-0');
+                    sidebar.classList.toggle('hidden');
+                }
+            });
+        }
     }
 
-    // ========== 打印功能 - 移到前面 ==========
+    // 打印功能
     function printOrder() {
         if (!currentOrderDetail) {
             showMessage('没有可打印的订单数据', 'error');
             return;
         }
 
-        // 创建打印内容
         const printContent = generatePrintContent(currentOrderDetail);
-
-        // 创建打印窗口
         const printWindow = window.open('', '_blank', 'width=800,height=600');
         printWindow.document.write(`
             <!DOCTYPE html>
@@ -378,110 +347,31 @@
             <head>
                 <title>打印订单 - ${currentOrderDetail.orderId}</title>
                 <style>
-                    body {
-                        font-family: 'Microsoft YaHei', Arial, sans-serif;
-                        margin: 20px;
-                        color: #333;
-                    }
-                    .print-header {
-                        text-align: center;
-                        margin-bottom: 20px;
-                        border-bottom: 2px solid #333;
-                        padding-bottom: 10px;
-                    }
-                    .print-header h1 {
-                        margin: 0;
-                        font-size: 24px;
-                        color: #165DFF;
-                    }
-                    .print-header .subtitle {
-                        font-size: 14px;
-                        color: #666;
-                    }
-                    .order-info {
-                        margin-bottom: 20px;
-                    }
-                    .info-section {
-                        margin-bottom: 15px;
-                    }
-                    .info-section h3 {
-                        margin: 0 0 10px 0;
-                        font-size: 16px;
-                        color: #165DFF;
-                        border-bottom: 1px solid #eee;
-                        padding-bottom: 5px;
-                    }
-                    .info-grid {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 10px;
-                    }
-                    .info-item {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-bottom: 5px;
-                    }
-                    .info-label {
-                        font-weight: bold;
-                        color: #666;
-                    }
-                    .info-value {
-                        text-align: right;
-                    }
-                    .amount-section {
-                        background: #f8f9fa;
-                        padding: 15px;
-                        border-radius: 5px;
-                        margin: 20px 0;
-                    }
-                    .amount-row {
-                        display: flex;
-                        justify-content: space-between;
-                        margin-bottom: 8px;
-                    }
-                    .total-row {
-                        font-weight: bold;
-                        font-size: 18px;
-                        border-top: 2px solid #333;
-                        padding-top: 10px;
-                        margin-top: 10px;
-                    }
-                    .footer {
-                        text-align: center;
-                        margin-top: 30px;
-                        font-size: 12px;
-                        color: #999;
-                        border-top: 1px solid #eee;
-                        padding-top: 10px;
-                    }
-                    @media print {
-                        body { margin: 0; }
-                        .no-print { display: none; }
-                    }
+                    body { font-family: 'Microsoft YaHei', Arial, sans-serif; margin: 20px; color: #333; }
+                    .print-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+                    .print-header h1 { margin: 0; font-size: 24px; color: #165DFF; }
+                    .print-header .subtitle { font-size: 14px; color: #666; }
+                    .order-info { margin-bottom: 20px; }
+                    .info-section { margin-bottom: 15px; }
+                    .info-section h3 { margin: 0 0 10px 0; font-size: 16px; color: #165DFF; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                    .info-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                    .info-label { font-weight: bold; color: #666; }
+                    .info-value { text-align: right; }
+                    .amount-section { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                    .amount-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+                    .total-row { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; }
+                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
+                    @media print { body { margin: 0; } .no-print { display: none; } }
                 </style>
             </head>
-            <body>
-                ${printContent}
-                <div class="footer">
-                    <p>感谢您的惠顾！</p>
-                    <p>打印时间：${new Date().toLocaleString('zh-CN')}</p>
-                </div>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        setTimeout(() => {
-                            window.close();
-                        }, 500);
-                    }
-                <\/script>
-            </body>
+            <body>${printContent}</body>
             </html>
         `);
         printWindow.document.close();
     }
 
     function generatePrintContent(order) {
-        // 计算折扣金额
         let discountAmount = order.discountAmount || 0;
         let originalAmount = order.totalAmount || 0;
         let actualPayment = order.actualPayment || order.totalAmount || 0;
@@ -496,107 +386,49 @@
                 <h1>智慧药房 - 销售订单</h1>
                 <div class="subtitle">PHARMACY SALES ORDER</div>
             </div>
-
             <div class="order-info">
                 <div class="info-section">
                     <h3>订单基本信息</h3>
                     <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">订单号：</span>
-                            <span class="info-value">${order.orderId}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">下单时间：</span>
-                            <span class="info-value">${formatDateTime(order.orderTime)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">支付时间：</span>
-                            <span class="info-value">${order.payTime ? formatDateTime(order.payTime) : '未支付'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">收银员：</span>
-                            <span class="info-value">${order.cashierId || '未知'}</span>
-                        </div>
+                        <div class="info-item"><span class="info-label">订单号：</span><span class="info-value">${order.orderId}</span></div>
+                        <div class="info-item"><span class="info-label">下单时间：</span><span class="info-value">${formatDateTime(order.orderTime)}</span></div>
+                        <div class="info-item"><span class="info-label">支付时间：</span><span class="info-value">${order.payTime ? formatDateTime(order.payTime) : '未支付'}</span></div>
+                        <div class="info-item"><span class="info-label">收银员：</span><span class="info-value">${order.cashierId || '未知'}</span></div>
                     </div>
                 </div>
-
                 <div class="info-section">
                     <h3>客户信息</h3>
                     <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">客户姓名：</span>
-                            <span class="info-value">${order.customerName || '匿名客户'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">会员状态：</span>
-                            <span class="info-value">${order.memberId ? '会员' : '非会员'}</span>
-                        </div>
-                        ${order.memberId ? `
-                        <div class="info-item">
-                            <span class="info-label">会员ID：</span>
-                            <span class="info-value">${order.memberId}</span>
-                        </div>
-                        ` : ''}
+                        <div class="info-item"><span class="info-label">客户姓名：</span><span class="info-value">${order.customerName || '匿名客户'}</span></div>
+                        <div class="info-item"><span class="info-label">会员状态：</span><span class="info-value">${order.memberId ? '会员' : '非会员'}</span></div>
+                        ${order.memberId ? `<div class="info-item"><span class="info-label">会员ID：</span><span class="info-value">${order.memberId}</span></div>` : ''}
                     </div>
                 </div>
-
                 <div class="info-section">
                     <h3>支付信息</h3>
                     <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">支付方式：</span>
-                            <span class="info-value">${getPaymentTypeText(order.paymentType)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">支付状态：</span>
-                            <span class="info-value">${getPaymentStatusText(order.paymentStatus)}</span>
-                        </div>
+                        <div class="info-item"><span class="info-label">支付方式：</span><span class="info-value">${getPaymentTypeText(order.paymentType)}</span></div>
+                        <div class="info-item"><span class="info-label">支付状态：</span><span class="info-value">${getPaymentStatusText(order.paymentStatus)}</span></div>
                         ${order.refundTime ? `
-                        <div class="info-item">
-                            <span class="info-label">退款时间：</span>
-                            <span class="info-value">${formatDateTime(order.refundTime)}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">退款原因：</span>
-                            <span class="info-value">${order.refundReason || '无'}</span>
-                        </div>
+                        <div class="info-item"><span class="info-label">退款时间：</span><span class="info-value">${formatDateTime(order.refundTime)}</span></div>
+                        <div class="info-item"><span class="info-label">退款原因：</span><span class="info-value">${order.refundReason || '无'}</span></div>
                         ` : ''}
                     </div>
                 </div>
-
                 <div class="amount-section">
-                    <div class="amount-row">
-                        <span>订单总额：</span>
-                        <span>${formatPrice(originalAmount)}</span>
-                    </div>
-                    ${discountAmount > 0 ? `
-                    <div class="amount-row">
-                        <span>优惠金额：</span>
-                        <span style="color: #36B37E;">-${formatPrice(discountAmount)}</span>
-                    </div>
-                    ` : ''}
-                    <div class="amount-row total-row">
-                        <span>实付金额：</span>
-                        <span style="color: #165DFF; font-weight: bold;">${formatPrice(actualPayment)}</span>
-                    </div>
+                    <div class="amount-row"><span>订单总额：</span><span>${formatPrice(originalAmount)}</span></div>
+                    ${discountAmount > 0 ? `<div class="amount-row"><span>优惠金额：</span><span style="color: #36B37E;">-${formatPrice(discountAmount)}</span></div>` : ''}
+                    <div class="amount-row total-row"><span>实付金额：</span><span style="color: #165DFF; font-weight: bold;">${formatPrice(actualPayment)}</span></div>
                 </div>
-
                 ${order.memberId ? `
                 <div class="info-section">
                     <h3>会员积分</h3>
                     <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">使用积分：</span>
-                            <span class="info-value">${order.usedPoints || 0} 积分</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">获得积分：</span>
-                            <span class="info-value">${order.createdPoints || 0} 积分</span>
-                        </div>
+                        <div class="info-item"><span class="info-label">使用积分：</span><span class="info-value">${order.usedPoints || 0} 积分</span></div>
+                        <div class="info-item"><span class="info-label">获得积分：</span><span class="info-value">${order.createdPoints || 0} 积分</span></div>
                     </div>
                 </div>
                 ` : ''}
-
                 <div class="info-section">
                     <h3>温馨提示</h3>
                     <div style="font-size: 12px; color: #666; line-height: 1.5;">
@@ -607,90 +439,143 @@
                     </div>
                 </div>
             </div>
+            <div class="footer">
+                <p>感谢您的惠顾！</p>
+                <p>打印时间：${new Date().toLocaleString('zh-CN')}</p>
+            </div>
         `;
     }
 
     // 订单相关事件初始化
     function initOrderEvents() {
-        document.getElementById('refresh-orders-btn').addEventListener('click', loadOrders);
-        document.getElementById('apply-filters-btn').addEventListener('click', applyFilters);
-        document.getElementById('reset-filters-btn').addEventListener('click', resetFilters);
-        document.getElementById('global-search').addEventListener('input', function() {
+        console.log('初始化订单事件...');
+
+        // 安全的元素绑定函数
+        function safeBind(id, event, handler) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener(event, handler);
+                console.log(`成功绑定事件到元素: #${id}`);
+            } else {
+                console.warn(`元素 #${id} 未找到，无法绑定 ${event} 事件`);
+            }
+        }
+
+        // 绑定所有事件
+        safeBind('refresh-orders-btn', 'click', loadOrders);
+        safeBind('apply-filters-btn', 'click', applyFilters);
+        safeBind('reset-filters-btn', 'click', resetFilters);
+        safeBind('export-orders-btn', 'click', exportOrders);
+
+        safeBind('order-date-filter', 'change', function() {
             currentOrdersPage = 1;
             applyFilters();
         });
-        document.getElementById('close-order-detail').addEventListener('click', function() {
-            document.getElementById('order-detail-modal').classList.add('hidden');
-        });
-        document.getElementById('export-orders-btn').addEventListener('click', exportOrders);
-        document.getElementById('order-date-filter').addEventListener('change', function() {
+
+        safeBind('order-status-filter', 'change', function() {
             currentOrdersPage = 1;
             applyFilters();
         });
-        document.getElementById('order-status-filter').addEventListener('change', function() {
+
+        safeBind('payment-type-filter', 'change', function() {
             currentOrdersPage = 1;
             applyFilters();
         });
-        document.getElementById('payment-type-filter').addEventListener('change', function() {
+
+        safeBind('member-filter', 'input', function() {
             currentOrdersPage = 1;
             applyFilters();
         });
-        document.getElementById('member-filter').addEventListener('input', function() {
-            currentOrdersPage = 1;
-            applyFilters();
+
+        // 模态框相关事件
+        safeBind('close-order-detail', 'click', function() {
+            const modal = document.getElementById('order-detail-modal');
+            if (modal) modal.classList.add('hidden');
         });
+
+        safeBind('print-order-btn', 'click', printOrder);
 
         // 退单相关事件
-        document.getElementById('refund-order-btn').addEventListener('click', function() {
-            showRefundConfirmModal();
+        safeBind('refund-order-btn', 'click', showRefundConfirmModal);
+        safeBind('cancel-refund-btn', 'click', function() {
+            const modal = document.getElementById('refund-confirm-modal');
+            if (modal) modal.classList.add('hidden');
         });
-        document.getElementById('cancel-refund-btn').addEventListener('click', function() {
-            document.getElementById('refund-confirm-modal').classList.add('hidden');
-        });
-        document.getElementById('confirm-refund-btn').addEventListener('click', processRefund);
 
-        // ✅ 打印订单事件监听 - 修复：放在函数内部
-        document.getElementById('print-order-btn').addEventListener('click', printOrder);
+        safeBind('confirm-refund-btn', 'click', processRefund);
 
+        console.log('订单事件初始化完成');
     }
 
     // 重置筛选
     function resetFilters() {
-        document.getElementById('order-date-filter').value = '';
-        document.getElementById('order-status-filter').value = '';
-        document.getElementById('payment-type-filter').value = '';
-        document.getElementById('member-filter').value = '';
-        document.getElementById('global-search').value = '';
+        console.log('重置筛选条件...');
+
+        const dateFilter = document.getElementById('order-date-filter');
+        const statusFilter = document.getElementById('order-status-filter');
+        const paymentTypeFilter = document.getElementById('payment-type-filter');
+        const memberFilter = document.getElementById('member-filter');
+
+        if (dateFilter) dateFilter.value = '';
+        if (statusFilter) statusFilter.value = '';
+        if (paymentTypeFilter) paymentTypeFilter.value = '';
+        if (memberFilter) memberFilter.value = '';
+
         currentOrdersPage = 1;
         applyFilters();
     }
 
-    // 加载订单数据
-    async function loadOrders() {
-        console.log('=== 开始加载订单数据 ===');
-        showOrdersLoading();
+    // 获取筛选条件 - 完全重写，添加详细的安全检查
+    function getOrderFilters() {
+        console.log('获取筛选条件...');
+
+        const filters = {
+            date: '',
+            status: '',
+            paymentType: '',
+            member: ''
+        };
 
         try {
-            const response = await fetch(`http://localhost:8080/api/orders?page=0&size=1000`);
-            console.log('API响应状态:', response.status);
+            const dateFilter = document.getElementById('order-date-filter');
+            const statusFilter = document.getElementById('order-status-filter');
+            const paymentTypeFilter = document.getElementById('payment-type-filter');
+            const memberFilter = document.getElementById('member-filter');
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            console.log('筛选元素状态:', {
+                dateFilter: !!dateFilter,
+                statusFilter: !!statusFilter,
+                paymentTypeFilter: !!paymentTypeFilter,
+                memberFilter: !!memberFilter
+            });
 
-            const result = await response.json();
-            console.log('完整的API响应:', result);
+            if (dateFilter) filters.date = dateFilter.value;
+            if (statusFilter) filters.status = statusFilter.value;
+            if (paymentTypeFilter) filters.paymentType = paymentTypeFilter.value;
+            if (memberFilter) filters.member = memberFilter.value;
 
+        } catch (error) {
+            console.error('获取筛选条件时出错:', error);
+        }
+
+        console.log('筛选条件:', filters);
+        return filters;
+    }
+
+    // 加载订单数据
+    async function loadOrders() {
+        console.log('开始加载订单数据...');
+        showOrdersLoading();
+        try {
+            // 使用统一 api 封装带租户 header
+            const result = await window.api.orderAPI.getOrders({}, 0, 1000);
             if (result && result.code === 200) {
-                console.log('获取到订单数据:', result.data);
                 allOrders = result.data || [];
-                console.log('存储所有订单:', allOrders.length, '条');
-
+                console.log(`成功加载 ${allOrders.length} 条订单`);
                 currentOrdersPage = 1;
                 applyFilters();
             } else {
-                console.log('API返回错误:', result.message);
-                showOrdersEmpty();
+                throw new Error(result.message || 'API返回错误');
             }
         } catch (error) {
             console.error('加载订单失败:', error);
@@ -701,7 +586,7 @@
 
     // 应用筛选条件
     function applyFilters() {
-        console.log('=== 应用筛选条件 ===');
+        console.log('应用筛选条件...');
 
         if (allOrders.length === 0) {
             console.log('没有订单数据可筛选');
@@ -710,23 +595,15 @@
         }
 
         const filters = getOrderFilters();
-        console.log('筛选条件:', filters);
-
         filteredOrders = [...allOrders];
 
         // 日期筛选
         if (filters.date) {
-            console.log('执行日期筛选，目标日期:', filters.date);
             filteredOrders = filteredOrders.filter(order => {
-                if (!order.orderTime) {
-                    console.log('订单没有orderTime', order);
-                    return false;
-                }
+                if (!order.orderTime) return false;
                 const orderDate = new Date(order.orderTime).toISOString().split('T')[0];
-                console.log(`比较日期: 订单日期=${orderDate}, 筛选日期=${filters.date}, 是否匹配=${orderDate === filters.date}`);
                 return orderDate === filters.date;
             });
-            console.log('日期筛选后订单数量:', filteredOrders.length);
         }
 
         // 状态筛选
@@ -752,29 +629,8 @@
             );
         }
 
-        // 全局搜索
-        if (filters.globalSearch) {
-            const searchTerm = filters.globalSearch.toLowerCase();
-            filteredOrders = filteredOrders.filter(order =>
-                (order.orderId && order.orderId.toLowerCase().includes(searchTerm)) ||
-                (order.customerName && order.customerName.toLowerCase().includes(searchTerm)) ||
-                (order.memberId && order.memberId.toLowerCase().includes(searchTerm))
-            );
-        }
-
-        console.log('筛选后订单数量:', filteredOrders.length);
+        console.log(`筛选后剩余 ${filteredOrders.length} 条订单`);
         displayFilteredOrders();
-    }
-
-    // 获取筛选条件
-    function getOrderFilters() {
-        return {
-            date: document.getElementById('order-date-filter').value,
-            status: document.getElementById('order-status-filter').value,
-            paymentType: document.getElementById('payment-type-filter').value,
-            member: document.getElementById('member-filter').value,
-            globalSearch: document.getElementById('global-search').value
-        };
     }
 
     // 显示筛选后的订单
@@ -783,107 +639,123 @@
         const endIndex = startIndex + ordersPageSize;
         const pagedOrders = filteredOrders.slice(startIndex, endIndex);
 
-        console.log('分页后订单:', pagedOrders);
         displayOrders(pagedOrders);
         updateOrdersPagination(filteredOrders.length);
+        updateAmountTotals(pagedOrders, filteredOrders);
     }
 
+    // 计算并显示订单金额合计（本页与筛选结果）
+    function updateAmountTotals(pageOrders, allFiltered){
+        const sum = (list)=>{
+            return list.reduce((acc, o)=>{
+                const val = (o.actualPayment != null ? o.actualPayment : o.totalAmount || 0);
+                const num = typeof val === 'number' ? val : parseFloat(val);
+                return acc + (isNaN(num)?0:num);
+            }, 0);
+        };
+        const pageSum = sum(pageOrders);
+        const allSum = sum(allFiltered);
+        const el = document.getElementById('orders-amount-total');
+        if(el){ el.textContent = `本页订单金额合计：¥${pageSum.toFixed(2)}；筛选结果订单金额合计：¥${allSum.toFixed(2)}`; }
+    }
     // 显示订单加载状态
     function showOrdersLoading() {
-        document.getElementById('orders-list-body').classList.add('hidden');
-        document.getElementById('loading-orders').classList.remove('hidden');
-        document.getElementById('empty-orders').classList.add('hidden');
+        const tbody = document.getElementById('orders-list-body');
+        const loading = document.getElementById('loading-orders');
+        const empty = document.getElementById('empty-orders');
+
+        if (tbody) tbody.classList.add('hidden');
+        if (loading) loading.classList.remove('hidden');
+        if (empty) empty.classList.add('hidden');
     }
 
     // 显示订单空状态
     function showOrdersEmpty() {
-        document.getElementById('orders-list-body').classList.add('hidden');
-        document.getElementById('loading-orders').classList.add('hidden');
-        document.getElementById('empty-orders').classList.remove('hidden');
-        document.getElementById('orders-count').textContent = '共 0 条订单';
-        document.getElementById('orders-pagination-info').textContent = '显示 0-0 条，共 0 条';
-        document.getElementById('orders-pagination-controls').innerHTML = '';
+        const tbody = document.getElementById('orders-list-body');
+        const loading = document.getElementById('loading-orders');
+        const empty = document.getElementById('empty-orders');
+        const count = document.getElementById('orders-count');
+        const paginationInfo = document.getElementById('orders-pagination-info');
+        const paginationControls = document.getElementById('orders-pagination-controls');
+
+        if (tbody) tbody.classList.add('hidden');
+        if (loading) loading.classList.add('hidden');
+        if (empty) empty.classList.remove('hidden');
+        if (count) count.textContent = '共 0 条订单';
+        if (paginationInfo) paginationInfo.textContent = '显示 0-0 条，共 0 条';
+        if (paginationControls) paginationControls.innerHTML = '';
     }
 
-    // 显示订单数据 - 关键修复：重新计算折扣
+    // 显示订单数据
     function displayOrders(orders) {
         const tbody = document.getElementById('orders-list-body');
-
-        console.log('要显示的订单数据:', orders);
+        const loading = document.getElementById('loading-orders');
+        const empty = document.getElementById('empty-orders');
 
         if (!orders || orders.length === 0) {
-            console.log('没有订单数据，显示空状态');
             showOrdersEmpty();
             return;
         }
 
-        document.getElementById('loading-orders').classList.add('hidden');
-        document.getElementById('empty-orders').classList.add('hidden');
-        tbody.classList.remove('hidden');
+        if (loading) loading.classList.add('hidden');
+        if (empty) empty.classList.add('hidden');
+        if (tbody) {
+            tbody.classList.remove('hidden');
 
-        const html = orders.map(order => {
-            console.log('处理订单:', order);
+            const html = orders.map(order => {
+                let discountAmount = order.discountAmount || 0;
+                let originalAmount = order.totalAmount || 0;
+                let actualPayment = order.actualPayment || order.totalAmount || 0;
 
-            // ========== 关键修复：重新计算折扣 ==========
-            // 由于后端没有正确保存折扣信息，我们需要重新计算
-            let discountAmount = order.discountAmount || 0;
-            let originalAmount = order.totalAmount || 0;
-            let actualPayment = order.actualPayment || order.totalAmount || 0;
+                if (order.actualPayment && order.totalAmount && order.actualPayment !== order.totalAmount) {
+                    discountAmount = order.totalAmount - order.actualPayment;
+                    originalAmount = order.totalAmount;
+                }
 
-            // 如果有实际支付金额且与总金额不同，重新计算折扣
-            // 注意：根据您的日志，后端返回的totalAmount实际上是原价，actualPayment是折后价
-            if (order.actualPayment && order.totalAmount && order.actualPayment !== order.totalAmount) {
-                discountAmount = order.totalAmount - order.actualPayment;
-                originalAmount = order.totalAmount;
-            } else if (order.memberId && order.discountAmount === 0) {
-                // 如果是会员订单但没有折扣信息，显示会员折扣（但金额为0）
-                discountAmount = 0; // 无法计算具体折扣金额
-            }
-            // ========== 折扣计算逻辑结束 ==========
+                return `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div>
+                                <div class="text-sm font-medium">${order.orderId || '未知订单'}</div>
+                                <div class="text-xs text-gray-500">${order.orderTime ? formatDateTime(order.orderTime) : '未知时间'}</div>
+                                <div class="text-xs text-gray-500">收银员: ${order.cashierId || '未知'}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            ${order.customerName ? `
+                                <div class="text-sm font-medium">${order.customerName}</div>
+                                <div class="text-xs text-gray-500">${order.memberId ? '会员' : '非会员'}</div>
+                            ` : '<div class="text-sm text-gray-500">匿名客户</div>'}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm">${getPaymentTypeText(order.paymentType)}</div>
+                            <div class="text-xs text-gray-500">${getPaymentStatusText(order.paymentStatus)}</div>
+                            ${order.payTime ? `<div class="text-xs text-gray-500">${formatDateTime(order.payTime)}</div>` : ''}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium">${formatPrice(actualPayment)}</div>
+                            ${discountAmount > 0 ? `<div class="text-xs text-secondary">优惠: -${formatPrice(discountAmount)}</div>` : ''}
+                            ${order.memberId && discountAmount === 0 ? `<div class="text-xs text-green-600">会员订单</div>` : ''}
+                        </td>
+                        <td class="px-6 py-4">
+                            <button class="btn btn-outline text-sm px-3 py-1 view-order-detail" data-order-id="${order.orderId}">
+                                <i class="fa fa-eye"></i> 查看详情
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
-            return `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                        <div>
-                            <div class="text-sm font-medium">${order.orderId || '未知订单'}</div>
-                            <div class="text-xs text-gray-500">${order.orderTime ? formatDateTime(order.orderTime) : '未知时间'}</div>
-                            <div class="text-xs text-gray-500">收银员: ${order.cashierId || '未知'}</div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        ${order.customerName ? `
-                            <div class="text-sm font-medium">${order.customerName}</div>
-                            <div class="text-xs text-gray-500">${order.memberId ? '会员' : '非会员'}</div>
-                        ` : '<div class="text-sm text-gray-500">匿名客户</div>'}
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm">${getPaymentTypeText(order.paymentType)}</div>
-                        <div class="text-xs text-gray-500">${getPaymentStatusText(order.paymentStatus)}</div>
-                        ${order.payTime ? `<div class="text-xs text-gray-500">${formatDateTime(order.payTime)}</div>` : ''}
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-medium">${formatPrice(actualPayment)}</div>
-                        ${discountAmount > 0 ? `<div class="text-xs text-secondary">优惠: -${formatPrice(discountAmount)}</div>` : ''}
-                        ${order.memberId && discountAmount === 0 ? `<div class="text-xs text-green-600">会员订单</div>` : ''}
-                    </td>
-                    <td class="px-6 py-4">
-                        <button class="btn btn-outline text-sm px-3 py-1 view-order-detail" data-order-id="${order.orderId}">
-                            <i class="fa fa-eye"></i> 查看详情
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+            tbody.innerHTML = html;
 
-        tbody.innerHTML = html;
-
-        // 重新绑定查看详情事件
-        document.querySelectorAll('.view-order-detail').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const orderId = this.getAttribute('data-order-id');
-                showOrderDetail(orderId);
+            // 重新绑��查看详情事件
+            document.querySelectorAll('.view-order-detail').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const orderId = this.getAttribute('data-order-id');
+                    showOrderDetail(orderId);
+                });
             });
-        });
+        }
     }
 
     // 更新订单分页信息
@@ -894,9 +766,11 @@
         const startItem = ((currentOrdersPage - 1) * ordersPageSize) + 1;
         const endItem = Math.min(currentOrdersPage * ordersPageSize, total);
 
-        document.getElementById('orders-count').textContent = `共 ${total} 条订单`;
-        document.getElementById('orders-pagination-info').textContent =
-            `显示 ${startItem}-${endItem} 条，共 ${total} 条`;
+        const count = document.getElementById('orders-count');
+        const paginationInfo = document.getElementById('orders-pagination-info');
+
+        if (count) count.textContent = `共 ${total} 条订单`;
+        if (paginationInfo) paginationInfo.textContent = `显示 ${startItem}-${endItem} 条，共 ${total} 条`;
 
         updateOrdersPaginationControls(totalPages);
     }
@@ -904,6 +778,8 @@
     // 更新订单分页控件
     function updateOrdersPaginationControls(totalPages) {
         const container = document.getElementById('orders-pagination-controls');
+
+        if (!container) return;
 
         if (totalPages <= 1) {
             container.innerHTML = '';
@@ -914,18 +790,9 @@
 
         // 上一页按钮
         if (currentOrdersPage > 1) {
-            html += `
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-                        onclick="changeOrdersPage(${currentOrdersPage - 1})">
-                    <i class="fa fa-chevron-left text-xs"></i>
-                </button>
-            `;
+            html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors" onclick="changeOrdersPage(${currentOrdersPage - 1})"><i class="fa fa-chevron-left text-xs"></i></button>`;
         } else {
-            html += `
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-400 cursor-not-allowed" disabled>
-                    <i class="fa fa-chevron-left text-xs"></i>
-                </button>
-            `;
+            html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-400 cursor-not-allowed" disabled><i class="fa fa-chevron-left text-xs"></i></button>`;
         }
 
         // 页码按钮
@@ -934,35 +801,17 @@
 
         for (let i = startPage; i <= endPage; i++) {
             if (i === currentOrdersPage) {
-                html += `
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-white">
-                        ${i}
-                    </button>
-                `;
+                html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-white">${i}</button>`;
             } else {
-                html += `
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-                            onclick="changeOrdersPage(${i})">
-                        ${i}
-                    </button>
-                `;
+                html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors" onclick="changeOrdersPage(${i})">${i}</button>`;
             }
         }
 
         // 下一页按钮
         if (currentOrdersPage < totalPages) {
-            html += `
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-                        onclick="changeOrdersPage(${currentOrdersPage + 1})">
-                    <i class="fa fa-chevron-right text-xs"></i>
-                </button>
-            `;
+            html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors" onclick="changeOrdersPage(${currentOrdersPage + 1})"><i class="fa fa-chevron-right text-xs"></i></button>`;
         } else {
-            html += `
-                <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-400 cursor-not-allowed" disabled>
-                    <i class="fa fa-chevron-right text-xs"></i>
-                </button>
-            `;
+            html += `<button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 text-gray-400 cursor-not-allowed" disabled><i class="fa fa-chevron-right text-xs"></i></button>`;
         }
 
         container.innerHTML = html;
@@ -970,12 +819,9 @@
 
     // 切换订单页面
     function changeOrdersPage(page) {
-        console.log('切换订单页面到:', page);
-
         const totalPages = Math.ceil(filteredOrders.length / ordersPageSize);
 
         if (page < 1 || page > totalPages) {
-            console.log('无效的页码:', page);
             return;
         }
 
@@ -986,16 +832,12 @@
     // 显示订单详情
     async function showOrderDetail(orderId) {
         try {
-            const response = await fetch(`http://localhost:8080/api/orders/${orderId}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const result = await response.json();
-
+            const result = await window.api.orderAPI.getOrderDetail(orderId);
             if (result && result.code === 200) {
                 currentOrderDetail = result.data;
                 displayOrderDetail(result.data);
-                document.getElementById('order-detail-modal').classList.remove('hidden');
+                const modal = document.getElementById('order-detail-modal');
+                if (modal) modal.classList.remove('hidden');
             } else {
                 throw new Error(result.message || '获取订单详情失败');
             }
@@ -1005,156 +847,110 @@
         }
     }
 
-    // 显示订单详情内容 - 关键修复：重新计算折扣
+    // 显示订单详情内容
     function displayOrderDetail(order) {
         const container = document.getElementById('order-detail-content');
-
-        // ========== 关键修复：重新计算折扣 ==========
+        if (!container) return;
         let discountAmount = order.discountAmount || 0;
         let originalAmount = order.totalAmount || 0;
         let actualPayment = order.actualPayment || order.totalAmount || 0;
-
-        // 如果有实际支付金额且与总金额不同，重新计算折扣
         if (order.actualPayment && order.totalAmount && order.actualPayment !== order.totalAmount) {
             discountAmount = order.totalAmount - order.actualPayment;
             originalAmount = order.totalAmount;
         }
-        // ========== 折扣计算逻辑结束 ==========
-
+        // 构建商品明细表
+        let itemsHtml = '';
+        const items = order.items || order.orderItems || [];
+        if (Array.isArray(items) && items.length > 0) {
+            itemsHtml = `<table class="min-w-full text-sm border border-gray-200 rounded">\n<thead class="bg-gray-50">\n<tr>\n<th class="px-3 py-2 text-left">药品名称</th>\n<th class="px-3 py-2 text-left">规格</th>\n<th class="px-3 py-2 text-right">数量</th>\n<th class="px-3 py-2 text-right">单价</th>\n<th class="px-3 py-2 text-right">小计</th>\n</tr>\n</thead><tbody>` +
+            items.map(it => {
+                const name = it.medicineName || it.tradeName || it.genericName || it.name || '未知药品';
+                const spec = it.spec || it.specification || '-';
+                const qty = it.quantity || it.qty || 0;
+                const unitPrice = it.unitPrice || it.price || 0;
+                const subtotal = (qty * unitPrice).toFixed(2);
+                return `<tr class="border-t">\n<td class="px-3 py-2">${name}</td>\n<td class="px-3 py-2 text-gray-500">${spec}</td>\n<td class="px-3 py-2 text-right">${qty}</td>\n<td class="px-3 py-2 text-right">¥${unitPrice}</td>\n<td class="px-3 py-2 text-right font-medium">¥${subtotal}</td>\n</tr>`; }).join('') + '</tbody></table>';
+        } else {
+            itemsHtml = '<div class="text-sm text-gray-500">无商品明细或后端未返回 items 列表</div>';
+        }
         const html = `
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <h4 class="font-medium mb-2">订单基本信息</h4>
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">订单号:</span>
-                            <span>${order.orderId}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">下单时间:</span>
-                            <span>${formatDateTime(order.orderTime)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">支付时间:</span>
-                            <span>${order.payTime ? formatDateTime(order.payTime) : '未支付'}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">收银员:</span>
-                            <span>${order.cashierId || '未知'}</span>
-                        </div>
+                        <div class="flex justify-between"><span class="text-gray-500">订单号:</span><span>${order.orderId}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">下单时间:</span><span>${formatDateTime(order.orderTime)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">支付时间:</span><span>${order.payTime ? formatDateTime(order.payTime) : '未支付'}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">收银员:</span><span>${order.cashierId || '未知'}</span></div>
                     </div>
                 </div>
-
                 <div>
                     <h4 class="font-medium mb-2">支付信息</h4>
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">支付方式:</span>
-                            <span>${getPaymentTypeText(order.paymentType)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">支付状态:</span>
-                            <span class="${getPaymentStatusClass(order.paymentStatus)}">${getPaymentStatusText(order.paymentStatus)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">订单总额:</span>
-                            <span>${formatPrice(originalAmount)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">优惠金额:</span>
-                            <span class="text-secondary">-${formatPrice(discountAmount)}</span>
-                        </div>
-                        <div class="flex justify-between font-medium border-t pt-2">
-                            <span>实付金额:</span>
-                            <span class="text-primary">${formatPrice(actualPayment)}</span>
-                        </div>
+                        <div class="flex justify-between"><span class="text-gray-500">支付方式:</span><span>${getPaymentTypeText(order.paymentType)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">支付状态:</span><span class="${getPaymentStatusClass(order.paymentStatus)}">${getPaymentStatusText(order.paymentStatus)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">订单总额:</span><span>${formatPrice(originalAmount)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">优惠金额:</span><span class="text-secondary">-${formatPrice(discountAmount)}</span></div>
+                        <div class="flex justify-between font-medium border-t pt-2"><span>实付金额:</span><span class="text-primary">${formatPrice(actualPayment)}</span></div>
                     </div>
                 </div>
             </div>
-
             <div class="mb-6">
                 <h4 class="font-medium mb-2">会员信息</h4>
                 ${order.memberId ? `
                     <div class="space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">会员ID:</span>
-                            <span>${order.memberId}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">使用积分:</span>
-                            <span>${order.usedPoints || 0} 积分</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-500">获得积分:</span>
-                            <span>${order.createdPoints || 0} 积分</span>
-                        </div>
+                        <div class="flex justify-between"><span class="text-gray-500">会员ID:</span><span>${order.memberId}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">使用积分:</span><span>${order.usedPoints || 0} 积分</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">获得积分:</span><span>${order.createdPoints || 0} 积分</span></div>
                     </div>
                 ` : '<div class="text-sm text-gray-500">非会员订单</div>'}
             </div>
-
-            <div>
+            <div class="mb-2">
                 <h4 class="font-medium mb-2">订单商品</h4>
-                <div class="text-sm text-gray-500">
-                    商品详情功能需要后端支持，请联系开发人员添加订单项查询接口。
-                </div>
+                ${itemsHtml}
             </div>
+            ${order.refundTime ? `<div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">该订单已退款，时间：${formatDateTime(order.refundTime)} 原因：${order.refundReason||'无'}</div>`: ''}
         `;
-
         container.innerHTML = html;
-
-        // 根据订单状态显示或隐藏退单按钮
         const refundBtn = document.getElementById('refund-order-btn');
-        if (order.paymentStatus === 1) { // 只有已支付的订单可以退单
-            refundBtn.classList.remove('hidden');
-        } else {
-            refundBtn.classList.add('hidden');
+        if (refundBtn) {
+            if (order.paymentStatus === 1 && !order.refundTime) {
+                refundBtn.classList.remove('hidden');
+            } else {
+                refundBtn.classList.add('hidden');
+            }
         }
     }
 
     // 显示退单确认模态框
     function showRefundConfirmModal() {
-        document.getElementById('refund-confirm-modal').classList.remove('hidden');
+        const modal = document.getElementById('refund-confirm-modal');
+        if (modal) modal.classList.remove('hidden');
     }
 
     // 处理退单请求
     async function processRefund() {
         const refundBtn = document.getElementById('confirm-refund-btn');
+        if (!refundBtn) return;
         const originalHTML = refundBtn.innerHTML;
-
         try {
             refundBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 处理中...';
             refundBtn.disabled = true;
-
-            const refundReason = document.getElementById('refund-reason').value;
-
-            // 调用退单API
-            const response = await fetch(`http://localhost:8080/api/orders/${currentOrderDetail.orderId}/refund`, {
+            const refundReasonEl = document.getElementById('refund-reason');
+            const refundReason = refundReasonEl ? refundReasonEl.value : '';
+            const response = await fetch(`${window.api.BASE_URL}/orders/${currentOrderDetail.orderId}/refund`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    reason: refundReason || '无'
-                })
+                headers: {'Content-Type':'application/json','X-Shop-Id': localStorage.getItem('selectedTenant') || ''},
+                body: JSON.stringify({ reason: refundReason || '无' })
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const result = await response.json();
-
             if (result && result.code === 200) {
-                // 退单成功
                 showMessage('退单成功', 'success');
-                document.getElementById('refund-confirm-modal').classList.add('hidden');
-                document.getElementById('order-detail-modal').classList.add('hidden');
-
-                // 刷新订单列表
+                document.getElementById('refund-confirm-modal')?.classList.add('hidden');
+                document.getElementById('order-detail-modal')?.classList.add('hidden');
                 loadOrders();
-            } else {
-                throw new Error(result.message || '退单失败');
-            }
+            } else throw new Error(result.message || '退单失败');
         } catch (error) {
             console.error('退单失败:', error);
             showMessage('退单失败: ' + error.message, 'error');
@@ -1164,13 +960,10 @@
         }
     }
 
-    // 修复导出订单函数 - 使用更稳定的CSV导出
+    // 导出订单函数
     async function exportOrders() {
         const btn = document.getElementById('export-orders-btn');
-        if (!btn) {
-            console.error('导出按钮未找到');
-            return;
-        }
+        if (!btn) return;
 
         const originalHTML = btn.innerHTML;
 
@@ -1180,17 +973,13 @@
 
             const ordersToExport = filteredOrders.length > 0 ? filteredOrders : allOrders;
 
-            console.log('准备导出的订单数量:', ordersToExport.length);
-
             if (ordersToExport.length === 0) {
                 showMessage('没有订单数据可导出', 'warning');
                 return;
             }
 
-            // 使用更稳定的CSV导出方法
             const csvData = convertOrdersToCSV(ordersToExport);
             downloadFile(csvData, `订单数据_${getCurrentDate()}.csv`, 'text/csv;charset=utf-8;');
-
             showMessage(`成功导出 ${ordersToExport.length} 条订单数据`, 'success');
 
         } catch (error) {
@@ -1202,20 +991,12 @@
         }
     }
 
-    // 更稳定的CSV转换函数
+    // CSV转换函数
     function convertOrdersToCSV(orders) {
-        const headers = [
-            '订单号', '下单时间', '收银员ID', '会员ID',
-            '客户姓名', '订单总额', '实付金额', '优惠金额',
-            '支付状态', '支付方式', '支付时间', '使用积分', '获得积分'
-        ];
-
-        // CSV头部
+        const headers = ['订单号', '下单时间', '收银员ID', '会员ID', '客户姓名', '订单总额', '实付金额', '优惠金额', '支付状态', '支付方式', '支付时间', '使用积分', '获得积分'];
         let csvContent = '\uFEFF' + headers.join(',') + '\n';
 
-        // 数据行
         orders.forEach(order => {
-            // 计算折扣金额
             let discountAmount = order.discountAmount || 0;
             if (order.actualPayment && order.totalAmount && order.actualPayment !== order.totalAmount) {
                 discountAmount = order.totalAmount - order.actualPayment;
@@ -1246,14 +1027,10 @@
     // CSV字段转义函数
     function escapeCSVField(field) {
         if (field === null || field === undefined) return '""';
-
         const stringField = String(field);
-
-        // 如果包含逗号、换行符或引号，需要用引号包围并转义内部引号
         if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
             return '"' + stringField.replace(/"/g, '""') + '"';
         }
-
         return stringField;
     }
 
@@ -1261,24 +1038,11 @@
     function downloadFile(data, filename, mimeType) {
         const blob = new Blob([data], { type: mimeType });
         const url = URL.createObjectURL(blob);
-
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
-
-        // 兼容不同浏览器的下载方式
-        if (document.createEvent) {
-            const event = document.createEvent('MouseEvents');
-            event.initEvent('click', true, true);
-            link.dispatchEvent(event);
-        } else {
-            link.click();
-        }
-
-        // 清理URL对象
-        setTimeout(() => {
-            URL.revokeObjectURL(url);
-        }, 100);
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 100);
     }
 
     // 获取当前日期函数
@@ -1289,25 +1053,17 @@
 
     // 工具函数
     function getPaymentTypeText(type) {
-        const types = {
-            1: '现金', 2: '微信', 3: '支付宝', 4: '医保'
-        };
+        const types = { 1: '现金', 2: '微信', 3: '支付宝', 4: '医保' };
         return types[type] || '未知';
     }
 
     function getPaymentStatusText(status) {
-        const statuses = {
-            0: '待支付', 1: '已支付', 2: '已退款'
-        };
+        const statuses = { 0: '待支付', 1: '已支付', 2: '已退款' };
         return statuses[status] || '未知';
     }
 
     function getPaymentStatusClass(status) {
-        const classes = {
-            0: 'text-yellow-600',
-            1: 'text-green-600',
-            2: 'text-gray-600'
-        };
+        const classes = { 0: 'text-yellow-600', 1: 'text-green-600', 2: 'text-gray-600' };
         return classes[status] || 'text-gray-600';
     }
 
@@ -1323,13 +1079,8 @@
 
     function showMessage(message, type = 'success') {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${
-            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-        }`;
-        messageDiv.innerHTML = `
-            <i class="fa ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i>
-            ${message}
-        `;
+        messageDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+        messageDiv.innerHTML = `<i class="fa ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} mr-2"></i>${message}`;
         document.body.appendChild(messageDiv);
         setTimeout(() => messageDiv.remove(), 3000);
     }

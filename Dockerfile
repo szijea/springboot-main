@@ -1,14 +1,7 @@
-# 基础镜像
-FROM openjdk:17-jdk-slim
-
-# 工作目录
+FROM eclipse-temurin:17-jdk
 WORKDIR /app
-
-# 复制打包后的jar文件（假设使用Maven打包）
-COPY target/pharmacy-system-0.0.1-SNAPSHOT.jar app.jar
-
-# 暴露端口（根据项目实际端口修改）
+ARG APP_VERSION=1.0.0
+ENV JAVA_OPTS=""
+COPY target/pharmacy-system-1.0.0.jar app.jar
 EXPOSE 8080
-
-# 启动命令
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]

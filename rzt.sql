@@ -230,8 +230,9 @@ INSERT INTO `role` (`role_name`, `permissions`) VALUES
 ('库管员', '["inventory","stock_record"]');
 
 INSERT INTO `employee` (`username`, `password`, `name`, `role_id`, `phone`) VALUES 
-('admin', 'e10adc3949ba59abbe56e057f20f883e', '系统管理员', 1, '13800138000'),
-('cashier01', 'e10adc3949ba59abbe56e057f20f883e', '张三（收银员）', 2, '13900139000');
+('adminrzt', 'e10adc3949ba59abbe56e057f20f883e', '系统管理员', 1, '13800138000'),
+('rzt01', 'e10adc3949ba59abbe56e057f20f883e', '店长', 2, '13900139000');
+('rzt02', 'e10adc3949ba59abbe56e057f20f883e', '店员', 3, '13900139000');
 
 INSERT INTO `member` (`member_id`, `name`, `phone`, `level`, `points`) VALUES 
 ('M00001', '李四', '13700137000', 1, 500),

@@ -73,4 +73,9 @@ public class OrderResponse {
     public void setItems(List<OrderItemResponse> items) {
         this.items = items;
     }
+
+    public String getOrderId(){
+        // 为兼容旧代码，将 orderId 视为 orderNumber 的别名
+        return this.orderNumber;
+    }
 }

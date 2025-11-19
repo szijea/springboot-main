@@ -1,8 +1,10 @@
 package com.pharmacy.service.impl;
 
 import com.pharmacy.entity.Inventory;
+import com.pharmacy.dto.InventoryDTO;
 import com.pharmacy.repository.InventoryRepository;
 import com.pharmacy.service.InventoryService;
+import com.pharmacy.util.StockStatusUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -205,7 +207,6 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
-
     @Override
     public Inventory findById(Long id) {
         return inventoryRepository.findById(id).orElse(null);
@@ -219,5 +220,153 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public void deleteById(Long id) {
         inventoryRepository.deleteById(id);
+    }
+
+    @Override
+    public List<InventoryDTO> findAllWithMedicineDTO() {
+        try {
+            List<InventoryDTO> list = inventoryRepository.findAllWithMedicine();
+            // 填充状态字段
+            for (InventoryDTO dto : list) {
+                String stockStatus = StockStatusUtil.calcStockStatus(dto.getStockQuantity(), dto.getMinStock());
+                String expiryStatus = StockStatusUtil.calcExpiryStatus(dto.getExpiryDate());
+                dto.setStockStatus(stockStatus);
+                dto.setExpiryStatus(expiryStatus);
+                dto.setSafetyStock(dto.getMinStock());
+                dto.setEarliestExpiryDate(dto.getExpiryDate()); // 单批次默认等于自身
+                // 新增字段: 分类与是否处方药
+                if (dto.getMedicineId() != null) {
+                    inventoryRepository.findByMedicineId(dto.getMedicineId()).stream().findFirst().ifPresent(inv -> {
+                        if (inv.getMedicine() != null) {
+                            dto.setMedicineCategoryId(inv.getMedicine().getCategoryId());
+                            dto.setMedicineIsRx(inv.getMedicine().getIsRx());
+                        }
+                    });
+                }
+            }
+            System.out.println("返回 InventoryDTO 数量: " + list.size());
+            return list;
+        } catch (Exception e) {
+            System.err.println("查询 InventoryDTO 失败: " + e.getMessage());
+            e.printStackTrace();
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    @Override
+    public InventoryDTO findDTOById(Long inventoryId) {
+        try {
+            return inventoryRepository.findDTOById(inventoryId);
+        } catch (Exception e) {
+            System.err.println("查询 InventoryDTO 详情失败: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public List<InventoryDTO> findDTOByMedicineId(String medicineId) {
+        try {
+            List<InventoryDTO> list = inventoryRepository.findDTOByMedicineId(medicineId);
+            LocalDate earliest = null;
+            for (InventoryDTO dto : list) {
+                String stockStatus = StockStatusUtil.calcStockStatus(dto.getStockQuantity(), dto.getMinStock());
+                String expiryStatus = StockStatusUtil.calcExpiryStatus(dto.getExpiryDate());
+                dto.setStockStatus(stockStatus);
+                dto.setExpiryStatus(expiryStatus);
+                dto.setSafetyStock(dto.getMinStock());
+                earliest = StockStatusUtil.mergeEarliest(earliest, dto.getExpiryDate());
+            }
+            for (InventoryDTO dto : list) {
+                dto.setEarliestExpiryDate(earliest);
+            }
+            return list;
+        } catch (Exception e) {
+            System.err.println("查询某药品 InventoryDTO 列表失败(精简版): " + e.getMessage());
+            e.printStackTrace();
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    @Override
+    public java.util.List<com.pharmacy.dto.InventoryDTO> findDTOByBatchNo(String batchNo) {
+        try {
+            java.util.List<com.pharmacy.dto.InventoryDTO> list = inventoryRepository.findDTOByBatchNo(batchNo);
+            java.time.LocalDate earliest = null;
+            for (com.pharmacy.dto.InventoryDTO dto : list) {
+                String stockStatus = com.pharmacy.util.StockStatusUtil.calcStockStatus(dto.getStockQuantity(), dto.getMinStock());
+                String expiryStatus = com.pharmacy.util.StockStatusUtil.calcExpiryStatus(dto.getExpiryDate());
+                dto.setStockStatus(stockStatus);
+                dto.setExpiryStatus(expiryStatus);
+                dto.setSafetyStock(dto.getMinStock());
+                earliest = com.pharmacy.util.StockStatusUtil.mergeEarliest(earliest, dto.getExpiryDate());
+                if (dto.getMedicineId() != null) {
+                    inventoryRepository.findByMedicineId(dto.getMedicineId()).stream().findFirst().ifPresent(inv -> {
+                        if (inv.getMedicine() != null) {
+                            dto.setMedicineCategoryId(inv.getMedicine().getCategoryId());
+                            dto.setMedicineIsRx(inv.getMedicine().getIsRx());
+                        }
+                    });
+                }
+            }
+            for (com.pharmacy.dto.InventoryDTO dto : list) {
+                dto.setEarliestExpiryDate(earliest);
+            }
+            return list;
+        } catch (Exception e) {
+            System.err.println("按批号查询库存失败: " + e.getMessage());
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    @Override
+    @Transactional
+    public Inventory createBatch(String medicineId, String batchNo, Integer stockQuantity, Integer minStock, Integer maxStock, java.math.BigDecimal purchasePrice, java.time.LocalDate expiryDate, String supplier) {
+        Inventory inv = new Inventory();
+        inv.setMedicineId(medicineId);
+        inv.setBatchNo(batchNo);
+        inv.setStockQuantity(stockQuantity != null ? stockQuantity : 0);
+        inv.setMinStock(minStock);
+        inv.setMaxStock(maxStock);
+        inv.setPurchasePrice(purchasePrice);
+        inv.setExpiryDate(expiryDate);
+        inv.setSupplier(supplier);
+        return inventoryRepository.save(inv);
+    }
+
+    @Override
+    @Transactional
+    public Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo, Integer minStock) {
+        if (addQuantity == null || addQuantity < 0) return null; // 仅负数非法，0允许
+        Inventory target = null;
+        if (preferredBatchNo != null && !preferredBatchNo.isBlank()) {
+            List<Inventory> byBatch = inventoryRepository.findByBatchNo(preferredBatchNo);
+            target = byBatch.stream().filter(i -> medicineId.equals(i.getMedicineId())).findFirst().orElse(null);
+        }
+        if (target == null) {
+            List<Inventory> list = inventoryRepository.findByMedicineId(medicineId);
+            target = list.stream()
+                    .sorted(Comparator.comparing(Inventory::getStockQuantity).thenComparing(Inventory::getCreateTime))
+                    .findFirst().orElse(null);
+        }
+        if (target == null) {
+            String newBatch = preferredBatchNo != null && !preferredBatchNo.isBlank() ? preferredBatchNo : ("AUTO" + System.currentTimeMillis());
+            // 0 数量仍可建批次用于设定 minStock
+            return createBatch(medicineId, newBatch, addQuantity != null ? addQuantity : 0, minStock, null, null, null, null);
+        }
+        if (addQuantity != null && addQuantity > 0) {
+            target.setStockQuantity(target.getStockQuantity() + addQuantity);
+        }
+        if (minStock != null) {
+            target.setMinStock(minStock);
+        }
+        return inventoryRepository.save(target);
+    }
+
+    // 原有三个参数补货改为委托新实现
+    @Override
+    @Transactional
+    public Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo) {
+        return replenish(medicineId, addQuantity, preferredBatchNo, null);
     }
 }

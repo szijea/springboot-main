@@ -1,11 +1,14 @@
 package com.pharmacy.entity;
 
-import jakarta.persistence.*;  // 改为 jakarta
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "medicine")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Medicine {
     @Id
     @Column(name = "medicine_id", length = 32)
@@ -20,7 +23,7 @@ public class Medicine {
     @Column(length = 50)
     private String spec;
 
-    @Column(name = "approval_no", nullable = false, length = 50)
+    @Column(name = "approval_no", nullable = false, length = 50, unique = true)
     private String approvalNo;
 
     @Column(name = "category_id", nullable = false)
@@ -52,7 +55,23 @@ public class Medicine {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
+    @JsonIgnore
     private Supplier supplier;
+
+    @Column(name = "barcode", length = 64)
+    private String barcode;
+
+    @Column(name = "production_date")
+    private java.time.LocalDate productionDate;
+
+    @Column(name = "expiry_date")
+    private java.time.LocalDate expiryDate;
+
+    @Column(name = "status", length = 20)
+    private String status;
+
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
 
     // 构造方法、Getter和Setter保持不变
     public Medicine() {}
@@ -107,14 +126,38 @@ public class Medicine {
         this.supplier = supplier;
     }
 
+    public String getBarcode() { return barcode; }
+    public void setBarcode(String barcode) { this.barcode = barcode; }
+
+    public java.time.LocalDate getProductionDate() { return productionDate; }
+    public void setProductionDate(java.time.LocalDate productionDate) { this.productionDate = productionDate; }
+
+    public java.time.LocalDate getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(java.time.LocalDate expiryDate) { this.expiryDate = expiryDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+
     @PrePersist
     public void prePersist() {
         this.createTime = LocalDateTime.now();
         this.updateTime = LocalDateTime.now();
+        if (this.status == null || this.status.isBlank()) {
+            this.status = "ACTIVE";
+        }
+        if (this.deleted == null) {
+            this.deleted = false;
+        }
     }
 
     @PreUpdate
     public void preUpdate() {
         this.updateTime = LocalDateTime.now();
+        if (this.status == null || this.status.isBlank()) {
+            this.status = "ACTIVE";
+        }
     }
 }

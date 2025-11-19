@@ -4,36 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 登录</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.css" />
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/base.css" />
 
-    <!-- 高级感配色配置 -->
+    <!-- 高级感配色配置 (安全包装，避免 tailwind 未定义时报错) -->
     <script>
-        tailwind.config = {
+        window.tailwind = window.tailwind || {}; // 防止 CDN 加载失败导致 ReferenceError
+        window.tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1e3a8a', // 深靛蓝主色
+                        primary: '#1e3a8a',
                         secondary: '#3b82f6',
-                        neutral: {
-                            50: '#f8fafc',
-                            100: '#f1f5f9',
-                            200: '#e2e8f0',
-                            300: '#cbd5e1',
-                            800: '#1e293b',
-                            900: '#0f172a'
-                        }
+                        neutral: { 50:'#f8fafc',100:'#f1f5f9',200:'#e2e8f0',300:'#cbd5e1',800:'#1e293b',900:'#0f172a' }
                     },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter','system-ui','sans-serif'] },
                     boxShadow: {
-                        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.05), 0 10px 20px -2px rgba(0, 0, 0, 0.03)',
-                        'hover': '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)',
+                        'soft': '0 2px 15px -3px rgba(0,0,0,0.05), 0 10px 20px -2px rgba(0,0,0,0.03)',
+                        'hover': '0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04)'
                     }
                 }
             }
-        }
+        };
     </script>
 
     <style type="text/tailwindcss">
@@ -128,17 +121,27 @@
                 <!-- 登录表单 -->
                 <form id="login-form" class="space-y-6">
                     <div class="space-y-2.5">
+                        <label class="block text-sm font-medium text-neutral-700">店铺 / 租户</label>
+                        <div class="relative">
+                            <select id="tenant-select" class="input-lux" required>
+                                <option value="" disabled selected>请选择店铺</option>
+                            </select>
+                        </div>
+                        <p id="tenant-hint" class="text-xs text-neutral-500 mt-1">登录前必须选择对应店铺数据库 (bht / wx / rzt)</p>
+                    </div>
+
+                    <div class="space-y-2.5">
                         <label class="block text-sm font-medium text-neutral-700">用户名</label>
                         <div class="relative">
-                            <input type="text" class="input-lux" placeholder="请输入用户名" required>
+                            <input id="login-username" name="username" type="text" class="input-lux" placeholder="请输入用户名" required>
                         </div>
                     </div>
 
                     <div class="space-y-2.5">
                         <label class="block text-sm font-medium text-neutral-700">密码</label>
                         <div class="relative">
-                            <input type="password" class="input-lux" placeholder="请输入密码" required>
-                            <button type="button" class="absolute right-5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors duration-300 p-1">
+                            <input id="login-password" name="password" type="password" class="input-lux" placeholder="请输入密码" required>
+                            <button id="password-toggle" type="button" class="absolute right-5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors duration-300 p-1" aria-label="显示或隐藏密码">
                                 <i class="fa fa-eye-slash"></i>
                             </button>
                         </div>
@@ -194,39 +197,52 @@
 </div>
 
 <script>
+    // 载入租户列表
+    async function loadTenants() {
+        const sel = document.getElementById('tenant-select');
+        try {
+            const resp = await fetch('/api/admin/tenants');
+            if (!resp.ok) throw new Error('租户列表获取失败');
+            const data = await resp.json();
+            const tenants = data.tenants || [];
+            sel.innerHTML = '<option value="" disabled>请选择店铺</option>' + tenants
+                .filter(t => t !== 'default')
+                .map(t => `<option value="${t}">${t}</option>`).join('');
+            const saved = localStorage.getItem('selectedTenant');
+            if (saved && tenants.includes(saved)) { sel.value = saved; }
+        } catch (e) {
+            console.warn('[Tenant] 列表获取失败, 使用静态回退', e);
+            sel.innerHTML = '<option value="" disabled>请选择店铺</option>'+
+              ['bht','wx','rzt'].map(t=>`<option value="${t}">${t}</option>`).join('');
+        }
+    }
+
+    loadTenants();
+
     // 登录函数
-    async function login(username, password) {
+    async function login(username, password, tenantId) {
+        if(!tenantId){
+            return { success:false, message:'未选择店铺租户'};
+        }
         try {
             const response = await fetch('http://localhost:8080/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json;charset=UTF-8',
-                    'Referer': 'http://localhost:8080/login',
-                    'Sec-Ch-Ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Microsoft Edge";v="122"',
-                    'Sec-Ch-Ua-Mobile': '?0',
-                    'Sec-Ch-Ua-Platform': '"Windows"',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0'
+                    'Content-Type': 'application/json',
+                    'X-Shop-Id': tenantId
                 },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                }),
+                body: JSON.stringify({ username, password }),
                 credentials: 'include'
             });
-
             const result = await response.json();
-
             if (!response.ok) {
-                throw new Error(result.msg || result.message || '登录失败');
+                throw new Error(result.message || '登录失败');
             }
-
             if (result.token) {
                 localStorage.setItem('authToken', result.token);
             }
-
             return { success: true, data: result };
-
         } catch (error) {
             return { success: false, message: error.message };
         }
@@ -252,43 +268,66 @@
         }
     }
 
-    // 登录表单处理
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
+    // 登录表单处理（使用稳定的ID避免 type 切换后选择不到元素）
+    const loginForm = document.getElementById('login-form');
+    const usernameInput = document.getElementById('login-username');
+    const passwordInput = document.getElementById('login-password');
+
+    loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const username = this.querySelector('input[type="text"]').value;
-        const password = this.querySelector('input[type="password"]').value;
-
-        if (username && password) {
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 登录中...';
-
-            const res = await login(username, password);
-
-            if (res.success) {
-                showMessage('登录成功，即将跳转', 'success');
-                setTimeout(() => {
-                    window.location.href = '/medicine-management.html';
-                }, 1000);
-            } else {
-                showMessage('登录失败：' + res.message, 'error');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '登录系统';
-            }
+        const tenantSel = document.getElementById('tenant-select');
+        const tenantId = tenantSel.value;
+        if(!tenantId){
+            showMessage('请选择店铺后再登录', 'error');
+            tenantSel.focus();
+            return;
+        }
+        localStorage.setItem('selectedTenant', tenantId);
+        if(!usernameInput || !passwordInput){
+            showMessage('页面元素缺失，无法登录', 'error');
+            return;
+        }
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        if (!username || !password) {
+            showMessage('请填写用户名和密码', 'error');
+            return;
+        }
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-2"></i> 登录中...';
+        const res = await login(username, password, tenantId);
+        if (res.success) {
+            // 新增: 缓存登录用户名称供导航显示
+            try {
+                const userInfo = res.data && res.data.user ? res.data.user : {};
+                localStorage.setItem('loginUsername', userInfo.name || username);
+                localStorage.setItem('currentUser', userInfo.username || username);
+                localStorage.setItem('userRoleId', (userInfo.roleId||'')+ '');
+            } catch(err){ console.warn('缓存用户信息失败', err); }
+            showMessage('登录成功，即将跳转', 'success');
+            setTimeout(() => window.location.href = '/medicine-management.html', 1000);
+        } else {
+            showMessage('登录失败：' + res.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '登录系统';
         }
     });
 
-    // 密码显示/隐藏切换
-    const passwordToggle = document.querySelector('.fa-eye-slash').parentElement;
-    const passwordInput = document.querySelector('input[type="password"]');
-
-    passwordToggle.addEventListener('click', function() {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        const icon = this.querySelector('i');
-        icon.classList.toggle('fa-eye');
-        icon.classList.toggle('fa-eye-slash');
-    });
+    // 密码显示/隐藏切换（使用固定ID）
+    const passwordToggleBtn = document.getElementById('password-toggle');
+    if(passwordToggleBtn && passwordInput){
+        passwordToggleBtn.addEventListener('click', function() {
+            const currentType = passwordInput.getAttribute('type');
+            const newType = currentType === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', newType);
+            const icon = this.querySelector('i');
+            if(icon){
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+            }
+        });
+    }
 </script>
 </body>
 </html>

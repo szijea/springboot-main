@@ -1,0 +1,39 @@
+/* base.css - 公共样式与设计令牌，供 Tailwind 与回退同时使用 */
+:root {
+  --color-primary:#1e3a8a;
+  --color-secondary:#3b82f6;
+  --color-neutral-50:#f8fafc;
+  --color-neutral-100:#f1f5f9;
+  --color-neutral-200:#e2e8f0;
+  --color-neutral-300:#cbd5e1;
+  --color-neutral-800:#1e293b;
+  --color-neutral-900:#0f172a;
+  --radius-sm:0.5rem;
+  --radius-md:0.75rem;
+  --radius-lg:1rem;
+  --shadow-soft:0 2px 15px -3px rgba(0,0,0,0.05),0 10px 20px -2px rgba(0,0,0,0.03);
+  --shadow-hover:0 10px 25px -5px rgba(0,0,0,0.08),0 8px 10px -6px rgba(0,0,0,0.04);
+  --transition:0.25s ease;
+}
+
+/* 语义类 */
+.card-luxury {background:#fff;border:1px solid var(--color-neutral-200);border-radius:1.25rem;box-shadow:var(--shadow-soft);overflow:hidden;transition:var(--transition);}
+.card-luxury:hover {box-shadow:var(--shadow-hover);}
+.input-lux {width:100%;padding:.85rem 1rem;background:var(--color-neutral-50);border:1px solid var(--color-neutral-200);border-radius:1rem;color:var(--color-neutral-800);font-size:.95rem;transition:var(--transition);}
+.input-lux:focus {outline:2px solid var(--color-primary);outline-offset:2px;}
+.btn-lux {display:inline-block;width:100%;padding:.9rem 1.2rem;background:var(--color-primary);color:#fff;font-weight:500;border:none;border-radius:1rem;cursor:pointer;transition:var(--transition);}
+.btn-lux:hover {background:#183170;}
+.link-elegant {color:var(--color-neutral-600,#475569);text-decoration:none;position:relative;transition:color .3s;}
+.link-elegant:hover {color:var(--color-primary);}
+.link-elegant:hover::after {width:100%;}
+.link-elegant::after {content:"";position:absolute;left:0;bottom:0;height:1px;width:0;background:var(--color-primary);transition:width .3s;}
+.divider-fine {height:1px;background:var(--color-neutral-200);margin:2rem 0;}
+.bg-pattern {background-image:radial-gradient(circle at 25% 25%, rgba(30,58,138,.05) 0%, transparent 50%),radial-gradient(circle at 75% 75%, rgba(30,58,138,.05) 0%, transparent 50%);background-size:100px 100px;}
+
+/* 通用工具（少量，避免与 Tailwind 冲突） */
+.flex {display:flex;} .items-center{align-items:center;} .justify-center{justify-content:center;} .justify-between{justify-content:space-between;} .gap-4{gap:1rem;} .rounded-xl{border-radius:var(--radius-lg);} .text-center{text-align:center;} .w-full{width:100%;}
+
+/* 动画 & 滚动条 */
+.fade-in {animation:fade-in .4s ease;} @keyframes fade-in {from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-track{background:#f1f5f9;} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;} ::-webkit-scrollbar-thumb:hover{background:#94a3b8;}
+

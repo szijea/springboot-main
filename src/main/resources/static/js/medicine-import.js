@@ -14,7 +14,6 @@ class MedicineBatchCreator {
             { field: 'maxStock', name: '最高库存', required: false, example: '500', type: 'number' },
             { field: 'batchNumber', name: '批号', required: true, example: 'BN20240501', type: 'text' },
             { field: 'expiryDate', name: '有效期至', required: true, example: '2025-12-31', type: 'date' },
-            { field: 'barcode', name: '条形码', required: false, example: '6931234567890', type: 'text' },
             { field: 'approvalNumber', name: '批准文号', required: false, example: '国药准字H13022166', type: 'text' },
             { field: 'description', name: '药品说明', required: false, example: '用于治疗细菌感染', type: 'text' }
         ];

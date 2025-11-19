@@ -15,8 +15,8 @@ public interface OrderService {
     // 创建订单
     OrderResponse createOrder(OrderRequest orderRequest);
 
-    // 根据ID获取订单
-    Optional<Order> getOrderById(Long id);
+    // 根据ID获取订单 (主键为字符串)
+    Optional<Order> getOrderById(String id);
 
     // 获取所有订单（分页）
     Page<Order> getAllOrders(Pageable pageable);
@@ -46,5 +46,5 @@ public interface OrderService {
     Long getOrderCountByDateRange(LocalDate startDate, LocalDate endDate);
 
     // 新增：退单方法
-    Order refundOrder(String orderId, String reason);
+    OrderResponse refundOrder(String orderId, String reason);
 }

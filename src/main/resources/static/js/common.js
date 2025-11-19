@@ -1,12 +1,23 @@
 // common.js - 修复版本
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = (typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost:8080') + '/api';
 
 // 通用API调用函数
 async function apiCall(endpoint, options = {}) {
     try {
         const url = `${BASE_URL}${endpoint}`;
-        console.log(`调用 API: ${options.method || 'GET'} ${url}`);
+        const tenant = (typeof localStorage !== 'undefined') ? localStorage.getItem('selectedTenant') : null;
+        if(!options.headers) options.headers = {};
+        if(tenant){
+            options.headers['X-Shop-Id'] = tenant;
+        } else {
+            console.warn('[apiCall] 未找到 selectedTenant, 请求将使用 default 数据源:', url);
+        }
+        console.log(`调用 API: ${options.method || 'GET'} ${url} 租户=${tenant || 'default'}`);
 
+        // 自动序列化 body（如果是普通对象/数组且非 FormData / Blob / string）
+        if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData) && !(options.body instanceof Blob)) {
+            options.body = JSON.stringify(options.body);
+        }
         if (options.body) {
             console.log('发送的请求数据:', options.body);
         }
@@ -35,9 +46,17 @@ async function apiCall(endpoint, options = {}) {
             throw new Error(errorMessage);
         }
 
-        const result = await response.json();
-        console.log('API 调用成功:', result);
-        return result;
+        // 尝试根据 Content-Type 解析响应
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const result = await response.json();
+            console.log('API 调用成功 (JSON):', result);
+            return result;
+        } else {
+            const text = await response.text();
+            console.warn('API 返回非 JSON 响应，返回文本:', text);
+            return text;
+        }
     } catch (error) {
         console.error('API 调用异常:', error);
         throw error;
@@ -140,7 +159,8 @@ const memberAPI = {
         method: 'PUT',
         body: JSON.stringify(member)
     }),
-    delete: (id) => apiCall(`/members/${id}`, { method: 'DELETE' })
+    delete: (id) => apiCall(`/members/${id}`, { method: 'DELETE' }),
+    quickSearch: (keyword) => apiCall(`/members/quick-search?keyword=${encodeURIComponent(keyword)}`)
 };
 
 // 入库相关API（需要定义这些API）
@@ -170,6 +190,49 @@ const supplierAPI = {
 // 批次药品相关API（需要定义这些API）
 const batchMedicineAPI = {
     // 可以根据需要添加方法
+};
+
+// 新增：inventoryAPI 用于库存页面
+const inventoryAPI = {
+    getAll: () => apiCall('/inventory'),
+    getLowStock: () => apiCall('/inventory/low-stock'),
+    getExpiringSoon: () => apiCall('/inventory/expiring-soon'),
+    getDetail: (id) => apiCall(`/inventory/${id}`),
+    getByMedicine: (medicineId) => apiCall(`/inventory/by-medicine/${medicineId}`),
+    searchByBatch: async (batchKeyword) => {
+        try {
+            // 如果后端有接口可直接调用: /inventory/search?batch=xxx
+            const direct = await apiCall(`/inventory/search?batch=${encodeURIComponent(batchKeyword)}`);
+            if (direct && direct.code === 200) return direct;
+        } catch(e){ console.warn('[inventoryAPI.searchByBatch] 后端搜索接口不可用, 使用本地过滤', e.message); }
+        // 回退: 全量拉取后端数据再过滤
+        const all = await apiCall('/inventory');
+        const filtered = (all.data||[]).filter(item => (item.batchNo||'').includes(batchKeyword));
+        return { code:200, message:'local-filter', data: filtered };
+    }
+};
+
+// 新增：员工相关API
+const employeesAPI = {
+    getAll: () => apiCall('/employees'),
+    getById: (id) => apiCall(`/employees/${id}`),
+    create: (employee) => apiCall('/employees',{method:'POST',body:JSON.stringify(employee)}),
+    update: (id, employee) => apiCall(`/employees/${id}`,{method:'PUT',body:JSON.stringify(employee)}),
+    delete: (id) => apiCall(`/employees/${id}`,{method:'DELETE'}),
+    getByRole: (roleId) => apiCall(`/employees/role/${roleId}`),
+    toggleStatus: async (id, newStatus) => {
+        // 获取原记录后仅更新 status 字段
+        const emp = await employeesAPI.getById(id);
+        if(!emp || !emp.employeeId) throw new Error('员工不���在');
+        emp.status = newStatus ? 1 : 0;
+        return employeesAPI.update(id, emp);
+    }
+};
+
+// 新增：系统设置 API
+const settingAPI = {
+    get: () => apiCall('/settings'),
+    update: (data) => apiCall('/settings',{method:'POST',body:JSON.stringify(data)})
 };
 
 // 工具函数
@@ -204,10 +267,13 @@ function showMessage(message, type = 'success') {
     }, 3000);
 }
 
-// 确保全局导出
+// 确保全局导出（合并已存在的 window.api，避免覆盖）
 (function() {
-    // 创建全局 api 对象
-    window.api = {
+    // 如果已有 window.api，合并而不是覆盖
+    window.api = window.api || {};
+
+    // 把本模块的命名空间合并到 window.api
+    Object.assign(window.api, {
         BASE_URL,
         medicineAPI,
         categoryAPI,
@@ -217,10 +283,37 @@ function showMessage(message, type = 'success') {
         orderAPI,
         utils,
         batchMedicineAPI,
-        showMessage
-    };
+        showMessage,
+        inventoryAPI,
+        employeesAPI,
+        settingAPI
+    });
 
     console.log('=== common.js 加载完成 ===');
     console.log('API 对象已挂载到 window.api');
-    console.log('medicineAPI 方法列表:', Object.keys(window.api.medicineAPI));
+    try {
+        console.log('medicineAPI 方法列表:', Object.keys(window.api.medicineAPI));
+    } catch (e) {
+        console.warn('medicineAPI 不存在或不可枚举');
+    }
 })();
+
+// 新增：全局仪表盘刷新函数（若不存在）
+if (typeof window.refreshDashboardWidgets !== 'function') {
+  window.refreshDashboardWidgets = async function(){
+    try {
+      const base = window.api?.BASE_URL || 'http://localhost:8080/api';
+      const [alertsResp, hotResp] = await Promise.all([
+        fetch(base + '/dashboard/stock-alerts').then(r=>r.json()).catch(()=>null),
+        fetch(base + '/dashboard/hot-products').then(r=>r.json()).catch(()=>null)
+      ]);
+      if (typeof updateStockAlerts === 'function' && alertsResp && (alertsResp.data||alertsResp.alerts)) {
+        updateStockAlerts(alertsResp.data||alertsResp.alerts);
+      }
+      if (typeof updateHotProducts === 'function' && hotResp && hotResp.data) {
+        updateHotProducts(Array.isArray(hotResp.data)?hotResp.data:hotResp.data.hotProducts||[]);
+      }
+      console.log('Dashboard widgets refreshed');
+    } catch(e){ console.warn('refreshDashboardWidgets failed', e); }
+  }
+}

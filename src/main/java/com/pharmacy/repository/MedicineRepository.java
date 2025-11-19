@@ -46,4 +46,28 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
 
     // 添加根据分类ID搜索（返回List）
     List<Medicine> findByCategoryId(Integer categoryId);
+    // 在 MedicineRepository.java 中添加这些方法
+
+    // 获取药品分类占比
+    @Query("SELECT c.categoryName, COUNT(m) FROM Medicine m JOIN Category c ON m.categoryId = c.categoryId GROUP BY c.categoryId, c.categoryName")
+    List<Object[]> getCategoryDistribution();
+
+    // 根据ID列表获取药品信息
+    List<Medicine> findByMedicineIdIn(List<String> medicineIds);
+
+    // 根据批准文号查找药品（用于创建时去重）
+    Medicine findByApprovalNo(String approvalNo);
+
+    // 根据通用名 + 规格 + 厂家查找（用于当 approvalNo 缺失时的去重）
+    Medicine findByGenericNameAndSpecAndManufacturer(String genericName, String spec, String manufacturer);
+
+    // 忽略软删除的查询方法
+    @Query("SELECT m FROM Medicine m WHERE m.deleted = false")
+    Page<Medicine> findAllActive(Pageable pageable);
+
+    @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND m.medicineId IN :ids")
+    List<Medicine> findActiveByMedicineIdIn(@Param("ids") List<String> ids);
+
+    @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND (m.genericName LIKE CONCAT('%', :keyword, '%') OR m.tradeName LIKE CONCAT('%', :keyword, '%') OR m.description LIKE CONCAT('%', :keyword, '%') OR m.manufacturer LIKE CONCAT('%', :keyword, '%') OR m.spec LIKE CONCAT('%', :keyword, '%'))")
+    List<Medicine> searchActiveByKeyword(@Param("keyword") String keyword);
 }

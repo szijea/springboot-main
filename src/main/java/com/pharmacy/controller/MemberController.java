@@ -1,8 +1,12 @@
 package com.pharmacy.controller;
 
+import com.pharmacy.dto.MemberDTO;
 import com.pharmacy.dto.MemberStatsDTO;
 import com.pharmacy.entity.Member;
+import com.pharmacy.repository.OrderRepository;
 import com.pharmacy.service.MemberService;
+import com.pharmacy.service.impl.MemberConsumptionUpdater;
+import com.pharmacy.multitenant.TenantContext; // 新增导入
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +26,12 @@ public class MemberController {
     @Autowired
     private MemberService memberService;
 
+    @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired(required = false)
+    private MemberConsumptionUpdater memberConsumptionUpdater;
+
     // 会员搜索端点
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchMembers(
@@ -30,7 +40,8 @@ public class MemberController {
             @RequestParam(defaultValue = "10") int size) {
 
         try {
-            System.out.println("=== 会员搜索请求 ===");
+            String tenant = TenantContext.getTenant();
+            System.out.println("=== 会员搜索请求 === 租户=" + tenant);
             System.out.println("keyword: " + keyword);
             System.out.println("page: " + page);
             System.out.println("size: " + size);
@@ -57,15 +68,18 @@ public class MemberController {
             int end = Math.min(start + size, total);
             List<Member> pagedMembers = (start < end) ? members.subList(start, end) : new ArrayList<>();
 
+            // 转换为DTO并填充消费统计
+            List<MemberDTO> dtoList = enrichMembersWithConsumption(pagedMembers);
+
             Map<String, Object> response = new HashMap<>();
             response.put("code", 200);
             response.put("message", "success");
-            response.put("data", pagedMembers);
+            response.put("data", dtoList);
             response.put("total", total);
             response.put("currentPage", page);
             response.put("totalPages", (int) Math.ceil((double) total / size));
 
-            System.out.println("搜索完成，返回 " + pagedMembers.size() + " 个结果");
+            System.out.println("搜索完成，返回 " + dtoList.size() + " 个结果");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("会员搜索出错: " + e.getMessage());
@@ -158,8 +172,9 @@ public class MemberController {
 
     // 其他会员相关方法...
     @GetMapping
-    public List<Member> getAllMembers() {
-        return memberService.findAll();
+    public List<MemberDTO> getAllMembers() {
+        List<Member> members = memberService.findAll();
+        return enrichMembersWithConsumption(members);
     }
 
     @GetMapping("/{memberId}")
@@ -318,11 +333,11 @@ public class MemberController {
             int total = allMembers.size();
             int start = Math.min(page * size, total);
             int end = Math.min(start + size, total);
-
-            List<Member> pageMembers = allMembers.subList(start, end);
+            List<Member> pageMembers = start < end ? allMembers.subList(start, end) : java.util.Collections.emptyList();
+            List<MemberDTO> dtoPage = enrichMembersWithConsumption(pageMembers);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("data", pageMembers);
+            response.put("data", dtoPage);
             response.put("currentPage", page);
             response.put("totalItems", total);
             response.put("totalPages", (int) Math.ceil((double) total / size));
@@ -331,5 +346,120 @@ public class MemberController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    // 快速搜索端点
+    @GetMapping("/quick-search")
+    public ResponseEntity<Map<String, Object>> quickSearch(@RequestParam String keyword) {
+        String tenant = TenantContext.getTenant();
+        System.out.println("=== 快速会员搜索 === 租户=" + tenant + " keyword=" + keyword);
+        List<Member> members = memberService.quickSearch(keyword);
+        List<MemberDTO> dto = enrichMembersWithConsumption(members);
+        return ResponseEntity.ok(Map.of(
+                "code", 200,
+                "message", "success",
+                "tenant", tenant,
+                "data", dto,
+                "total", dto.size()
+        ));
+    }
+
+    // 调试端点：获取当前租户的所有会员及其原始名称
+    @GetMapping("/debug-all")
+    public ResponseEntity<Map<String,Object>> debugAll(){
+        String tenant = TenantContext.getTenant();
+        List<Member> all = memberService.findAll();
+        List<Map<String,Object>> raw = new ArrayList<>();
+        for(Member m: all){
+            Map<String,Object> row = new HashMap<>();
+            row.put("memberId", m.getMemberId());
+            row.put("name", m.getName());
+            row.put("hexName", m.getName()!=null? toHex(m.getName()): null);
+            row.put("phone", m.getPhone());
+            row.put("cardNo", m.getCardNo());
+            raw.add(row);
+        }
+        return ResponseEntity.ok(Map.of(
+                "tenant", tenant,
+                "count", all.size(),
+                "data", raw
+        ));
+    }
+    private String toHex(String s){
+        StringBuilder sb=new StringBuilder();
+        for(char c: s.toCharArray()) sb.append(Integer.toHexString(c)).append(' ');
+        return sb.toString().trim();
+    }
+
+    private List<MemberDTO> enrichMembersWithConsumption(List<Member> members){
+        if(members==null || members.isEmpty()) return java.util.Collections.emptyList();
+        java.util.Map<String, MemberDTO> map = new java.util.LinkedHashMap<>();
+        java.util.Set<String> missingForBatch = new java.util.HashSet<>();
+        for(Member m: members){
+            MemberDTO dto = new MemberDTO(m.getMemberId(), m.getName(), m.getPhone());
+            dto.setCardNo(m.getCardNo());
+            dto.setLevel(m.getLevel());
+            dto.setPoints(m.getPoints());
+            dto.setAllergicHistory(m.getAllergicHistory());
+            dto.setMedicalCardNo(m.getMedicalCardNo());
+            dto.setCreateTime(m.getCreateTime());
+            dto.setLevelName(MemberDTO.getLevelName(m.getLevel()));
+            map.put(m.getMemberId(), dto);
+        }
+        // 优先从缓存取值
+        if(memberConsumptionUpdater!=null){
+            for(String mid: map.keySet()){
+                MemberConsumptionUpdater.MemberStatsSnapshot snap = memberConsumptionUpdater.getCachedStats(mid);
+                if(snap!=null){
+                    MemberDTO dto = map.get(mid);
+                    dto.setConsumptionCount(snap.consumptionCount);
+                    dto.setLastConsumptionDate(snap.lastConsumptionDate);
+                } else {
+                    missingForBatch.add(mid);
+                }
+            }
+            // 批量数据库聚合填充缺失项并更新缓存
+            if(!missingForBatch.isEmpty()){
+                try {
+                    memberConsumptionUpdater.refreshMembersBatch(missingForBatch); // 刷新缓存
+                    for(String mid: missingForBatch){
+                        MemberConsumptionUpdater.MemberStatsSnapshot snap2 = memberConsumptionUpdater.getCachedStats(mid);
+                        if(snap2!=null){
+                            MemberDTO dto = map.get(mid);
+                            dto.setConsumptionCount(snap2.consumptionCount);
+                            dto.setLastConsumptionDate(snap2.lastConsumptionDate);
+                        } else {
+                            // 缓存仍无，置默认值
+                            MemberDTO dto = map.get(mid);
+                            dto.setConsumptionCount(0);
+                        }
+                    }
+                } catch(Exception e){
+                    System.err.println("批量填充会员消费统计失败: "+e.getMessage());
+                    // 回退：缺失全部置0
+                    for(String mid: missingForBatch){
+                        MemberDTO dto = map.get(mid);
+                        if(dto.getConsumptionCount()==null) dto.setConsumptionCount(0);
+                    }
+                }
+            }
+        } else {
+            // 无缓存组件时原始聚合逻辑
+            java.util.List<Object[]> agg = orderRepository.aggregateMemberConsumption(map.keySet());
+            for(Object[] row: agg){
+                String memberId = (String) row[0];
+                Long count = (Long) row[1];
+                java.time.LocalDateTime last = (java.time.LocalDateTime) row[2];
+                MemberDTO dto = map.get(memberId);
+                if(dto!=null){
+                    dto.setConsumptionCount(count!=null? count.intValue():0);
+                    dto.setLastConsumptionDate(last);
+                }
+            }
+            for(MemberDTO dto: map.values()){
+                if(dto.getConsumptionCount()==null) dto.setConsumptionCount(0);
+            }
+        }
+        return new java.util.ArrayList<>(map.values());
     }
 }

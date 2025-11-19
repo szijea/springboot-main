@@ -121,288 +121,213 @@ document.addEventListener('DOMContentLoaded', loadSalesData);
   </style>
 </head>
 
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
-  <!-- 侧边栏（添加收银台导航项） -->
-  <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
-    <div class="p-4 border-b border-gray-200">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-          <i class="fa fa-medkit text-primary"></i>
-        </div>
-        <h1 class="font-bold text-lg">智慧药房系统</h1>
-      </div>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-      <nav class="space-y-1">
-        <!-- 新增：核心操作区（含收银台入口） -->
-        <p class="text-xs font-medium text-gray-500 px-4 mb-2">核心操作</p>
-        
-        <a href="cashier.html" class="sidebar-item block">
-          <i class="fa fa-shopping-cart w-5 text-center"></i>
-          <span>收银台</span>
-        </a>
-        
-        <!-- 原有：数据分析区 -->
-        <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">数据分析</p>
-        
-        <a href="profit.html" class="sidebar-item block">
-          <i class="fa fa-line-chart w-5 text-center"></i>
-          <span>毛利率分析</span>
-        </a>
-        
-        <a href="sales.html" class="sidebar-item active block">
-          <i class="fa fa-bar-chart w-5 text-center"></i>
-          <span>销售统计</span>
-        </a>
-      </nav>
-    </div>
-    
-    <div class="p-4 border-t border-gray-200">
-      <div class="flex items-center gap-3">
-        <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
-        <div>
-          <p class="font-medium text-sm">张药师</p>
-          <p class="text-xs text-gray-500">管理员</p>
-        </div>
-        <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
-          <i class="fa fa-sign-out"></i>
-        </a>
-      </div>
-    </div>
-  </aside>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex">
+  <!-- 注入统一导航（侧边栏 + 顶部） -->
+  <div id="common-nav" data-active="sales"></div>
 
-  <!-- 主内容区 -->
-  <main class="flex-1 flex flex-col overflow-hidden">
-    <!-- 顶部导航（添加收银台快捷按钮） -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <div class="flex items-center gap-4">
-        <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
-          <i class="fa fa-bars text-xl"></i>
-        </button>
-        <div class="relative">
-          <input type="text" placeholder="搜索药品、时间段..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
-          <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+  <main class="flex-1 flex flex-col pt-16">
+      <!-- 内容区域（保持原有功能不变） -->
+      <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <div>
+            <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">销售统计</h2>
+            <p class="text-gray-500">药品销售数据与趋势分析</p>
+          </div>
+          <div class="flex gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-sm font-medium">时间范围:</label>
+              <select class="input w-auto">
+                <option value="week">本周</option>
+                <option value="month" selected>本月</option>
+                <option value="quarter">本季度</option>
+                <option value="year">本年</option>
+                <option value="custom">自定义</option>
+              </select>
+            </div>
+            <button class="btn btn-primary">
+              <i class="fa fa-download"></i> 导出报表
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div class="flex items-center gap-4">
-        <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
-          <i class="fa fa-bell text-xl"></i>
-          <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-        </button>
-        
-        <!-- 新增：收银台快捷按钮 -->
-        <a href="cashier.html" class="btn btn-primary hidden md:flex">
-          <i class="fa fa-shopping-cart"></i> 收银台
-        </a>
-        
-        <div class="text-right hidden md:block">
-          <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
-          <p class="text-xs text-gray-500" id="current-time"></p>
-        </div>
-      </div>
-    </header>
 
-    <!-- 内容区域（保持原有功能不变） -->
-    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
-      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">销售统计</h2>
-          <p class="text-gray-500">药品销售数据与趋势分析</p>
-        </div>
-        <div class="flex gap-3">
-          <div class="flex items-center gap-2">
-            <label class="text-sm font-medium">时间范围:</label>
-            <select class="input w-auto">
-              <option value="week">本周</option>
-              <option value="month" selected>本月</option>
-              <option value="quarter">本季度</option>
-              <option value="year">本年</option>
-              <option value="custom">自定义</option>
-            </select>
-          </div>
-          <button class="btn btn-primary">
-            <i class="fa fa-download"></i> 导出报表
-          </button>
-        </div>
-      </div>
-      
-      <!-- 销售概览卡片 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div class="card p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <p class="text-gray-500 text-sm">总销售额</p>
-              <h3 class="text-2xl font-bold mt-1">¥128,560</h3>
+        <!-- 销售概览卡片 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div class="card p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <p class="text-gray-500 text-sm">总销售额</p>
+                <h3 class="text-2xl font-bold mt-1">¥128,560</h3>
+              </div>
+              <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <i class="fa fa-money"></i>
+              </div>
             </div>
-            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <i class="fa fa-money"></i>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary flex items-center">
+                <i class="fa fa-arrow-up mr-1"></i> 12.5%
+              </span>
+              <span class="text-gray-500 ml-2">较上月</span>
             </div>
           </div>
-          <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 12.5%
-            </span>
-            <span class="text-gray-500 ml-2">较上月</span>
-          </div>
-        </div>
-        
-        <div class="card p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <p class="text-gray-500 text-sm">总订单数</p>
-              <h3 class="text-2xl font-bold mt-1">4,256</h3>
+
+          <div class="card p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <p class="text-gray-500 text-sm">总订单数</p>
+                <h3 class="text-2xl font-bold mt-1">4,256</h3>
+              </div>
+              <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary">
+                <i class="fa fa-shopping-bag"></i>
+              </div>
             </div>
-            <div class="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary">
-              <i class="fa fa-shopping-bag"></i>
-            </div>
-          </div>
-          <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 8.2%
-            </span>
-            <span class="text-gray-500 ml-2">较上月</span>
-          </div>
-        </div>
-        
-        <div class="card p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <p class="text-gray-500 text-sm">客单价</p>
-              <h3 class="text-2xl font-bold mt-1">¥302</h3>
-            </div>
-            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
-              <i class="fa fa-user"></i>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary flex items-center">
+                <i class="fa fa-arrow-up mr-1"></i> 8.2%
+              </span>
+              <span class="text-gray-500 ml-2">较上月</span>
             </div>
           </div>
-          <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 5.3%
-            </span>
-            <span class="text-gray-500 ml-2">较上月</span>
+
+          <div class="card p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <p class="text-gray-500 text-sm">客单价</p>
+                <h3 class="text-2xl font-bold mt-1">¥302</h3>
+              </div>
+              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                <i class="fa fa-user"></i>
+              </div>
+            </div>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary flex items-center">
+                <i class="fa fa-arrow-up mr-1"></i> 5.3%
+              </span>
+              <span class="text-gray-500 ml-2">较上月</span>
+            </div>
+          </div>
+
+          <div class="card p-6">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <p class="text-gray-500 text-sm">销售药品数</p>
+                <h3 class="text-2xl font-bold mt-1">1,856</h3>
+              </div>
+              <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-yellow-600">
+                <i class="fa fa-pills"></i>
+              </div>
+            </div>
+            <div class="flex items-center text-sm">
+              <span class="text-secondary flex items-center">
+                <i class="fa fa-arrow-up mr-1"></i> 7.8%
+              </span>
+              <span class="text-gray-500 ml-2">较上月</span>
+            </div>
           </div>
         </div>
-        
-        <div class="card p-6">
-          <div class="flex justify-between items-start mb-4">
-            <div>
-              <p class="text-gray-500 text-sm">销售药品数</p>
-              <h3 class="text-2xl font-bold mt-1">1,856</h3>
+
+        <!-- 图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div class="card p-6 lg:col-span-2">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="font-bold">每日销售趋势</h3>
+              <div class="flex gap-2">
+                <button class="btn btn-outline text-sm px-3 py-1">周</button>
+                <button class="btn btn-primary text-sm px-3 py-1">月</button>
+                <button class="btn btn-outline text-sm px-3 py-1">年</button>
+              </div>
             </div>
-            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-yellow-600">
-              <i class="fa fa-pills"></i>
-            </div>
-          </div>
-          <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 7.8%
-            </span>
-            <span class="text-gray-500 ml-2">较上月</span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 图表区域 -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div class="card p-6 lg:col-span-2">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="font-bold">每日销售趋势</h3>
-            <div class="flex gap-2">
-              <button class="btn btn-outline text-sm px-3 py-1">周</button>
-              <button class="btn btn-primary text-sm px-3 py-1">月</button>
-              <button class="btn btn-outline text-sm px-3 py-1">年</button>
+            <div class="h-80">
+              <canvas id="daily-sales-chart"></canvas>
             </div>
           </div>
-          <div class="h-80">
-            <canvas id="daily-sales-chart"></canvas>
-          </div>
-        </div>
-        
-        <div class="card p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="font-bold">支付方式占比</h3>
-            <a href="#" class="text-primary text-sm hover:underline">详情</a>
-          </div>
-          <div class="h-80 flex items-center justify-center">
-            <canvas id="payment-method-chart"></canvas>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 热销药品和分类销售 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card">
-          <div class="p-6 border-b border-gray-100">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold">热销药品 TOP10</h3>
-              <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">排名</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">药品名称</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">销售数量</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">销售额</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同比增长</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">1</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">布洛芬缓释胶囊</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">356盒</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥11,676.80</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="text-secondary flex items-center text-sm">
-                      <i class="fa fa-arrow-up mr-1"></i> 25.3%
-                    </span>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">2</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">复方甘草片</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">289瓶</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥5,346.50</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="text-secondary flex items-center text-sm">
-                      <i class="fa fa-arrow-up mr-1"></i> 18.7%
-                    </span>
-                  </td>
-                </tr>
-                <tr class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">3</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">板蓝根颗粒</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm">256包</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥4,608.00</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="text-accent flex items-center text-sm">
-                      <i class="fa fa-arrow-down mr-1"></i> 3.2%
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="p-6 border-b border-gray-100">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold">分类销售占比</h3>
+
+          <div class="card p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="font-bold">支付方式占比</h3>
               <a href="#" class="text-primary text-sm hover:underline">详情</a>
             </div>
+            <div class="h-80 flex items-center justify-center">
+              <canvas id="payment-method-chart"></canvas>
+            </div>
           </div>
-          <div class="h-80">
-            <canvas id="category-sales-chart"></canvas>
+        </div>
+
+        <!-- 热销药品和分类销售 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="card">
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex justify-between items-center">
+                <h3 class="font-bold">热销药品 TOP10</h3>
+                <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">排名</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">药品名称</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">销售数量</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">销售额</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同比增长</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">1</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">布洛芬缓释胶囊</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">356盒</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥11,676.80</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="text-secondary flex items-center text-sm">
+                        <i class="fa fa-arrow-up mr-1"></i> 25.3%
+                      </span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">2</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">复方甘草片</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">289瓶</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥5,346.50</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="text-secondary flex items-center text-sm">
+                        <i class="fa fa-arrow-up mr-1"></i> 18.7%
+                      </span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">3</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">板蓝根颗粒</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">256包</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">¥4,608.00</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class="text-accent flex items-center text-sm">
+                        <i class="fa fa-arrow-down mr-1"></i> 3.2%
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="p-6 border-b border-gray-100">
+              <div class="flex justify-between items-center">
+                <h3 class="font-bold">分类销售占比</h3>
+                <a href="#" class="text-primary text-sm hover:underline">详情</a>
+              </div>
+            </div>
+            <div class="h-80">
+              <canvas id="category-sales-chart"></canvas>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </main>
+    </main>
+
+  <!-- 注入统一导航脚本 -->
+  <script src="js/common-nav.js"></script>
 
   <script>
     // 初始化日期和时间
@@ -503,3 +428,4 @@ document.addEventListener('DOMContentLoaded', loadSalesData);
   </script>
 </body>
 </html>
+

@@ -4,255 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 智能入库</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-
-    <!-- Tailwind 配置 -->
+    <link rel="stylesheet" href="/css/tailwind.css" />
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        secondary: '#36B37E',
-                        accent: '#FF5630',
-                        warning: '#FFAB00'
-                    },
-                    fontFamily: {
-                        inter: ['Inter', 'system-ui', 'sans-serif']
-                    }
-                }
-            }
-        }
+      // 若本地文件未找到则提示
+      (function(){
+        var testEl = document.createElement('div');
+        testEl.className='hidden';
+        document.head.appendChild(testEl);
+        var style = window.getComputedStyle(testEl);
+        if(!style){console.warn('Tailwind 检测失败');}
+      })();
     </script>
-
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .sidebar-item {
-                @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer;
-            }
-            .sidebar-item.active {
-                @apply bg-primary text-white;
-            }
-            .sidebar-item:not(.active):hover {
-                @apply bg-gray-100;
-            }
-            .card {
-                @apply bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow;
-            }
-            .btn {
-                @apply px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors;
-            }
-            .btn-primary {
-                @apply bg-primary text-white hover:bg-primary/90;
-            }
-            .btn-success {
-                @apply bg-secondary text-white hover:bg-secondary/90;
-            }
-            .btn-warning {
-                @apply bg-warning text-white hover:bg-warning/90;
-            }
-            .btn-info {
-                @apply bg-blue-500 text-white hover:bg-blue-600;
-            }
-            .btn-outline {
-                @apply border border-gray-300 hover:bg-gray-50;
-            }
-            .main-content {
-                @apply flex-1 p-6 bg-gray-50;
-                height: calc(100vh - 64px);
-                overflow-y: scroll;
-                scrollbar-width: thin;
-            }
-            .main-content::-webkit-scrollbar {
-                width: 8px;
-            }
-            .main-content::-webkit-scrollbar-track {
-                background: #f5f5f5;
-            }
-            .main-content::-webkit-scrollbar-thumb {
-                background: #d1d5db;
-                border-radius: 4px;
-            }
-            .main-content::-webkit-scrollbar-thumb:hover {
-                background: #9ca3af;
-            }
-            .input {
-                @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
-            }
-            .badge {
-                @apply px-2 py-1 rounded-full text-xs font-medium;
-            }
-            .badge-success {
-                @apply bg-green-100 text-green-800;
-            }
-            .badge-warning {
-                @apply bg-yellow-100 text-yellow-800;
-            }
-            .badge-error {
-                @apply bg-red-100 text-red-800;
-            }
-            .smart-suggestion {
-                @apply bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm;
-            }
-            .step-indicator {
-                @apply flex items-center justify-center w-8 h-8 rounded-full border-2 border-primary text-primary font-medium;
-            }
-            .step-indicator.active {
-                @apply bg-primary text-white;
-            }
-            .step-indicator.completed {
-                @apply bg-green-100 border-green-500 text-green-700;
-            }
-            .price-input-container {
-                @apply relative;
-            }
-            .price-input-container::before {
-                content: "¥";
-                @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-500;
-            }
-            .price-input {
-                @apply pl-8;
-            }
-            .profit-positive {
-                @apply text-green-600 font-medium;
-            }
-            .profit-negative {
-                @apply text-red-600 font-medium;
-            }
-            .info-tooltip {
-                @apply relative inline-block;
-            }
-            .info-tooltip .tooltip-text {
-                @apply invisible w-48 bg-black text-white text-center rounded-lg py-2 px-3 absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 transition-opacity;
-            }
-            .info-tooltip:hover .tooltip-text {
-                @apply visible opacity-100;
-            }
-            /* 模态框动画 */
-            .modal-overlay {
-                @apply fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4 z-50;
-            }
-            .modal-content {
-                @apply bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95 opacity-0;
-            }
-            .modal-overlay.show .modal-content {
-                @apply scale-100 opacity-100;
-            }
-            .modal-overlay.show {
-                @apply flex;
-            }
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
 
 <body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex">
-<!-- 侧边栏导航 -->
-<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen z-10">
-    <!-- 系统标题 -->
-    <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <i class="fa fa-medkit text-primary"></i>
-            </div>
-            <h1 class="font-bold text-lg">智慧药房系统</h1>
-        </div>
-    </div>
+<!-- 注入统一导航（侧边栏 + 顶部） -->
+<div id="common-nav" data-active="stock-in"></div>
 
-    <!-- 导航菜单 -->
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-        <nav class="space-y-1">
-            <!-- 主功能区 -->
-            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
-            <a href="medicine-management.html" class="sidebar-item block">
-                <i class="fa fa-dashboard w-5 text-center"></i>
-                <span>控制台</span>
-            </a>
-            <a href="cashier.html" class="sidebar-item block">
-                <i class="fa fa-shopping-cart w-5 text-center"></i>
-                <span>收银管理</span>
-            </a>
-            <a href="stock-in.html" class="sidebar-item active block">
-                <i class="fa fa-box w-5 text-center"></i>
-                <span>药品入库</span>
-            </a>
-            <a href="inventory.html" class="sidebar-item block">
-                <i class="fa fa-warehouse w-5 text-center"></i>
-                <span>库存管理</span>
-            </a>
-            <a href="members.html" class="sidebar-item block">
-                <i class="fa fa-users w-5 text-center"></i>
-                <span>会员管理</span>
-            </a>
-            <a href="order-history.html" class="sidebar-item block">
-                <i class="fa fa-history w-5 text-center"></i>
-                <span>历史订单</span>
-            </a>
-
-            <!-- 系统管理区 -->
-            <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">系统管理</p>
-            <a href="products.html" class="sidebar-item block">
-                <i class="fa fa-pills w-5 text-center"></i>
-                <span>药品档案</span>
-            </a>
-            <a href="staff.html" class="sidebar-item block">
-                <i class="fa fa-user-md w-5 text-center"></i>
-                <span>员工管理</span>
-            </a>
-            <a href="settings.html" class="sidebar-item block">
-                <i class="fa fa-cog w-5 text-center"></i>
-                <span>系统设置</span>
-            </a>
-        </nav>
-    </div>
-
-    <!-- 用户信息 -->
-    <div class="p-4 border-t border-gray-200">
-        <div class="flex items-center gap-3">
-            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full">
-            <div>
-                <p class="font-medium text-sm">张药师</p>
-                <p class="text-xs text-gray-500">管理员</p>
-            </div>
-            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent">
-                <i class="fa fa-sign-out"></i>
-            </a>
-        </div>
-    </div>
-</aside>
-
-<!-- 主内容区 -->
-<main class="flex-1 flex flex-col">
-    <!-- 顶部导航栏 -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div class="flex items-center gap-4">
-            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
-                <i class="fa fa-bars text-xl"></i>
-            </button>
-            <div class="relative">
-                <input
-                        type="text"
-                        placeholder="搜索药品、供应商..."
-                        class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
-                        id="global-search"
-                >
-                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4">
-            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full" id="notification-btn">
-                <i class="fa fa-bell text-xl"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-            </button>
-
-            <div class="text-right hidden md:block">
-                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
-                <p class="text-xs text-gray-500" id="current-time"></p>
-            </div>
-        </div>
-    </header>
-
+<main class="flex-1 flex flex-col pt-16">
     <!-- 可滚动内容区 -->
     <div class="main-content">
         <!-- 页面标题与操作按钮 -->
@@ -275,20 +46,20 @@
         <div class="card p-4 mb-6 smart-suggestion">
             <div class="flex items-center gap-2 mb-2">
                 <i class="fa fa-lightbulb-o text-blue-500"></i>
-                <h3 class="font-medium">智能建议</h3>
+                <h3 class="font-medium">操作提示</h3>
             </div>
             <div class="flex flex-wrap gap-4 text-sm">
                 <div class="flex items-center gap-2">
-                    <span class="badge badge-success">推荐</span>
-                    <span>根据历史数据，建议补充<span class="font-medium">布洛芬缓释胶囊</span>库存</span>
+                    <span class="badge badge-success">提示</span>
+                    <span>请确保所有药品信息准确无误，特别是批准文号和有效期</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="badge badge-warning">提醒</span>
-                    <span>有3种药品库存低于安全线，建议优先入库</span>
+                    <span class="badge badge-warning">注意</span>
+                    <span>药品批号格式：B+年月日+三位随机数，如B241215001</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="badge badge-success">利润</span>
-                    <span>近期<span class="font-medium">阿莫西林胶囊</span>利润率较高，建议加大采购</span>
+                    <span class="badge badge-success">建议</span>
+                    <span>入库前请仔细核对药品信息与实物是否一致</span>
                 </div>
             </div>
         </div>
@@ -333,10 +104,14 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">机构名称</label>
-                    <select class="input">
-                        <option>淮安仁智堂大药房有限公司</option>
-                        <option>淮安仁智堂大药房分店</option>
-                    </select>
+                    <div class="flex gap-2">
+                      <input type="text" class="input flex-1" id="org-name" list="org-name-options" value="淮安仁智堂大药房有限公司" placeholder="请输入机构名称">
+                      <button type="button" class="btn btn-outline text-xs" id="toggle-org-edit"><i class="fa fa-pencil"></i> 编辑</button>
+                    </div>
+                    <datalist id="org-name-options">
+                      <option value="淮安仁智堂大药房有限公司"></option>
+                      <option value="淮安仁智堂大药房分店"></option>
+                    </datalist>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">随货单号</label>
@@ -352,13 +127,16 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">货位</label>
-                    <select class="input">
-                        <option value="">请选择货位（可选）</option>
-                        <option>A区-01架</option>
-                        <option>A区-02架</option>
-                        <option>B区-01架</option>
-                        <option>B区-02架</option>
-                    </select>
+                    <div class="flex gap-2">
+                      <input type="text" class="input flex-1" id="location-input" list="location-options" placeholder="可输入或选择货位">
+                      <button type="button" class="btn btn-outline text-xs" id="reset-location"><i class="fa fa-undo"></i> 重置</button>
+                    </div>
+                    <datalist id="location-options">
+                      <option value="A区-01架"></option>
+                      <option value="A区-02架"></option>
+                      <option value="B区-01架"></option>
+                      <option value="B区-02架"></option>
+                    </datalist>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
@@ -383,9 +161,8 @@
                 <button class="btn btn-warning" id="quick-add">
                     <i class="fa fa-bolt"></i> 快速添加
                 </button>
-                <!-- 调试按钮（实际项目中应移除） -->
-                <button class="btn btn-outline" onclick="debugInventory()">
-                    <i class="fa fa-bug"></i> 调试库存
+                <button class="btn btn-info" id="add-medicine">
+                    <i class="fa fa-plus"></i> 添加药品
                 </button>
             </div>
         </div>
@@ -396,9 +173,6 @@
                 <h3 class="font-bold">药品入库明细</h3>
                 <div class="flex items-center gap-3">
                     <div class="text-sm text-gray-500">共 <span id="item-count">0</span> 条记录</div>
-                    <button class="btn btn-primary text-sm" id="add-medicine">
-                        <i class="fa fa-plus"></i> 添加药品
-                    </button>
                 </div>
             </div>
 
@@ -503,7 +277,7 @@
                                 </tr>
                                 </thead>
                                 <tbody id="search-results-body">
-                                <!-- 搜索结果将通过JS动态加载 -->
+                                <!-- ��索结果将通过JS动态加载 -->
                                 </tbody>
                             </table>
                         </div>
@@ -532,6 +306,14 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">生产厂家</label>
                             <input type="text" id="manual-manufacturer" class="input" placeholder="输入生产厂家">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">批准文号</label>
+                            <input type="text" id="manual-approval" class="input" placeholder="国药准字H20058763">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">条形码</label>
+                            <input type="text" id="manual-barcode" class="input" placeholder="扫描或输入条形码">
                         </div>
                         <button class="btn btn-outline w-full" onclick="manualAddMedicine()">
                             <i class="fa fa-plus"></i> 手动添加药品
@@ -600,7 +382,7 @@
                                     <span class="tooltip-text">国家药品监督管理局批准的文号</span>
                                 </span>
                             </label>
-                            <input type="text" id="detail-approval" class="input" readonly>
+                            <input type="text" id="detail-approval" class="input" placeholder="国药准字H20058763">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
@@ -655,7 +437,7 @@
                                 </span>
                             </label>
                             <div class="price-input-container">
-                                <input type="number" id="detail-cost" class="input price-input" min="0" step="0.01" placeholder="0.00">
+                                <input type="number" id="detail-cost" class="input price-input" min="0" step="0.01" placeholder="0.00" value="10.00">
                             </div>
                         </div>
                         <div>
@@ -663,11 +445,11 @@
                                 <span>零售价格</span>
                                 <span class="info-tooltip ml-1">
                                     <i class="fa fa-info-circle text-blue-500 cursor-pointer"></i>
-                                    <span class="tooltip-text">药品的销售单价，含税</span>
+                                    <span class="tooltip-text">药品的销售��价，含税</span>
                                 </span>
                             </label>
                             <div class="price-input-container">
-                                <input type="number" id="detail-price" class="input price-input" min="0" step="0.01" placeholder="0.00">
+                                <input type="number" id="detail-price" class="input price-input" min="0" step="0.01" placeholder="0.00" value="15.00">
                             </div>
                         </div>
                         <div>
@@ -678,8 +460,21 @@
                                     <span class="tooltip-text">本次计划入库的药品数量</span>
                                 </span>
                             </label>
-                            <input type="number" id="detail-quantity" class="input" min="1" value="1">
+                            <input type="number" id="detail-quantity" class="input" min="1" value="10">
                             <div class="text-xs text-gray-500 mt-1">安全库存: <span id="safety-stock">10</span> | 当前库存: <span id="current-stock">0</span></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                <span>条形码</span>
+                                <span class="info-tooltip ml-1">
+                                    <i class="fa fa-info-circle text-blue-500 cursor-pointer"></i>
+                                    <span class="tooltip-text">用于库存唯一识别与扫码快速录入</span>
+                                </span>
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="text" id="detail-barcode" class="input" placeholder="扫描或输入条形码">
+                                <button class="btn btn-outline whitespace-nowrap text-sm" onclick="simulateBarcodeScan()">模拟扫描</button>
+                            </div>
                         </div>
                     </div>
 
@@ -687,15 +482,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
                         <div class="text-center">
                             <div class="text-sm text-gray-500 mb-1">单件利润</div>
-                            <div class="text-xl font-bold" id="unit-profit">¥0.00</div>
+                            <div class="text-xl font-bold" id="unit-profit">¥5.00</div>
                         </div>
                         <div class="text-center">
                             <div class="text-sm text-gray-500 mb-1">总利润</div>
-                            <div class="text-xl font-bold" id="total-profit-preview">¥0.00</div>
+                            <div class="text-xl font-bold" id="total-profit-preview">¥50.00</div>
                         </div>
                         <div class="text-center">
                             <div class="text-sm text-gray-500 mb-1">利润率</div>
-                            <div class="text-xl font-bold" id="profit-rate">0%</div>
+                            <div class="text-xl font-bold" id="profit-rate">50%</div>
                         </div>
                     </div>
 
@@ -771,19 +566,13 @@
 <!-- 批量导入模态框 -->
 <div id="import-modal" class="modal-overlay">
     <div class="modal-content max-w-2xl">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="text-lg font-semibold">批量导入药品数据</h3>
-            <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fa fa-times"></i>
-            </button>
-        </div>
         <div class="p-6">
             <div class="mb-6">
                 <h4 class="font-medium mb-3">导入步骤</h4>
-                <div class="space-y-2 text-sm text-gray-600">
-                    <p>1. 下载Excel模板文件</p>
+                <div class="text-sm text-gray-700">
+                    <p>1. 下载 Excel 模板文件</p>
                     <p>2. 按照模板格式填写药品信息</p>
-                    <p>3. 上传填写好的Excel文件</p>
+                    <p>3. 上传填写好的 Excel 文件</p>
                     <p>4. 系统将自动验证并导入数据</p>
                 </div>
             </div>
@@ -825,18 +614,8 @@
     </div>
 </div>
 
-<!-- 通知面板 -->
-<div id="notification-panel" class="fixed top-16 right-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 hidden">
-    <div class="p-4 border-b border-gray-200">
-        <h3 class="font-bold">通知消息</h3>
-    </div>
-    <div class="max-h-96 overflow-y-auto" id="notification-list">
-        <div class="p-4 text-center text-gray-500">暂无通知</div>
-    </div>
-    <div class="p-2 border-t border-gray-200 text-center">
-        <a href="#" class="text-sm text-primary hover:underline">查看全部</a>
-    </div>
-</div>
+<!-- 注入统一导航脚本 -->
+<script src="js/common-nav.js"></script>
 
 <script>
     // 全局变量
@@ -846,6 +625,15 @@
     let currentIndex = 1;
     let selectedFile = null;
     let inventoryData = JSON.parse(localStorage.getItem('pharmacy-inventory')) || {};
+
+    // 新增: 获取租户头部
+    function getTenantHeaders(base){
+        const tenant = localStorage.getItem('selectedTenant') || '';
+        if(tenant){
+            return { ...base, 'X-Shop-Id': tenant };
+        }
+        return base;
+    }
 
     // 初始化
     document.addEventListener('DOMContentLoaded', async function() {
@@ -857,7 +645,6 @@
         }
 
         initDateTime();
-        initSidebar();
         initEvents();
         await loadMedicineData();
         initSmartSearch();
@@ -885,35 +672,9 @@
 
     // 日期时间
     function initDateTime() {
-        const update = () => {
-            const now = new Date();
-            const dateElement = document.getElementById('current-date');
-            const timeElement = document.getElementById('current-time');
-
-            if (dateElement) dateElement.textContent = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
-            if (timeElement) timeElement.textContent = now.toLocaleTimeString('zh-CN');
-        };
-        update();
-        setInterval(update, 1000);
-
         // 设置入库日期为今天
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('stock-date').value = today;
-    }
-
-    // 侧边栏切换
-    function initSidebar() {
-        const toggleBtn = document.getElementById('sidebar-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const sidebar = document.querySelector('aside');
-                if (sidebar) {
-                    sidebar.classList.toggle('w-64');
-                    sidebar.classList.toggle('w-0');
-                    sidebar.classList.toggle('hidden');
-                }
-            });
-        }
     }
 
     // 文件上传初始化
@@ -1193,32 +954,6 @@
         if (quickAddBtn) {
             quickAddBtn.addEventListener('click', openQuickAddModal);
         }
-
-        // 通知面板
-        const panel = document.getElementById('notification-panel');
-        const notificationBtn = document.getElementById('notification-btn');
-
-        if (notificationBtn && panel) {
-            notificationBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                panel.classList.toggle('hidden');
-            });
-
-            document.addEventListener('click', () => panel.classList.add('hidden'));
-            panel.addEventListener('click', e => e.stopPropagation());
-        }
-
-        // 全局搜索
-        const globalSearch = document.getElementById('global-search');
-        if (globalSearch) {
-            globalSearch.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    openModal();
-                    document.getElementById('medicine-search').value = this.value;
-                    searchMedicine();
-                }
-            });
-        }
     }
 
     // 打开模态框
@@ -1238,6 +973,7 @@
         document.getElementById('manual-spec').value = '';
         document.getElementById('manual-unit').value = '';
         document.getElementById('manual-manufacturer').value = '';
+        document.getElementById('manual-approval').value = '';
 
         // 设置默认日期
         const today = new Date().toISOString().split('T')[0];
@@ -1308,7 +1044,7 @@
     function processBarcode() {
         const barcode = document.getElementById('barcode-input').value;
         if (!barcode) {
-            alert('请输入条形码');
+            alert('请���入条形码');
             return;
         }
 
@@ -1334,35 +1070,43 @@
         const spec = document.getElementById('manual-spec').value.trim();
         const unit = document.getElementById('manual-unit').value.trim();
         const manufacturer = document.getElementById('manual-manufacturer').value.trim();
+        const approvalNo = document.getElementById('manual-approval').value.trim();
+        const barcode = document.getElementById('manual-barcode').value.trim();
 
-        if (!name || !spec || !unit || !manufacturer) {
+        if (!name || !spec || !unit || !manufacturer || !approvalNo) {
             alert('请填写所有必填字段');
             return;
         }
 
+        // 验证批准文号格式（可选，但建议）
+        if (!approvalNo.startsWith('国药准字')) {
+            if (!confirm('批准文号格式建议以"国药准字"开头，是否继续？')) {
+                return;
+            }
+        }
+
         try {
-            // 构建新药品数据 - 根据数据库结构调整
+            // 构建新药品数据
             const newMedicine = {
-                medicineId: 'M' + Date.now(), // 生成药品ID
+                medicineId: 'M' + Date.now(),
                 tradeName: name,
                 genericName: name,
                 spec: spec,
                 unit: unit,
-                approvalNo: '手动添加-' + Date.now(),
-                categoryId: 2, // 默认分类ID
+                approvalNo: approvalNo,
+                categoryId: 2,
                 manufacturer: manufacturer,
-                retailPrice: 0,
-                purchasePrice: 0,
-                isRx: 0, // 非处方药
-                description: ''
+                retailPrice: 15.00,
+                purchasePrice: 10.00,
+                stockQuantity: 0,
+                isRx: 0,
+                description: '',
+                barcode: barcode
             };
 
-            // 调用后端API创建药品
             const response = await fetch(`${API_BASE_URL}/medicines`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getTenantHeaders({'Content-Type': 'application/json'}),
                 body: JSON.stringify(newMedicine)
             });
 
@@ -1382,8 +1126,8 @@
                     manufacturer: createdMedicine.manufacturer,
                     stock: createdMedicine.stockQuantity || 0,
                     safetyStock: createdMedicine.minThreshold || 10,
-                    cost: createdMedicine.purchasePrice || 0,
-                    price: createdMedicine.retailPrice || 0,
+                    cost: createdMedicine.purchasePrice || 10.00,
+                    price: createdMedicine.retailPrice || 15.00,
                     category: createdMedicine.categoryId ? createdMedicine.categoryId.toString() : '2',
                     storage: createdMedicine.storageCondition || '常温',
                     description: createdMedicine.description || '',
@@ -1406,12 +1150,12 @@
                 genericName: name,
                 spec: spec,
                 unit: unit,
-                approvalNo: '手动添加',
+                approvalNo: approvalNo, // 使用用户输入的批准文号
                 manufacturer: manufacturer,
                 stock: 0,
                 safetyStock: 10,
-                cost: 0,
-                price: 0,
+                cost: 10.00,
+                price: 15.00,
                 category: '2',
                 storage: '常温',
                 isRx: 0
@@ -1435,9 +1179,12 @@
         document.getElementById('detail-storage').value = medicine.storage || '常温';
         document.getElementById('detail-description').value = medicine.description || '';
 
-        // 设置默认价格
-        document.getElementById('detail-cost').value = medicine.cost || '';
-        document.getElementById('detail-price').value = medicine.price || '';
+        // 设置默认价格 - 确保有默认值
+        const defaultCost = medicine.cost || 10.00; // 默认进货价10元
+        const defaultPrice = medicine.price || 15.00; // 默认零售价15元
+
+        document.getElementById('detail-cost').value = defaultCost;
+        document.getElementById('detail-price').value = defaultPrice;
 
         // 显示详情表单
         document.getElementById('medicine-detail-prompt').classList.add('hidden');
@@ -1447,11 +1194,39 @@
         // 自动生成批号
         generateBatchNumber();
 
-        // 更新利润计算
-        initPriceCalculation();
+        // 立即更新利润计算
+        updateProfitCalculation();
 
         // 滚动到详情表单
         document.getElementById('medicine-detail-fields').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 立即更新利润计算的函数
+    function updateProfitCalculation() {
+        const costInput = document.getElementById('detail-cost');
+        const priceInput = document.getElementById('detail-price');
+        const quantityInput = document.getElementById('detail-quantity');
+
+        const cost = parseFloat(costInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const quantity = parseInt(quantityInput.value) || 1;
+
+        const unitProfit = price - cost;
+        const totalProfit = unitProfit * quantity;
+        const profitRate = cost > 0 ? ((unitProfit / cost) * 100).toFixed(2) : 0;
+
+        const unitProfitElement = document.getElementById('unit-profit');
+        const totalProfitElement = document.getElementById('total-profit-preview');
+        const profitRateElement = document.getElementById('profit-rate');
+
+        unitProfitElement.textContent = `¥${unitProfit.toFixed(2)}`;
+        unitProfitElement.className = unitProfit >= 0 ? 'profit-positive' : 'profit-negative';
+
+        totalProfitElement.textContent = `¥${totalProfit.toFixed(2)}`;
+        totalProfitElement.className = totalProfit >= 0 ? 'profit-positive' : 'profit-negative';
+
+        profitRateElement.textContent = `${profitRate}%`;
+        profitRateElement.className = profitRate >= 0 ? 'profit-positive' : 'profit-negative';
     }
 
     // 搜索药品
@@ -1472,7 +1247,9 @@
             params.append('page', '1');
             params.append('size', '100');
 
-            const response = await fetch(`${API_BASE_URL}/medicines/search?${params}`);
+            const response = await fetch(`${API_BASE_URL}/medicines/search?${params}`, {
+                headers: getTenantHeaders({})
+            });
 
             if (response.ok) {
                 const result = await response.json();
@@ -1491,8 +1268,8 @@
                         manufacturer: medicine.manufacturer,
                         stock: medicine.stockQuantity || 0,
                         safetyStock: medicine.minThreshold || 10,
-                        cost: medicine.purchasePrice || 0,
-                        price: medicine.retailPrice || 0,
+                        cost: medicine.purchasePrice || 10.00,
+                        price: medicine.retailPrice || 15.00,
                         category: medicine.categoryId ? medicine.categoryId.toString() : '2',
                         storage: medicine.storageCondition || '常温',
                         description: medicine.description || '',
@@ -1510,7 +1287,7 @@
             console.error('搜索药品失败:', error);
             alert('搜索药品失败: ' + error.message);
 
-            // 回退到本地搜索
+            // 回���到本地搜索
             let results = medicineList.filter(medicine =>
                 medicine.name.includes(keyword) ||
                 medicine.genericName.includes(keyword) ||
@@ -1583,63 +1360,70 @@
         document.getElementById('detail-batch').value = `B${year}${month}${day}${random}`;
     }
 
-    // 添加药品到列表
-function addMedicineToList() {
-    if (!selectedMedicine) return;
+    // 添��药品到列表
+    function addMedicineToList() {
+        if (!selectedMedicine) return;
 
-    const batch = document.getElementById('detail-batch').value;
-    const prodDate = document.getElementById('detail-prod-date').value;
-    const expiryDate = document.getElementById('detail-expiry-date').value;
-    const cost = parseFloat(document.getElementById('detail-cost').value) || 0;
-    const price = parseFloat(document.getElementById('detail-price').value) || 0;
-    const quantity = parseInt(document.getElementById('detail-quantity').value) || 0;
-    const category = document.getElementById('detail-category').value;
-    const storage = document.getElementById('detail-storage').value;
-    const description = document.getElementById('detail-description').value;
+        const batch = document.getElementById('detail-batch').value;
+        const prodDate = document.getElementById('detail-prod-date').value;
+        const expiryDate = document.getElementById('detail-expiry-date').value;
+        const cost = parseFloat(document.getElementById('detail-cost').value) || 0;
+        const price = parseFloat(document.getElementById('detail-price').value) || 0;
+        const quantity = parseInt(document.getElementById('detail-quantity').value) || 0;
+        const approvalNo = document.getElementById('detail-approval').value.trim();
+        const category = document.getElementById('detail-category').value;
+        const storage = document.getElementById('detail-storage').value;
+        const description = document.getElementById('detail-description').value;
 
-    if (!quantity || quantity <= 0) {
-        alert('请输入有效的入库数量');
-        return;
+        if (!quantity || quantity <= 0) {
+            alert('请输入有效的入库数量');
+            return;
+        }
+
+        if (!batch) {
+            alert('请输入药品批号');
+            return;
+        }
+
+        if (!approvalNo) {
+            alert('请输入批准文号');
+            return;
+        }
+
+        if (cost <= 0) {
+            alert('请输入有效的进货价格');
+            return;
+        }
+
+        // 计算利润
+        const unitProfit = (price || 0) - cost;
+        const totalProfit = unitProfit * quantity;
+
+        // 创建药品数据对象
+        const medicineData = {
+            ...selectedMedicine,
+            batch,
+            prodDate,
+            expiryDate,
+            approvalNo: approvalNo, // 使用用户输入的批准文号
+            cost: cost, // 进货价格
+            price: price, // 零售价格
+            quantity,
+            category,
+            storage,
+            description,
+            unitProfit,
+            totalProfit
+        };
+
+        addMedicineToTable(medicineData);
+
+        // 关闭模态框
+        closeModal();
+
+        // 重置选择
+        selectedMedicine = null;
     }
-
-    if (!batch) {
-        alert('请输入药品批号');
-        return;
-    }
-
-    if (cost <= 0) {
-        alert('请输入有效的进货价格');
-        return;
-    }
-
-    // 计算利润
-    const unitProfit = (price || 0) - cost;
-    const totalProfit = unitProfit * quantity;
-
-    // 创建药品数据对象
-    const medicineData = {
-        ...selectedMedicine,
-        batch,
-        prodDate,
-        expiryDate,
-        cost: cost, // 进货价格
-        price: price, // 零售价格
-        quantity,
-        category,
-        storage,
-        description,
-        unitProfit,
-        totalProfit
-    };
-
-    addMedicineToTable(medicineData);
-
-    // 关闭模态框
-    closeModal();
-
-    // 重置选择
-    selectedMedicine = null;
-}
 
     // 添加药品到表格
     function addMedicineToTable(medicineData) {
@@ -1740,6 +1524,7 @@ function addMedicineToList() {
             document.getElementById('detail-category').value = medicineData.category;
             document.getElementById('detail-storage').value = medicineData.storage;
             document.getElementById('detail-description').value = medicineData.description || '';
+            document.getElementById('detail-barcode').value = medicineData.barcode || ''; // 填充条形码
 
             // 显示详情表单
             document.getElementById('medicine-detail-prompt').classList.add('hidden');
@@ -1747,7 +1532,7 @@ function addMedicineToList() {
             document.getElementById('add-to-list-btn').disabled = false;
 
             // 更新利润计算
-            initPriceCalculation();
+            updateProfitCalculation();
 
             // 移除原行
             row.remove();
@@ -1786,114 +1571,100 @@ function addMedicineToList() {
                     </tr>
                 `;
             }
+ }
+    }
+
+    // 完成入库
+    async function completeStock() {
+        const itemCount = document.getElementById('item-count').textContent;
+        if (itemCount === '0') {
+            alert('请先添加药品到入库单');
+            return;
         }
-    }
 
-// 完成入库
-async function completeStock() {
-    const itemCount = document.getElementById('item-count').textContent;
-    if (itemCount === '0') {
-        alert('请先添加药品到入库单');
-        return;
-    }
+        if (confirm('确定要完成入库操作吗？完成后将无法修改。')) {
+            const completeBtn = document.getElementById('complete-stock');
+            const originalText = completeBtn.innerHTML;
+            completeBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 入库中...';
+            completeBtn.disabled = true;
 
-    if (confirm('确定要完成入库操作吗？完成后将无法修改。')) {
-        const completeBtn = document.getElementById('complete-stock');
-        const originalText = completeBtn.innerHTML;
-        completeBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 入库中...';
-        completeBtn.disabled = true;
-
-        try {
-            // 获取所有入库药品数据
-            const rows = document.querySelectorAll('#medicine-table-body tr');
-            const stockItems = [];
-
-            rows.forEach(row => {
-                if (row.cells.length > 1 && row._medicineData) {
-                    stockItems.push(row._medicineData);
-                }
-            });
-
-            // 首先获取或创建默认供应商
-            let supplierId = 1; // 默认供应商ID
             try {
-                const suppliersResponse = await fetch(`${API_BASE_URL}/suppliers`);
-                if (suppliersResponse.ok) {
-                    const suppliers = await suppliersResponse.json();
-                    if (suppliers.length > 0) {
-                        supplierId = suppliers[0].supplierId;
-                        console.log('使用供应商ID:', supplierId);
-                    } else {
-                        // 如果没有供应商，创建一个默认供应商
-                        const newSupplier = {
-                            supplierName: "默认供应商",
-                            contactPerson: "系统管理员",
-                            phone: "13800138000",
-                            address: "系统自动创建",
-                            email: "system@pharmacy.com"
-                        };
+                // 获取所有入库药品数据
+                const rows = document.querySelectorAll('#medicine-table-body tr');
+                const stockItems = [];
+                rows.forEach(row => {
+                    if (row.cells.length > 1 && row._medicineData) {
+                        stockItems.push(row._medicineData);
+                    }
+                });
+                if(stockItems.length===0){ throw new Error('没有可提交的入库明细'); }
 
-                        const createSupplierResponse = await fetch(`${API_BASE_URL}/suppliers`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(newSupplier)
-                        });
-
-                        if (createSupplierResponse.ok) {
-                            const createdSupplier = await createSupplierResponse.json();
-                            supplierId = createdSupplier.supplierId;
-                            console.log('创建默认供应商成功，ID:', supplierId);
-                        } else {
-                            throw new Error('无法创建默认供应商');
+                // 首先获取或创建默认供应商
+                let supplierId = 1; // 默认供应商ID
+                try {
+                    const tenantHeader = localStorage.getItem('selectedTenant') || '';
+                    const suppliersResponse = await fetch(`${API_BASE_URL}/suppliers`, {
+                        headers: tenantHeader? {'X-Shop-Id': tenantHeader}:{}
+                    });
+                    if (suppliersResponse.ok) {
+                        const suppliers = await suppliersResponse.json();
+                        if (Array.isArray(suppliers) && suppliers.length > 0) {
+                            supplierId = suppliers[0].supplierId;
+                            console.log('使用供应商ID:', supplierId);
                         }
                     }
+                } catch (supplierError) {
+                    console.warn('供应商处理失败，使用默认ID:', supplierError);
                 }
-            } catch (supplierError) {
-                console.warn('供应商处理失败，使用默认ID:', supplierError);
-            }
 
-            // 构建后端需要的入库单数据格式
-            const stockInData = {
-                stockInDate: new Date().toISOString(),
-                remark: document.querySelector('input[placeholder="请输入备注信息"]').value || '智能入库',
-                status: 1, // 已入库状态
-                items: stockItems.map(item => {
-                    // 确保所有必要字段都有值
-                    const itemData = {
-                        medicine: {
-                            medicineId: item.medicineId || item.id
-                        },
-                        quantity: item.quantity || 0,
-                        unitPrice: item.cost || 0.0, // 使用 unitPrice 而不是 purchasePrice
-                        batchNumber: item.batch || 'DEFAULT_BATCH',
-                        productionDate: item.prodDate ? new Date(item.prodDate).toISOString() : new Date().toISOString(),
-                        expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-                    };
+                // 构建后端需要的入库单数据格式 (日期统一 YYYY-MM-DD 避免 LocalDate 解析失败)
+                const stockInData = {
+                    stockInDate: new Date().toISOString(),
+                    remark: document.querySelector('input[placeholder="请输入备注信息"]').value || '智能入库',
+                    status: 1,
+                    items: stockItems.map(item => {
+                        const medId = item.medicineId || item.id;
+                        if(!medId){ console.warn('条目缺少 medicineId, 已跳过', item); return null; }
+                        const prodDateRaw = item.prodDate ? new Date(item.prodDate) : new Date();
+                        const expiryRaw = item.expiryDate ? new Date(item.expiryDate) : new Date(Date.now()+365*24*60*60*1000);
+                        const toDate = d => isNaN(d.getTime())? new Date().toISOString().slice(0,10): d.toISOString().slice(0,10);
+                        const unitPriceVal = (item.cost!=null? item.cost : (item.unitPrice!=null? item.unitPrice : 0));
+                        const mapped = {
+                            medicine: { medicineId: medId },
+                            quantity: item.quantity || 0,
+                            unitPrice: Number(unitPriceVal),
+                            batchNumber: item.batch || 'DEFAULT_BATCH',
+                            productionDate: toDate(prodDateRaw),
+                            expiryDate: toDate(expiryRaw)
+                        };
+                        console.log('处理后的入库项:', mapped);
+                        return mapped;
+                    }).filter(Boolean),
+                    supplier: { supplierId }
+                };
 
-                    console.log('处理后的入库项:', itemData);
-                    return itemData;
-                }),
-                supplier: {
-                    supplierId: supplierId
+                console.log('发送入库数据:', stockInData);
+                const tenant = localStorage.getItem('selectedTenant') || '';
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if(tenant){ headers['X-Shop-Id'] = tenant; }
+                const response = await fetch(`${API_BASE_URL}/stock-ins`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(stockInData)
+                });
+
+                if (!response.ok) {
+                    let errorText;
+                    try { errorText = await response.text(); } catch(_) { errorText = response.status + ' 错误'; }
+                    console.error('入库失败:', errorText);
+                    // 如果后端返回 400 提示药品不存在
+                    if(response.status===400){
+                        throw new Error('入库失败(400): '+ errorText);
+                    }
+                    throw new Error(`入库失败: ${errorText}`);
                 }
-            };
-
-            console.log('发送入库数据:', stockInData);
-
-            // 调用后端API完成入库
-            const response = await fetch(`${API_BASE_URL}/stock-ins`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(stockInData)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                console.log('入库成功:', result);
 
                 alert('入库操作已完成！库存已同步更新。');
 
@@ -1908,42 +1679,12 @@ async function completeStock() {
                 `;
                 currentIndex = 1;
                 updateTotals();
-            } else {
-                const errorText = await response.text();
-                console.error('入库失败:', errorText);
-                throw new Error(`入库失败: ${errorText}`);
-            }
-        } catch (error) {
-            console.error('入库错误:', error);
-            alert('入库操作失败: ' + error.message);
-        } finally {
-            completeBtn.innerHTML = originalText;
-            completeBtn.disabled = false;
-        }
-    }
-}
-
-    // 更新库存记录
-    async function updateStockRecords(stockItems) {
-        for (const item of stockItems) {
-            try {
-                // 检查库存记录是否存在
-                const inventoryData = {
-                    medicineId: item.medicineId || item.id,
-                    batchNo: item.batch,
-                    expireDate: item.expiryDate,
-                    stockQuantity: item.quantity,
-                    purchasePrice: item.cost
-                };
-
-                // 这里应该调用库存更新API，但根据您的Controller，可能需要单独实现
-                console.log('需要更新库存记录:', inventoryData);
-
-                // 由于InventoryController没有提供更新库存的端点，我们暂时记录日志
-                // 在实际应用中，应该在StockInService中处理库存更新
-
             } catch (error) {
-                console.error('更新库存记录失败:', error);
+                console.error('入库错误:', error);
+                alert('入库操作失败: ' + error.message);
+            } finally {
+                completeBtn.innerHTML = originalText;
+                completeBtn.disabled = false;
             }
         }
     }
@@ -1951,13 +1692,13 @@ async function completeStock() {
     // 修改初始化函数，从后端加载药品数据
     async function loadMedicineData() {
         try {
-            const response = await fetch(`${API_BASE_URL}/medicines?page=0&size=1000`);
+            const response = await fetch(`${API_BASE_URL}/medicines?page=0&size=1000`, {
+                headers: getTenantHeaders({})
+            });
             if (response.ok) {
                 const result = await response.json();
-                console.log('从后端加载药品数据成功:', result);
-
-                // 将后端数据格式转换为前端格式 - 根据数据库结构调整
-                medicineList = result.content.map(medicine => ({
+                console.log('从后端加载药品数据成功 (租户隔离):', result);
+                medicineList = (result.content || []).map(medicine => ({
                     medicineId: medicine.medicineId,
                     id: medicine.medicineId,
                     name: medicine.tradeName || medicine.genericName,
@@ -1968,106 +1709,23 @@ async function completeStock() {
                     manufacturer: medicine.manufacturer,
                     stock: medicine.stockQuantity || 0,
                     safetyStock: medicine.minThreshold || 10,
-                    cost: medicine.purchasePrice || 0,
-                    price: medicine.retailPrice || 0,
+                    cost: medicine.purchasePrice || 10.00,
+                    price: medicine.retailPrice || 15.00,
                     category: medicine.categoryId ? medicine.categoryId.toString() : '2',
                     storage: medicine.storageCondition || '常温',
                     description: medicine.description || '',
-                    isRx: medicine.isRx || 0
+                    isRx: medicine.isRx || 0,
+                    barcode: medicine.barcode || ''
                 }));
             } else {
                 throw new Error('Failed to load medicine data');
             }
         } catch (error) {
-            console.error('从后端加载药品数据失败，使用模拟数据:', error);
-            // 使用模拟数据作为回退
-            loadMockData();
+            console.error('从后端加载药品数据失败，使用空数组:', error);
+            medicineList = [];
         }
-    }
-
-    // 修改模拟数据加载函数，确保字段名正确
-    function loadMockData() {
-        medicineList = [
-            {
-                medicineId: 'M001',
-                id: 'M001',
-                name: '阿莫西林胶囊',
-                genericName: '阿莫西林',
-                spec: '0.25g*24粒',
-                unit: '盒',
-                approvalNo: '国药准字H20058763',
-                manufacturer: '珠海联邦制药',
-                stock: 45,
-                safetyStock: 15,
-                cost: 8.50,
-                price: 15.00,
-                category: '1',
-                storage: '常温',
-                description: '广谱抗生素，用于敏感菌所致的感染',
-                isRx: 1
-            },
-            {
-                medicineId: 'M002',
-                id: 'M002',
-                name: '布洛芬缓释胶囊',
-                genericName: '布洛芬',
-                spec: '0.3g*20粒',
-                unit: '盒',
-                approvalNo: '国药准字H20013062',
-                manufacturer: '中美天津史克',
-                stock: 8,
-                safetyStock: 10,
-                cost: 12.00,
-                price: 25.00,
-                category: '2',
-                storage: '常温',
-                description: '非甾体抗炎药，用于缓解轻至中度疼痛',
-                isRx: 0
-            },
-            {
-                medicineId: 'M003',
-                id: 'M003',
-                name: '连花清瘟胶囊',
-                genericName: '连花清瘟',
-                spec: '0.35g*24粒',
-                unit: '盒',
-                approvalNo: '国药准字Z20040063',
-                manufacturer: '以岭药业',
-                stock: 12,
-                safetyStock: 20,
-                cost: 18.00,
-                price: 32.00,
-                category: '1',
-                storage: '常温',
-                description: '清瘟解毒，宣肺泄热，用于治疗流行性感冒',
-                isRx: 1
-            },
-            {
-                medicineId: 'M004',
-                id: 'M004',
-                name: '盐酸二甲双胍片',
-                genericName: '二甲双胍',
-                spec: '0.5g*20片',
-                unit: '盒',
-                approvalNo: '国药准字H20023370',
-                manufacturer: '中美上海施贵宝',
-                stock: 28,
-                safetyStock: 15,
-                cost: 6.50,
-                price: 12.00,
-                category: '1',
-                storage: '常温',
-                description: '口服降血糖药，用于2型糖尿病',
-                isRx: 1
-            }
-        ];
-    }
-
-    // 调试库存函数
-    function debugInventory() {
-        console.log('当前库存数据:', inventoryData);
-        alert('库存数据已输出到控制台，请按F12查看');
     }
 </script>
 </body>
 </html>
+

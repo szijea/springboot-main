@@ -1,5 +1,9 @@
+// StockIn.java - 修复版本
 package com.pharmacy.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,8 +20,9 @@ public class StockIn {
     @Column(name = "stock_in_no", nullable = false, unique = true, length = 32)
     private String stockInNo;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "medicines", "stockIns"})
     private Supplier supplier;
 
     @Column(name = "stock_in_date", nullable = false)
@@ -30,7 +35,7 @@ public class StockIn {
     private Integer operatorId;
 
     @Column(name = "status")
-    private Integer status = 0; // 0-待审核, 1-已入库, 2-已取消
+    private Integer status = 0;
 
     @Column(name = "remark", length = 500)
     private String remark;
@@ -42,6 +47,7 @@ public class StockIn {
     private LocalDateTime updateTime;
 
     @OneToMany(mappedBy = "stockIn", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<StockInItem> items = new ArrayList<>();
 
     // 构造器

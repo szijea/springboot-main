@@ -1,5 +1,8 @@
+// Supplier.java - 修复版本
 package com.pharmacy.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,6 +10,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "supplier")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Supplier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,9 +33,11 @@ public class Supplier {
     private LocalDateTime createTime;
 
     @OneToMany(mappedBy = "supplier", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Medicine> medicines = new ArrayList<>();
 
     @OneToMany(mappedBy = "supplier", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<StockIn> stockIns = new ArrayList<>();
 
     // 构造器

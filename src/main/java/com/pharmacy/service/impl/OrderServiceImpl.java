@@ -7,11 +7,15 @@ import com.pharmacy.dto.OrderItemRequest;
 import com.pharmacy.entity.Order;
 import com.pharmacy.entity.OrderItem;
 import com.pharmacy.entity.Medicine;
+import com.pharmacy.entity.Employee;
 import com.pharmacy.repository.OrderRepository;
 import com.pharmacy.repository.OrderItemRepository;
 import com.pharmacy.repository.MedicineRepository;
+import com.pharmacy.repository.EmployeeRepository;
 import com.pharmacy.service.OrderService;
 import com.pharmacy.service.InventoryService;
+import com.pharmacy.repository.MemberRepository;
+import com.pharmacy.entity.Member;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +42,14 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private InventoryService inventoryService;
+
+    @Autowired(required = false)
+    private MemberConsumptionUpdater memberConsumptionUpdater; // 可选组件，不存在时日志提示
+
+    @Autowired
+    private EmployeeRepository employeeRepository; // 新增: 动态获取收银员
+    @Autowired
+    private MemberRepository memberRepository; // 新增: 校验会员是否存在
 
     @Override
     @Transactional
@@ -83,12 +95,24 @@ public class OrderServiceImpl implements OrderService {
             // 4. 创建订单实体
             Order order = new Order();
             order.setOrderId(orderId);
-            order.setCashierId(1); // 默认收银员ID
+            // 动态解析收银员ID，避免外键失败
+            Integer cashierId = resolveCashierId();
+            if (cashierId == null) {
+                throw new RuntimeException("当前租户没有可用收银员账号，无法创建订单");
+            }
+            order.setCashierId(cashierId);
 
-            // 设置会员ID
+            // 设置会员ID（需要存在性校验）
             if (orderRequest.getMemberId() != null && !orderRequest.getMemberId().trim().isEmpty()) {
-                order.setMemberId(orderRequest.getMemberId().trim());
-                System.out.println("设置会员ID: " + orderRequest.getMemberId());
+                String rawMemberId = orderRequest.getMemberId().trim();
+                boolean memberExists = memberRepository.findById(rawMemberId).isPresent();
+                if (memberExists) {
+                    order.setMemberId(rawMemberId);
+                    System.out.println("设置会员ID: " + rawMemberId);
+                } else {
+                    System.err.println("[Order] 当前租户不存在会员ID=" + rawMemberId + "，跳过关联，避免外键错误");
+                    order.setMemberId(null); // 避免 1452 外键错误
+                }
             } else {
                 order.setMemberId(null);
                 System.out.println("无会员信息");
@@ -140,8 +164,9 @@ public class OrderServiceImpl implements OrderService {
 
             // 7. 构建响应
             OrderResponse response = convertToOrderResponse(savedOrder);
-            System.out.println("✅ 订单创建完成: " + response.getOrderNumber());
-
+            // 新增：订单创建后异步刷新会员消费统计
+            triggerMemberStatsUpdate(savedOrder.getMemberId());
+            System.out.println("✅ 订单创建完成并触发会员消费统计刷新: " + response.getOrderNumber());
             return response;
 
         } catch (Exception e) {
@@ -165,7 +190,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Optional<Order> getOrderById(Long id) {
+    public Optional<Order> getOrderById(String id) { // 改为 String
         return orderRepository.findById(id);
     }
 
@@ -240,86 +265,41 @@ public class OrderServiceImpl implements OrderService {
         return result != null ? result : 0L;
     }
 
-    // 新增：退单方法实现
     @Override
     @Transactional
-    public Order refundOrder(String orderId, String reason) {
-        System.out.println("=== 开始处理退单 ===");
-        System.out.println("订单号: " + orderId);
-        System.out.println("退单原因: " + reason);
+    public OrderResponse refundOrder(String orderId, String reason) {
+        Optional<Order> opt = orderRepository.findByOrderId(orderId);
+        if(opt.isEmpty()) throw new RuntimeException("订单不存在: " + orderId);
+        Order order = opt.get();
+        if(order.getPaymentStatus()!=null && order.getPaymentStatus()==2){
+            throw new RuntimeException("订单已退款");
+        }
+        if(order.getPaymentStatus()==null || order.getPaymentStatus()==0){
+            throw new RuntimeException("未支付订单不可退款");
+        }
+        // 恢复库存(根据订单项)
+        List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+        for(OrderItem it: items){
+            try { inventoryService.restoreStock(it.getMedicineId(), it.getQuantity(), orderId); } catch (Exception e){ System.err.println("恢复库存失败:"+e.getMessage()); }
+        }
+        order.setPaymentStatus(2); // 已退款
+        order.setRefundTime(LocalDateTime.now());
+        OrderResponse resp = convertToOrderResponse(orderRepository.save(order));
+        triggerMemberStatsUpdate(order.getMemberId());
+        return resp;
+    }
 
+    // 异步触发会员统计刷新
+    private void triggerMemberStatsUpdate(String memberId){
+        if(memberId==null || memberId.isBlank()) return;
         try {
-            // 1. 查找订单
-            Optional<Order> orderOpt = orderRepository.findByOrderId(orderId);
-            if (!orderOpt.isPresent()) {
-                throw new RuntimeException("订单不存在: " + orderId);
+            if(memberConsumptionUpdater!=null){
+                memberConsumptionUpdater.refreshSingleMember(memberId);
+            } else {
+                System.out.println("[MemberStats] 无成员消费刷新组件，跳过刷新，memberId="+memberId);
             }
-
-            Order order = orderOpt.get();
-            System.out.println("找到订单，当前状态: " + order.getPaymentStatus());
-            System.out.println("订单金额: " + order.getActualPayment());
-
-            // 2. 检查订单状态，只有已支付的订单才能退单
-            if (order.getPaymentStatus() != 1) {
-                throw new RuntimeException("只有已支付的订单才能退单，当前订单状态: " + getPaymentStatusText(order.getPaymentStatus()));
-            }
-
-            // 3. 更新订单状态为已退款
-            order.setPaymentStatus(2); // 2表示已退款
-            order.setRefundTime(LocalDateTime.now());
-            order.setRefundReason(reason);
-
-            // 4. 恢复库存
-            List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
-            System.out.println("需要恢复库存的订单项数量: " + orderItems.size());
-
-            for (OrderItem item : orderItems) {
-                System.out.println("恢复库存 - 药品ID: " + item.getMedicineId() + ", 数量: " + item.getQuantity());
-
-                // 获取药品信息用于日志
-                String medicineName = medicineRepository.findById(item.getMedicineId())
-                        .map(Medicine::getGenericName)
-                        .orElse(item.getMedicineId());
-
-                // 恢复库存
-                boolean stockRestored = inventoryService.restoreStock(
-                        item.getMedicineId(),
-                        item.getQuantity(),
-                        orderId + "_REFUND"
-                );
-
-                if (!stockRestored) {
-                    System.err.println("警告: 药品 " + medicineName + " 库存恢复失败");
-                    // 这里可以根据业务需求决定是否继续执行
-                } else {
-                    System.out.println("✅ 成功恢复药品库存: " + medicineName + " x " + item.getQuantity());
-                }
-            }
-
-            // 5. 如果是会员订单，处理积分返还
-            if (order.getMemberId() != null && !order.getMemberId().isEmpty()) {
-                System.out.println("会员订单，需要处理积分返还:");
-                System.out.println("  - 会员ID: " + order.getMemberId());
-                System.out.println("  - 使用的积分: " + order.getUsedPoints());
-                System.out.println("  - 获得的积分: " + order.getCreatedPoints());
-
-                // 这里可以添加积分返还逻辑
-                // 比如调用会员服务返还使用的积分，并扣除获得的积分
-                // refundMemberPoints(order.getMemberId(), order.getUsedPoints(), order.getCreatedPoints());
-            }
-
-            // 6. 保存更新后的订单
-            Order refundedOrder = orderRepository.save(order);
-            System.out.println("✅ 退单处理完成: " + refundedOrder.getOrderId());
-            System.out.println("退单后状态: " + refundedOrder.getPaymentStatus());
-            System.out.println("退款时间: " + refundedOrder.getRefundTime());
-
-            return refundedOrder;
-
-        } catch (Exception e) {
-            System.err.println("❌ 退单处理失败: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("退单失败: " + e.getMessage());
+        } catch(Exception e){
+            System.err.println("[MemberStats] 刷新会员消费统计失败:"+e.getMessage());
         }
     }
 
@@ -378,5 +358,29 @@ public class OrderServiceImpl implements OrderService {
         response.setSubtotal(java.math.BigDecimal.valueOf(orderItem.getSubtotal()));
 
         return response;
+    }
+
+    private Integer resolveCashierId() {
+        // 优先找活动员工
+        return employeeRepository.findAllActive().stream()
+                .map(Employee::getEmployeeId)
+                .findFirst()
+                .orElseGet(() -> {
+                    // 若无活动员工则尝试创建一个默认员工(只在极端情况下执行)
+                    try {
+                        Employee e = new Employee();
+                        e.setUsername("auto_cashier");
+                        e.setPassword("e10adc3949ba59abbe56e057f20f883e"); // 默认 md5(123456)
+                        e.setName("自动收银员");
+                        e.setRoleId(1); // 赋管理员或收银角色，根据实际需要调整
+                        e.setPhone("00000000000");
+                        e.setStatus(1);
+                        Employee saved = employeeRepository.save(e);
+                        return saved.getEmployeeId();
+                    } catch (Exception ex) {
+                        System.err.println("[Order] 自动创建收银员失败: " + ex.getMessage());
+                        return null;
+                    }
+                });
     }
 }

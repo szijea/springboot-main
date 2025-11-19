@@ -19,6 +19,9 @@ public class MemberDTO {
     // 用于前端显示的格式化时间
     private String createTimeFormatted;
 
+    private Integer consumptionCount; // 已支付订单次数
+    private java.time.LocalDateTime lastConsumptionDate; // 最近一次支付订单时间
+
     // 构造器
     public MemberDTO() {}
 
@@ -61,6 +64,11 @@ public class MemberDTO {
 
     public String getCreateTimeFormatted() { return createTimeFormatted; }
     public void setCreateTimeFormatted(String createTimeFormatted) { this.createTimeFormatted = createTimeFormatted; }
+
+    public Integer getConsumptionCount(){ return consumptionCount; }
+    public void setConsumptionCount(Integer consumptionCount){ this.consumptionCount = consumptionCount; }
+    public java.time.LocalDateTime getLastConsumptionDate(){ return lastConsumptionDate; }
+    public void setLastConsumptionDate(java.time.LocalDateTime lastConsumptionDate){ this.lastConsumptionDate = lastConsumptionDate; }
 
     // 等级名称映射
     public static String getLevelName(Integer level) {

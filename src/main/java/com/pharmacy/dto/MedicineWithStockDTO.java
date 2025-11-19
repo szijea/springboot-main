@@ -2,6 +2,7 @@
 package com.pharmacy.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class MedicineWithStockDTO {
     private String medicineId;
@@ -15,6 +16,15 @@ public class MedicineWithStockDTO {
     private String unit;
     private String description;
     private Integer stockQuantity;
+    private List<String> batchNos; // 新增：批号列表
+    private java.time.LocalDate earliestExpiryDate; // 新增：最早未过期日期
+    private String approvalNo;
+    private String barcode;
+    private java.time.LocalDate productionDate;
+    private java.time.LocalDate expiryDate;
+    private String status;
+    private String expiryStatus; // NORMAL / NEAR_EXPIRY / EXPIRED
+    private String stockStatus;  // HIGH / MEDIUM / LOW / CRITICAL / OUT
 
     // 构造函数
     public MedicineWithStockDTO() {}
@@ -52,4 +62,31 @@ public class MedicineWithStockDTO {
 
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
+
+    public List<String> getBatchNos() { return batchNos; }
+    public void setBatchNos(List<String> batchNos) { this.batchNos = batchNos; }
+
+    public java.time.LocalDate getEarliestExpiryDate() { return earliestExpiryDate; }
+    public void setEarliestExpiryDate(java.time.LocalDate earliestExpiryDate) { this.earliestExpiryDate = earliestExpiryDate; }
+
+    public String getApprovalNo() { return approvalNo; }
+    public void setApprovalNo(String approvalNo) { this.approvalNo = approvalNo; }
+
+    public String getBarcode() { return barcode; }
+    public void setBarcode(String barcode) { this.barcode = barcode; }
+
+    public java.time.LocalDate getProductionDate() { return productionDate; }
+    public void setProductionDate(java.time.LocalDate productionDate) { this.productionDate = productionDate; }
+
+    public java.time.LocalDate getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(java.time.LocalDate expiryDate) { this.expiryDate = expiryDate; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getExpiryStatus() { return expiryStatus; }
+    public void setExpiryStatus(String expiryStatus) { this.expiryStatus = expiryStatus; }
+
+    public String getStockStatus() { return stockStatus; }
+    public void setStockStatus(String stockStatus) { this.stockStatus = stockStatus; }
 }

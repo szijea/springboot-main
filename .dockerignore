@@ -1,0 +1,7 @@
+.git/
+.idea/
+*.iml
+mysql-data/
+Dockerfile.old
+**/node_modules
+.env

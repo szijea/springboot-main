@@ -4,10 +4,24 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  # 多租户店铺数据库列表示例（按需修改为真实库、用户名、密码）
+  tenants:
+    - id: bht  # 原 shopA → bht（店铺标识）
+      url: jdbc:mysql://localhost:3306/bht?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: 123456
+    - id: wx   # 原 shopB → wx（店铺标识）
+      url: jdbc:mysql://localhost:3306/wx?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: 123456
+    - id: rzt  # 新增租户 rzt
+      url: jdbc:mysql://localhost:3306/rzt_db?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: 123456
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
@@ -16,6 +30,9 @@ spring:
         jdbc:
           time_zone: Asia/Shanghai
     open-in-view: false
+
+  flyway:
+    enabled: false
 
   servlet:
     multipart:
@@ -34,6 +51,12 @@ spring:
     servlet:
       context-path: /
 
+  member:
+    cache:
+      ttl-minutes: 10
+      batch-refresh-cron: "0 */15 * * * *" # 每15分钟执行批量刷新
+      evict-cron: "0 */20 * * * *"      # 每20分钟清理过期缓存
+
 logging:
   level:
     com.pharmacy: DEBUG
@@ -42,9 +65,9 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
-    mybatis:
-      mapper-locations: classpath*:mapper/**/*.xml
-      type-aliases-package: com.pharmacy.entity
-      configuration:
-        map-underscore-to-camel-case: true
-        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.pharmacy.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

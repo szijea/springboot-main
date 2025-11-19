@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -73,5 +76,16 @@ public class DashboardController {
     public ResponseEntity<ApiResponse<String>> refreshData() {
         // 这里可以触发数据刷新，例如重新计算统计指标等
         return ResponseEntity.ok(ApiResponse.success("数据刷新成功", null));
+    }
+
+    // 在 DashboardController.java 中添加缺失的 /stock-alerts 接口
+    @GetMapping("/stock-alerts")
+    public ResponseEntity<ApiResponse<?>> getStockAlerts() {
+        try {
+            Map<String, Object> stockAlerts = dashboardService.getStockAlerts();
+            return ResponseEntity.ok(ApiResponse.success("获取库存预警成功", stockAlerts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.error("获取库存预警失败"));
+        }
     }
 }

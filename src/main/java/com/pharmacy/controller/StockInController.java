@@ -2,6 +2,7 @@ package com.pharmacy.controller;
 
 import com.pharmacy.entity.StockIn;
 import com.pharmacy.entity.StockInItem;
+import com.pharmacy.repository.InventoryRepository;
 import com.pharmacy.repository.MedicineRepository;
 import com.pharmacy.repository.StockInItemRepository;
 import com.pharmacy.repository.StockInRepository;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -31,6 +33,9 @@ public class StockInController {
 
     @Autowired
     private StockInItemRepository stockInItemRepository;
+
+    @Autowired
+    private InventoryRepository inventoryRepository;
 
     @GetMapping
     public ResponseEntity<Page<StockIn>> getStockIns(
@@ -53,24 +58,25 @@ public class StockInController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<?> createStockIn(@RequestBody StockIn stockIn) {
         try {
-            System.out.println("接收到入库单数据: " + stockIn);
-
-            // 简化供应商验证 - 如果供应商不存在，使用默认供应商
+            System.out.println("[StockInController] 接收到入库单数据: stockInNo=" + stockIn.getStockInNo() + ", items=" + (stockIn.getItems()==null?0:stockIn.getItems().size()));
+            if (stockIn.getItems()==null || stockIn.getItems().isEmpty()) {
+                return ResponseEntity.badRequest().body("入库单必须包含至少一个药品");
+            }
+            // 供应商处理
             if (stockIn.getSupplier() != null && stockIn.getSupplier().getSupplierId() != null) {
                 if (!supplierRepository.existsById(stockIn.getSupplier().getSupplierId())) {
-                    System.out.println("供应商不存在，使用默认供应商");
-                    // 使用第一个可用的供应商
+                    System.out.println("供应商不存在, 改用默认供应商 ID=1");
                     Optional<com.pharmacy.entity.Supplier> defaultSupplier = supplierRepository.findById(1);
                     if (defaultSupplier.isPresent()) {
                         stockIn.setSupplier(defaultSupplier.get());
                     } else {
-                        return ResponseEntity.badRequest().body("没有可用的供应商，请先创建供应商");
+                        return ResponseEntity.badRequest().body("没有可用的供应商, 请先创建供应商");
                     }
                 }
             } else {
-                // 如果没有提供供应商，使用默认供应商
                 Optional<com.pharmacy.entity.Supplier> defaultSupplier = supplierRepository.findById(1);
                 if (defaultSupplier.isPresent()) {
                     stockIn.setSupplier(defaultSupplier.get());
@@ -78,57 +84,71 @@ public class StockInController {
                     return ResponseEntity.badRequest().body("请先创建供应商");
                 }
             }
-
-            // 验证药品是否存在并设置关联，确保 unitPrice 不为 null
-            if (stockIn.getItems() != null && !stockIn.getItems().isEmpty()) {
-                for (StockInItem item : stockIn.getItems()) {
-                    // 验证药品是否存在
-                    if (item.getMedicine() != null && item.getMedicine().getMedicineId() != null) {
-                        if (!medicineRepository.existsById(item.getMedicine().getMedicineId())) {
-                            return ResponseEntity.badRequest().body("药品不存在: " + item.getMedicine().getMedicineId());
-                        }
-                    } else {
-                        return ResponseEntity.badRequest().body("药品信息不完整");
-                    }
-
-                    // 确保必要字段不为 null
-                    if (item.getBatchNumber() == null) {
-                        item.setBatchNumber("DEFAULT_BATCH");
-                    }
-
-
-                    // 设置关联关系
-                    item.setStockIn(stockIn);
+            // Items 校验与默认值
+            for (StockInItem item : stockIn.getItems()) {
+                if (item.getMedicine()==null || item.getMedicine().getMedicineId()==null) {
+                    return ResponseEntity.badRequest().body("药品信息不完整");
                 }
-            } else {
-                return ResponseEntity.badRequest().body("入库单必须包含至少一个药品");
+                String medId = item.getMedicine().getMedicineId();
+                if (!medicineRepository.existsById(medId)) {
+                    return ResponseEntity.badRequest().body("药品不存在: " + medId);
+                }
+                if (item.getBatchNumber()==null || item.getBatchNumber().isBlank()) {
+                    item.setBatchNumber("DEFAULT_BATCH");
+                }
+                if (item.getQuantity()==null) {
+                    item.setQuantity(0);
+                }
+                if (item.getUnitPrice()==null) { // 前端可能传 cost 字段映射为 unitPrice
+                    // 尝试从已存在库存或零售价格推断
+                    try {
+                        var medOpt = medicineRepository.findById(medId);
+                        if (medOpt.isPresent() && medOpt.get().getRetailPrice()!=null) {
+                            item.setUnitPrice(medOpt.get().getRetailPrice().doubleValue());
+                        } else {
+                            item.setUnitPrice(0.0);
+                        }
+                    } catch (Exception ignore) { item.setUnitPrice(0.0); }
+                }
+                // 关联反向引用
+                item.setStockIn(stockIn);
             }
-
-            // 设置入库时间（如果未设置）
-            if (stockIn.getStockInDate() == null) {
-                stockIn.setStockInDate(LocalDateTime.now());
-            }
-
-            // 生成入库单号（如果未设置）
-            if (stockIn.getStockInNo() == null) {
-                stockIn.setStockInNo(generateStockInNo());
-            }
-
-            // 确保状态不为 null
-            if (stockIn.getStatus() == null) {
-                stockIn.setStatus(0); // 默认待审核
-            }
-
-            // 计算总金额
+            // 设置日期与编号
+            if (stockIn.getStockInDate()==null) stockIn.setStockInDate(LocalDateTime.now());
+            if (stockIn.getStockInNo()==null) stockIn.setStockInNo(generateStockInNo());
+            if (stockIn.getStatus()==null) stockIn.setStatus(1); // 已入库状态
             stockIn.calculateTotalAmount();
-
-            StockIn savedStockIn = stockInRepository.save(stockIn);
-            System.out.println("入库单保存成功: " + savedStockIn);
-            return ResponseEntity.ok(savedStockIn);
+            StockIn saved = stockInRepository.save(stockIn);
+            System.out.println("[StockInController] 入库单保存成功 ID="+saved.getStockInId()+" 总金额="+saved.getTotalAmount());
+            // 更新库存
+            for (StockInItem item : stockIn.getItems()) {
+                try {
+                    String medId = item.getMedicine().getMedicineId();
+                    String batch = item.getBatchNumber();
+                    Integer qty = item.getQuantity();
+                    java.time.LocalDate expiry = item.getExpiryDate();
+                    var invs = inventoryRepository.findByMedicineId(medId);
+                    com.pharmacy.entity.Inventory matched = null;
+                    for (com.pharmacy.entity.Inventory inv : invs) {
+                        if (batch.equals(inv.getBatchNo())) { matched = inv; break; }
+                    }
+                    if (matched != null) {
+                        matched.setStockQuantity(matched.getStockQuantity() + qty);
+                        inventoryRepository.save(matched);
+                    } else {
+                        com.pharmacy.entity.Inventory newInv = new com.pharmacy.entity.Inventory(medId, batch, qty, expiry);
+                        newInv.setPurchasePrice(item.getUnitPrice()!=null? java.math.BigDecimal.valueOf(item.getUnitPrice()) : null);
+                        inventoryRepository.save(newInv);
+                    }
+                } catch (Exception updEx) {
+                    System.err.println("[StockInController] 更新库存失败: "+updEx.getMessage());
+                }
+            }
+            return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            System.err.println("创建入库单失败: " + e.getMessage());
+            System.err.println("[StockInController] 创建入库单失败: "+e.getMessage());
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("创建入库单失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("创建入库单失败: "+e.getMessage());
         }
     }
 

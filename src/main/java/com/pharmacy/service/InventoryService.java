@@ -1,9 +1,16 @@
 package com.pharmacy.service;
 
 import com.pharmacy.entity.Inventory;
+import com.pharmacy.dto.InventoryDTO;
 import java.util.List;
 
 public interface InventoryService {
+
+    /**
+     * 新增：返回带药品信息的 InventoryDTO 列表，避免懒加载问题
+     * @return 带药品信息的 InventoryDTO 列表
+     */
+    List<InventoryDTO> findAllWithMedicineDTO();
 
     /**
      * 为订单更新库存
@@ -75,4 +82,34 @@ public interface InventoryService {
      * @param id 库存ID
      */
     void deleteById(Long id);
+
+    /**
+     * 根据库存ID获取包含药品信息的库存详情
+     */
+    InventoryDTO findDTOById(Long inventoryId);
+
+    /**
+     * 根据药品ID获取该药品所有库存批次（DTO）
+     */
+    List<InventoryDTO> findDTOByMedicineId(String medicineId);
+
+    /**
+     * 根据批号查询 DTO
+     */
+    List<InventoryDTO> findDTOByBatchNo(String batchNo);
+
+    /**
+     * 新增库存批次（补货）
+     */
+    Inventory createBatch(String medicineId, String batchNo, Integer stockQuantity, Integer minStock, Integer maxStock, java.math.BigDecimal purchasePrice, java.time.LocalDate expiryDate, String supplier);
+
+    /**
+     * 简化补货：向已有批次或新批次追加库存
+     */
+    Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo);
+
+    /**
+     * 补货并可更新批次最低库存（如果传入）
+     */
+    Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo, Integer minStock);
 }

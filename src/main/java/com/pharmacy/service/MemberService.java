@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -32,38 +33,49 @@ public class MemberService {
                 return new ArrayList<>();
             }
 
-            String trimmedKeyword = keyword.trim();
+            String trimmedKeyword = normalize(keyword);
             Set<Member> results = new HashSet<>();
-
-            // 1. 按手机号精确匹配
-            System.out.println("正在按手机号搜索: " + trimmedKeyword);
+            // 1. 精确手机号
             Optional<Member> byPhone = memberRepository.findByPhone(trimmedKeyword);
-            if (byPhone.isPresent()) {
-                System.out.println("按手机号找到会员: " + byPhone.get().getName());
-                results.add(byPhone.get());
-            } else {
-                System.out.println("按手机号未找到会员");
+            byPhone.ifPresent(m -> { System.out.println("手机精确命中: " + m.getName()); results.add(m); });
+
+            // 新增: 部分手机号匹配(包含)
+            if (trimmedKeyword.chars().allMatch(Character::isDigit) && trimmedKeyword.length() >= 4) {
+                List<Member> partialPhones = memberRepository.findAll().stream()
+                        .filter(m -> m.getPhone() != null && m.getPhone().contains(trimmedKeyword))
+                        .collect(Collectors.toList());
+                if(!partialPhones.isEmpty()) {
+                    System.out.println("手机号包含匹配数量: " + partialPhones.size());
+                }
+                results.addAll(partialPhones);
             }
 
-            // 2. 按姓名模糊搜索
-            System.out.println("正在按姓名模糊搜索: " + trimmedKeyword);
-            List<Member> byName = memberRepository.findByNameContaining(trimmedKeyword);
-            if (!byName.isEmpty()) {
-                System.out.println("按姓名找到 " + byName.size() + " 个会员");
-                results.addAll(byName);
+            // 2. 姓名 LIKE（数据库层面）
+            List<Member> nameDbMatches = memberRepository.findByNameContaining(trimmedKeyword);
+            if(!nameDbMatches.isEmpty()) {
+                System.out.println("数据库 LIKE 匹配姓名数量: " + nameDbMatches.size());
+                results.addAll(nameDbMatches);
             } else {
-                System.out.println("按姓名未找到会员");
+                // Fallback：在已加载的全部列表中手动 contains（处理可能的编码 / 空格差异）
+                List<Member> manualNameMatches = memberRepository.findAll().stream()
+                        .filter(m -> {
+                            String n = normalize(m.getName());
+                            return !n.isEmpty() && n.contains(trimmedKeyword);
+                        })
+                        .collect(Collectors.toList());
+                if(!manualNameMatches.isEmpty()) {
+                    System.out.println("手动遍历姓名匹配数量: " + manualNameMatches.size());
+                    results.addAll(manualNameMatches);
+                } else {
+                    System.out.println("姓名匹配为空（数据库+手动），关键词: " + trimmedKeyword);
+                }
             }
 
-            // 3. 按会员卡号搜索
-            System.out.println("正在按会员卡号搜索: " + trimmedKeyword);
-            Optional<Member> byCardNo = memberRepository.findByCardNo(trimmedKeyword);
-            if (byCardNo.isPresent()) {
-                System.out.println("按卡号找到会员: " + byCardNo.get().getName());
-                results.add(byCardNo.get());
-            } else {
-                System.out.println("按卡号未找到会员");
-            }
+            // 3. 卡号精确
+            memberRepository.findByCardNo(trimmedKeyword).ifPresent(m -> {
+                System.out.println("卡号精确命中: " + m.getName());
+                results.add(m);
+            });
 
             System.out.println("总共找到 " + results.size() + " 个不重复的会员");
             return new ArrayList<>(results);
@@ -72,6 +84,17 @@ public class MemberService {
             e.printStackTrace();
             throw new RuntimeException("搜索会员时发生错误: " + e.getMessage(), e);
         }
+    }
+
+    // 新增: 更宽松的快速搜索(姓名包含 / 手机包含 / 卡号包含)
+    public List<Member> quickSearch(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) return new ArrayList<>();
+        String k = keyword.trim();
+        return memberRepository.findAll().stream().filter(m -> {
+            return (m.getName() != null && m.getName().contains(k)) ||
+                    (m.getPhone() != null && m.getPhone().contains(k)) ||
+                    (m.getCardNo() != null && m.getCardNo().contains(k));
+        }).collect(Collectors.toList());
     }
 
     // 创建新会员
@@ -244,5 +267,18 @@ public class MemberService {
             System.err.println("筛选会员失败: " + e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+    private String normalize(String s){
+        if(s==null) return "";
+        String trimmed = s.trim();
+        // 全角空格转换为普通空格，再压缩连续空白
+        trimmed = trimmed.replace('\u3000',' ').replaceAll("\\s+"," ");
+        // 去除常见隐藏字符: 零宽空格/零宽不换行/字节顺序标记
+        trimmed = trimmed.replace("\u200B","" ) // ZERO WIDTH SPACE
+                         .replace("\u200C","" ) // ZERO WIDTH NON-JOINER
+                         .replace("\u200D","" ) // ZERO WIDTH JOINER
+                         .replace("\uFEFF","" ); // BOM
+        return trimmed;
     }
 }

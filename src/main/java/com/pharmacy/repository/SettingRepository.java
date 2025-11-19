@@ -9,6 +9,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SettingRepository extends JpaRepository<Setting, Long> {
 
-    @Query("SELECT s FROM Setting s ORDER BY s.id DESC LIMIT 1")
+    @Query("SELECT s FROM Setting s WHERE s.id = (SELECT MAX(s2.id) FROM Setting s2)")
     Setting findLatestSettings();
 }

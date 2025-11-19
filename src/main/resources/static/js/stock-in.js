@@ -488,6 +488,7 @@ class StockInManager {
     }
 
     getMockRecords() {
+        const currentOperator = (localStorage.getItem('loginUsername') || localStorage.getItem('currentUser') || '系统用户');
         return [
             {
                 batchNumber: 'IN-20231215-001',
@@ -495,7 +496,7 @@ class StockInManager {
                 medicineCount: 8,
                 totalAmount: 24560.00,
                 stockDate: '2023-12-15',
-                operator: '张药师',
+                operator: currentOperator,
                 status: 'completed'
             },
             {
@@ -513,7 +514,7 @@ class StockInManager {
                 medicineCount: 5,
                 totalAmount: 15680.00,
                 stockDate: '2023-12-13',
-                operator: '张药师',
+                operator: currentOperator,
                 status: 'processing'
             }
         ];

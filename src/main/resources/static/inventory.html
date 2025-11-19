@@ -4,231 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 库存管理</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.css" />
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-
-    <!-- 配置Tailwind（与其他页面一致） -->
-    <script>
-        tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                primary: '#165DFF',
-                secondary: '#36B37E',
-                accent: '#FF5630',
-              },
-              fontFamily: {
-                inter: ['Inter', 'system-ui', 'sans-serif'],
-              },
-            },
-          }
-        }
-    </script>
-
-    <style type="text/tailwindcss">
-        @layer utilities {
-          .sidebar-item {
-            @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer;
-          }
-          .sidebar-item.active {
-            @apply bg-primary text-white;
-          }
-          .sidebar-item:not(.active):hover {
-            @apply bg-gray-100;
-          }
-          .card {
-            @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
-          }
-          .btn {
-            @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
-          }
-          .btn-primary {
-            @apply bg-primary text-white hover:bg-primary/90;
-          }
-          .btn-outline {
-            @apply border border-gray-300 hover:bg-gray-50;
-          }
-          .input {
-            @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
-          }
-          .badge {
-            @apply px-2 py-1 rounded-full text-xs font-medium;
-          }
-        }
+    <style>
+    /* 保留原自定义工具类 */
+    .sidebar-item{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.5rem;transition:all .2s;cursor:pointer}
+    .sidebar-item.active{background:#165DFF;color:#fff}
+    .sidebar-item:not(.active):hover{background:#f3f4f6}
+    .card{background:#fff;border:1px solid #f1f5f9;border-radius:0.75rem;box-shadow:0 1px 2px rgba(0,0,0,0.04);transition:box-shadow .3s}
+    .card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.08)}
+    .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1rem;border-radius:0.5rem;font-weight:500;transition:all .2s}
+    .btn-primary{background:#165DFF;color:#fff}
+    .btn-primary:hover{background:#165DFFCC}
+    .btn-outline{border:1px solid #d1d5db}
+    .btn-outline:hover{background:#f8fafc}
+    .input{width:100%;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:0.5rem;outline:none;transition:.15s}
+    .input:focus{border-color:#165DFF;box-shadow:0 0 0 3px rgba(22,93,255,0.15)}
+    .stock-indicator{display:inline-flex;align-items:center;border-radius:9999px;padding:0.25rem 0.5rem;font-size:.75rem;font-weight:500}
+    .stock-high{background:#dcfce7;color:#166534}
+    .stock-medium{background:#fef9c3;color:#92400e}
+    .stock-low{background:#ffedd5;color:#c2410c}
+    .stock-critical{background:#fee2e2;color:#991b1b}
+    .pagination-btn{width:2rem;height:2rem;display:flex;align-items:center;justify-content:center;border:1px solid #d1d5db;border-radius:0.375rem;font-size:.75rem}
+    .pagination-btn:hover{background:#f1f5f9}
+    .pagination-btn.active{background:#165DFF;color:#fff;border-color:#165DFF}
+    .pagination-btn.disabled{color:#94a3b8;cursor:not-allowed}
+    .main-content-container{height:calc(100vh - 64px);overflow-y:auto}
     </style>
 </head>
-
 <body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
-<!-- 侧边栏（与其他页面一致） -->
-<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
-    <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <i class="fa fa-medkit text-primary"></i>
-            </div>
-            <h1 class="font-bold text-lg">智慧药房系统</h1>
-        </div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-        <nav class="space-y-1">
-            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
-
-            <a href="medicine-management.html" class="sidebar-item block">
-                <i class="fa fa-dashboard w-5 text-center"></i>
-                <span>控制台</span>
-            </a>
-
-            <a href="cashier.html" class="sidebar-item block">
-                <i class="fa fa-shopping-cart w-5 text-center"></i>
-                <span>收银管理</span>
-            </a>
-
-            <a href="stock-in.html" class="sidebar-item block">
-                <i class="fa fa-box w-5 text-center"></i>
-                <span>药品入库</span>
-            </a>
-
-            <a href="inventory.html" class="sidebar-item active block">
-                <i class="fa fa-warehouse w-5 text-center"></i>
-                <span>库存管理</span>
-            </a>
-            <a href="order-history.html" class="sidebar-item block">
-                <i class="fa fa-history w-5 text-center"></i>
-                <span>历史订单</span>
-            </a>
-            <!-- 其他导航项省略 -->
-        </nav>
-    </div>
-
-    <div class="p-4 border-t border-gray-200">
-        <div class="flex items-center gap-3">
-            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
-            <div>
-                <p class="font-medium text-sm">张药师</p>
-                <p class="text-xs text-gray-500">管理员</p>
-            </div>
-            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
-                <i class="fa fa-sign-out"></i>
-            </a>
-        </div>
-    </div>
-</aside>
-
-<!-- 主内容区 -->
-<main class="flex-1 flex flex-col overflow-hidden">
-    <!-- 顶部导航（与其他页面一致） -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div class="flex items-center gap-4">
-            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
-                <i class="fa fa-bars text-xl"></i>
-            </button>
-            <div class="relative">
-                <input type="text" placeholder="搜索药品、批号..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
-                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4">
-            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
-                <i class="fa fa-bell text-xl"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-            </button>
-
-            <div class="text-right hidden md:block">
-                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
-                <p class="text-xs text-gray-500" id="current-time"></p>
-            </div>
-        </div>
-    </header>
-
-    <!-- 内容区域 -->
-    <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+<div id="common-nav" data-active="inventory"></div>
+<main class="flex-1 flex flex-col pt-16">
+    <div class="main-content-container p-6 bg-gray-50">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
             <div>
-                <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold">库存管理</h2>
+                <h2 class="text-xl md:text-2xl font-bold">库存管理</h2>
                 <p class="text-gray-500">实时监控药品库存状态与变动</p>
             </div>
             <div class="flex gap-3">
-                <button class="btn btn-outline">
-                    <i class="fa fa-download"></i> 导出库存
-                </button>
-                <button class="btn btn-outline">
-                    <i class="fa fa-sync"></i> 库存盘点
-                </button>
-                <button class="btn btn-primary">
-                    <i class="fa fa-history"></i> 库存流水
-                </button>
+                <button class="btn btn-outline" id="export-inventory"><i class="fa fa-download"></i> 导出库存</button>
+                <button id="inventory-audit-btn" class="btn btn-outline"><i class="fa fa-sync"></i> 库存盘点</button>
+                <button class="btn btn-primary" id="refresh-inventory"><i class="fa fa-refresh"></i> 刷新数据</button>
             </div>
         </div>
-
-        <!-- 库存状态卡片 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <p class="text-gray-500 text-sm">总药品数</p>
-                        <h3 class="text-2xl font-bold mt-1">328 种</h3>
-                    </div>
-                    <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                        <i class="fa fa-cubes"></i>
-                    </div>
-                </div>
-                <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 12 种
-            </span>
-                    <span class="text-gray-500 ml-2">较上月</span>
-                </div>
+                <p class="text-gray-500 text-sm">总药品数</p>
+                <h3 id="total-medicines" class="text-2xl font-bold mt-1">0 种</h3>
             </div>
-
             <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <p class="text-gray-500 text-sm">库存预警</p>
-                        <h3 class="text-2xl font-bold mt-1">12 种</h3>
-                    </div>
-                    <div class="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center text-accent">
-                        <i class="fa fa-exclamation-triangle"></i>
-                    </div>
-                </div>
-                <div class="flex items-center text-sm">
-            <span class="text-accent flex items-center">
-              <i class="fa fa-arrow-up mr-1"></i> 3 种
-            </span>
-                    <span class="text-gray-500 ml-2">较昨日</span>
-                </div>
+                <p class="text-gray-500 text-sm">库存预警</p>
+                <h3 id="lowstock-count" class="text-2xl font-bold mt-1">0 种</h3>
             </div>
-
             <div class="card p-6">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <p class="text-gray-500 text-sm">近效期药品</p>
-                        <h3 class="text-2xl font-bold mt-1">8 种</h3>
-                    </div>
-                    <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-yellow-600">
-                        <i class="fa fa-calendar-times-o"></i>
-                    </div>
-                </div>
-                <div class="flex items-center text-sm">
-            <span class="text-secondary flex items-center">
-              <i class="fa fa-arrow-down mr-1"></i> 2 种
-            </span>
-                    <span class="text-gray-500 ml-2">较上周</span>
-                </div>
+                <p class="text-gray-500 text-sm">近效期药品</p>
+                <h3 id="near-expiry-count" class="text-2xl font-bold mt-1">0 种</h3>
             </div>
         </div>
-
-        <!-- 库存筛选 -->
         <div class="card p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">药品名称</label>
-                    <input type="text" class="input" placeholder="请输入药品名称">
+                    <label for="medicine-name-filter" class="block text-sm font-medium text-gray-700 mb-1">药品名称</label>
+                    <input id="medicine-name-filter" type="text" class="input" placeholder="请输入药品名称">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">药品分类</label>
-                    <select class="input">
+                    <label for="category-filter" class="block text-sm font-medium text-gray-700 mb-1">药品分类</label>
+                    <select id="category-filter" class="input">
                         <option value="">全部分类</option>
                         <option value="otc">非处方药(OTC)</option>
                         <option value="prescription">处方药</option>
@@ -236,8 +77,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">库存状态</label>
-                    <select class="input">
+                    <label for="stock-status-filter" class="block text-sm font-medium text-gray-700 mb-1">库存状态</label>
+                    <select id="stock-status-filter" class="input">
                         <option value="">全部状态</option>
                         <option value="normal">正常</option>
                         <option value="warning">预警</option>
@@ -245,248 +86,170 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">效期状态</label>
-                    <select class="input">
+                    <label for="expiry-status-filter" class="block text-sm font-medium text-gray-700 mb-1">效期状态</label>
+                    <select id="expiry-status-filter" class="input">
                         <option value="">全部状态</option>
                         <option value="normal">正常效期</option>
-                        <option value="near">近效期(3个月内)</option>
+                        <option value="near">近效期</option>
                         <option value="expired">已过期</option>
                     </select>
                 </div>
-            </div>
-            <div class="flex justify-end gap-3 mt-4">
-                <button class="btn btn-outline">重置</button>
-                <button class="btn btn-primary">查询</button>
-            </div>
-        </div>
-
-        <!-- 库存列表 -->
-        <div class="card">
-            <div class="p-6 border-b border-gray-100">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold">药品库存列表</h3>
-                    <div class="text-sm text-gray-500">共 328 种药品</div>
+                <div>
+                    <label for="include-zero-stock" class="block text-sm font-medium text-gray-700 mb-1">选项</label>
+                    <label class="inline-flex items-center mt-2"><input id="include-zero-stock" type="checkbox" class="rounded border-gray-300" checked><span class="ml-2 text-sm text-gray-700">包含无库存药品</span></label>
                 </div>
             </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button class="btn btn-outline" id="reset-filters">重置</button>
+                <button class="btn btn-primary" id="apply-filters">查询</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 class="font-bold">药品库存列表</h3>
+                <div class="flex items-center gap-4">
+                    <div id="inventory-total-text" class="text-sm text-gray-500">共 0 种药品</div>
+                    <div class="flex items-center gap-2">
+                        <label for="page-size-select" class="text-sm text-gray-500">每页显示</label>
+                        <select id="page-size-select" class="input py-1 text-sm w-20">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="loading-inventory" class="p-8 text-center"><i class="fa fa-spinner fa-spin text-primary text-xl mb-2"></i><p class="text-gray-500">正在加载库存数据...</p></div>
+            <div id="empty-inventory" class="p-8 text-center hidden"><i class="fa fa-box text-gray-300 text-3xl mb-2"></i><p class="text-gray-500">暂无库存数据</p></div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">药品信息</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">批号</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">有效期至</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存数量</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最低库存</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存状态</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">药品信息</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">规格</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">批号</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">有效期至</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">库存数量</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">最低库存</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">库存状态</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
                     </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img src="https://picsum.photos/40/40?random=30" alt="药品图片" class="w-10 h-10 mr-3 rounded">
-                                <div>
-                                    <div class="text-sm font-medium">布洛芬缓释胶囊</div>
-                                    <div class="text-xs text-gray-500">华北制药</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">0.3g*20粒</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">20230405</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">2025-04-04</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">12盒</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">30盒</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge bg-yellow-100 text-yellow-800">预警</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button class="text-primary hover:underline mr-3">详情</button>
-                            <button class="text-secondary hover:underline">补货</button>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img src="https://picsum.photos/40/40?random=31" alt="药品图片" class="w-10 h-10 mr-3 rounded">
-                                <div>
-                                    <div class="text-sm font-medium">复方甘草片</div>
-                                    <div class="text-xs text-gray-500">同仁堂</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">100片/瓶</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">20230312</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">2024-12-30</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">8瓶</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">20瓶</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge bg-yellow-100 text-yellow-800">预警</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button class="text-primary hover:underline mr-3">详情</button>
-                            <button class="text-secondary hover:underline">补货</button>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img src="https://picsum.photos/40/40?random=32" alt="药品图片" class="w-10 h-10 mr-3 rounded">
-                                <div>
-                                    <div class="text-sm font-medium">板蓝根颗粒</div>
-                                    <div class="text-xs text-gray-500">白云山</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">10g*20袋</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">20230125</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">2023-06-15</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">5包</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">15包</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="badge bg-red-100 text-red-800">近效期</span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button class="text-primary hover:underline mr-3">详情</button>
-                            <button class="text-secondary hover:underline">促销</button>
-                        </td>
-                    </tr>
-                    </tbody>
+                    <tbody id="inventory-list-body" class="bg-white divide-y divide-gray-200"></tbody>
                 </table>
             </div>
-            <div class="p-4 border-t border-gray-100 flex justify-between items-center">
-                <div class="text-sm text-gray-500">显示 1-3 条，共 328 条</div>
-                <div class="flex gap-1">
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50" disabled>
-                        <i class="fa fa-chevron-left text-xs"></i>
-                    </button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-primary bg-primary text-white">1</button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">2</button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">3</button>
-                    <button class="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50">
-                        <i class="fa fa-chevron-right text-xs"></i>
-                    </button>
+            <div class="p-4 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div id="inventory-range-text" class="text-sm text-gray-500">显示 0-0 条，共 0 条</div>
+                <div class="flex items-center gap-2">
+                    <label for="page-jump-input" class="text-sm text-gray-500">跳至</label>
+                    <input id="page-jump-input" type="number" min="1" class="input py-1 text-sm w-16" placeholder="页">
+                    <button id="page-jump-btn" class="btn btn-outline py-1 text-sm">跳转</button>
+                    <div id="inventory-pagination-controls" class="flex gap-1"></div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" id="stock-alert-panels">
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg">库存预警药品</h3>
+                    <span class="text-sm text-gray-500" id="lowstock-updated-at"></span>
+                </div>
+                <div id="lowstock-list" class="space-y-2 max-h-64 overflow-y-auto text-sm">
+                    <p class="text-gray-400" id="lowstock-empty">暂无低库存或缺货药品</p>
+                </div>
+            </div>
+            <div class="card p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg">近效期 / 已过期药品</h3>
+                    <span class="text-sm text-gray-500" id="expiry-updated-at"></span>
+                </div>
+                <div id="expiry-list" class="space-y-2 max-h-64 overflow-y-auto text-sm">
+                    <p class="text-gray-400" id="expiry-empty">暂无近效期或过期药品</p>
                 </div>
             </div>
         </div>
     </div>
 </main>
-
+<div id="inventory-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div class="p-4 border-b flex justify-between items-center">
+      <h3 id="inventory-modal-title" class="font-bold text-lg">补货</h3>
+      <button id="inventory-modal-close" class="text-gray-500 hover:text-gray-700">✕</button>
+    </div>
+    <div class="p-4" id="inventory-modal-body">
+      <form id="replenish-form" class="space-y-4 hidden">
+        <div>
+          <label for="replenish-medicine-id" class="block text-sm font-medium mb-1">药品ID</label>
+          <input id="replenish-medicine-id" class="input" readonly />
+        </div>
+        <div>
+          <label for="replenish-quantity" class="block text-sm font-medium mb-1">补货数量 *</label>
+          <input id="replenish-quantity" type="number" class="input" min="0" required />
+        </div>
+        <div>
+          <label for="replenish-batch" class="block text-sm font-medium mb-1">批号（可选）</label>
+          <input id="replenish-batch" class="input" placeholder="不填则自动生成" />
+        </div>
+        <div>
+          <label for="replenish-min-stock" class="block text-sm font-medium mb-1">最低库存（可选）</label>
+          <input id="replenish-min-stock" type="number" class="input" min="0" placeholder="用于预警阈值" />
+        </div>
+        <!-- 新增有效期输入 -->
+        <div>
+          <label for="replenish-expiry" class="block text-sm font-medium mb-1">有效期至（可选）</label>
+          <input id="replenish-expiry" type="date" class="input" />
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button type="button" id="replenish-cancel" class="btn btn-outline">取消</button>
+          <button type="submit" id="replenish-submit" class="btn btn-primary">提交补货</button>
+        </div>
+      </form>
+      <div id="inventory-detail" class="hidden"></div>
+    </div>
+  </div>
+</div>
+<script src="js/common.js"></script>
+<script src="js/common-nav.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/stock-status.js"></script>
 <script>
-    // 初始化日期和时间
-    function updateDateTime() {
-      const now = new Date();
-      const options = { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'long' };
-      document.getElementById('current-date').textContent = now.toLocaleDateString('zh-CN', options);
-
-      const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', timeOptions);
-    }
-
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // 侧边栏切换（移动端）
-    document.getElementById('sidebar-toggle').addEventListener('click', function() {
-      const sidebar = document.querySelector('aside');
-      sidebar.classList.toggle('-translate-x-full');
-    });
-    <script>
-// 在inventory.html中添加
-document.addEventListener('DOMContentLoaded', function() {
-    let currentPage = 1;
-    const pageSize = 10;
-
-    // 加载库存数据
-    async function loadInventoryData(page = 1) {
-        try {
-            const inventoryList = await api.inventoryAPI.getAll();
-            // 实际项目中API应支持分页参数，这里做前端模拟分页
-            const startIndex = (page - 1) * pageSize;
-            const paginatedData = inventoryList.slice(startIndex, startIndex + pageSize);
-
-            renderInventoryTable(paginatedData);
-            updatePagination(inventoryList.length, page);
-        } catch (error) {
-            api.showMessage('加载库存数据失败', 'error');
-        }
-    }
-
-    // 渲染库存表格
-    function renderInventoryTable(data) {
-        const tbody = document.querySelector('table tbody');
-        tbody.innerHTML = ''; // 清空现有内容
-
-        data.forEach(item => {
-            const row = document.createElement('tr');
-            row.className = 'hover:bg-gray-50 transition-colors';
-            row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <img src="https://picsum.photos/40/40?random=${item.id}" alt="${item.medicineName}" class="w-10 h-10 mr-3 rounded">
-                        <div>
-                            <div class="text-sm font-medium">${item.medicineName}</div>
-                            <div class="text-xs text-gray-500">${item.specification}</div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">${item.manufacturer}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">${item.quantity}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">${api.utils.formatDate(item.expiryDate)}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="badge ${item.quantity <= item.lowStockThreshold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
-                        ${item.quantity <= item.lowStockThreshold ? '库存不足' : '库存充足'}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <button class="text-primary hover:underline mr-3" onclick="viewInventoryDetail(${item.id})">详情</button>
-                    <button class="text-secondary hover:underline" onclick="editInventory(${item.id})">调整</button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    }
-
-    // 更新分页控件
-    function updatePagination(totalItems, currentPage) {
-        const totalPages = Math.ceil(totalItems / pageSize);
-        const paginationContainer = document.querySelector('.flex.gap-1');
-        // 清空现有分页按钮（保留前后翻页）
-        const pageButtons = paginationContainer.querySelectorAll('button:not(:first-child):not(:last-child)');
-        pageButtons.forEach(btn => btn.remove());
-
-        // 添加页码按钮
-        for (let i = 1; i <= totalPages; i++) {
-            const btn = document.createElement('button');
-            btn.className = `w-8 h-8 flex items-center justify-center rounded border ${i === currentPage ? 'border-primary bg-primary text-white' : 'border-gray-300 hover:bg-gray-50'}`;
-            btn.textContent = i;
-            btn.addEventListener('click', () => {
-                currentPage = i;
-                loadInventoryData(i);
-            });
-            paginationContainer.insertBefore(btn, paginationContainer.lastChild);
-        }
-
-        // 前后翻页按钮
-        document.querySelector('.fa-chevron-left').parentElement.onclick = () => {
-            if (currentPage > 1) loadInventoryData(--currentPage);
-        };
-        document.querySelector('.fa-chevron-right').parentElement.onclick = () => {
-            if (currentPage < totalPages) loadInventoryData(++currentPage);
-        };
-    }
-
-    // 初始化加载
-    loadInventoryData();
-
-    // 库存盘点按钮事件
-    document.querySelector('button:contains("库存盘点")').addEventListener('click', function() {
-        // 实际项目中打开盘点模态框
-        api.showMessage('库存盘点功能待实现');
-    });
-});
+// ====== 通用提示封装 ======
+function safeToast(msg,type){ if(typeof showToast==='function'){ showToast(msg,type); } else { console[type==='error'?'error':'log']('[Toast]',type||'info',msg); } }
+// ====== 占位：加载/空数据显示函数（原脚本调用但未定义时避免报错） ======
+if(typeof showInventoryLoading!=='function'){ window.showInventoryLoading=function(){ const l=document.getElementById('loading-inventory'); const e=document.getElementById('empty-inventory'); if(l) l.classList.remove('hidden'); if(e) e.classList.add('hidden'); }; }
+if(typeof showInventoryEmpty!=='function'){ window.showInventoryEmpty=function(){ const l=document.getElementById('loading-inventory'); const e=document.getElementById('empty-inventory'); if(l) l.classList.add('hidden'); if(e) e.classList.remove('hidden'); }; }
+// ====== 缺失函数补齐 ======
+if(typeof updateInventorySummary!=='function'){ window.updateInventorySummary=function(){ try {
+  const total = allInventoryItems.length; totalInventoryItems = total;
+  const totalEl = document.getElementById('total-medicines'); if(totalEl) totalEl.textContent = total+' 种';
+  // 低库存(含缺货)统计
+  let lowCount = 0; let nearExpiryCount = 0;
+  allInventoryItems.forEach(it=>{ const stock=getStockStatus(it.currentStock,it.safetyStock); if(['low','critical'].includes(stock.level)) lowCount++; const exp=getExpiryStatus(it.earliestExpiryDate||it.expiryDate,it.rawExpiryStatus); if(exp.text.startsWith('近效期')) nearExpiryCount++; if(exp.text==='已过期') nearExpiryCount++; });
+  const lowEl = document.getElementById('lowstock-count'); if(lowEl) lowEl.textContent = lowCount+' 种';
+  const expEl = document.getElementById('near-expiry-count'); if(expEl) expEl.textContent = nearExpiryCount+' 种';
+  const totalText = document.getElementById('inventory-total-text'); if(totalText) totalText.textContent = '共 '+total+' 种药品';
+  renderInventoryPage();
+ } catch(err){ console.warn('updateInventorySummary 执行失败',err); }
+}; }
+function exportInventoryData(){ try { const headers=['medicineId','name','currentStock','safetyStock','stockStatus','expiryDate','expiryStatus']; const rows=allInventoryItems.map(it=>{ const s=getStockStatus(it.currentStock,it.safetyStock); const e=getExpiryStatus(it.earliestExpiryDate||it.expiryDate,it.rawExpiryStatus); return [it.id,it.name,it.currentStock,it.safetyStock,s.text,(it.earliestExpiryDate||it.expiryDate||''),e.text]; }); const csv='\ufeff'+[headers.join(','),...rows.map(r=>r.map(v=>(''+v).replace(/"/g,'""')).join(','))].join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='inventory_export_'+Date.now()+'.csv'; a.click(); safeToast('导出完成','success'); } catch(e){ safeToast('导出失败: '+e.message,'error'); } }
+function startInventoryAudit(){ safeToast('盘点功能暂未实现，敬请期待','info'); }
+function resetInventoryFilters(){ ['medicine-name-filter','category-filter','stock-status-filter','expiry-status-filter'].forEach(id=>{ const el=document.getElementById(id); if(el) { if(el.tagName==='SELECT') el.value=''; else el.value=''; } }); applyInventoryFilters(); }
+function applyInventoryFilters(){ try { const nameVal=(document.getElementById('medicine-name-filter')?.value||'').trim().toLowerCase(); const catVal=(document.getElementById('category-filter')?.value||'').trim().toLowerCase(); const stockVal=(document.getElementById('stock-status-filter')?.value||'').trim(); const expVal=(document.getElementById('expiry-status-filter')?.value||'').trim(); filteredInventoryItems = allInventoryItems.filter(it=>{ if(nameVal && !(`${it.name}`.toLowerCase().includes(nameVal))) return false; if(catVal && it.category && it.category!==catVal) return false; const stock=getStockStatus(it.currentStock,it.safetyStock); if(stockVal){ if(stockVal==='normal' && !['high','medium'].includes(stock.level)) return false; if(stockVal==='warning' && !['low'].includes(stock.level)) return false; if(stockVal==='out' && !['critical'].includes(stock.level)) return false; }
+  const exp=getExpiryStatus(it.earliestExpiryDate||it.expiryDate,it.rawExpiryStatus);
+  if(expVal){ if(expVal==='normal' && !['正常','库存充足','库存一般','正常效期','正常'].includes(exp.text)) return false; if(expVal==='near' && !exp.text.startsWith('近效期')) return false; if(expVal==='expired' && exp.text!=='已过期') return false; }
+  return true; }); totalPages = Math.max(1, Math.ceil(filteredInventoryItems.length / inventoryPageSize)); if(currentInventoryPage>totalPages) currentInventoryPage=1; renderInventoryPage(); updateInventorySummary(); } catch(e){ console.error('applyInventoryFilters 出错',e); }}
+function changeInventoryPage(p){ if(p<1||p>totalPages) return; currentInventoryPage=p; renderInventoryPage(); }
+function renderInventoryPage(){ const body=document.getElementById('inventory-list-body'); if(!body) return; const start=(currentInventoryPage-1)*inventoryPageSize; const slice=filteredInventoryItems.slice(start,start+inventoryPageSize); body.innerHTML = slice.map(it=>{ const stock=getStockStatus(it.currentStock,it.safetyStock); const exp=getExpiryStatus(it.earliestExpiryDate||it.expiryDate,it.rawExpiryStatus); return `<tr class="hover:bg-gray-50">\n<td class="px-6 py-4"><div class="text-sm font-medium">${it.name}</div><div class="text-xs text-gray-500">ID: ${it.id}</div></td>\n<td class="px-6 py-4 text-sm">${it.spec||'—'}</td>\n<td class="px-6 py-4 text-sm">${it.batchNumber||'—'}</td>\n<td class="px-6 py-4 text-sm">${it.earliestExpiryDate||it.expiryDate||'—'}</td>\n<td class="px-6 py-4 text-sm">${it.currentStock}</td>\n<td class="px-6 py-4 text-sm">${it.safetyStock}</td>\n<td class="px-6 py-4 text-sm"><span class="stock-indicator ${stock.class}">${stock.text}</span> <span class="stock-indicator ${exp.class}">${exp.text}</span></td>\n<td class="px-6 py-4 text-sm space-x-2"><button class="btn btn-outline text-xs" onclick="viewInventoryDetail('${it.id}')">详情/补货</button></td>\n</tr>`; }).join(''); const range=document.getElementById('inventory-range-text'); if(range){ const end=Math.min(start+slice.length, filteredInventoryItems.length); range.textContent = `显示 ${slice.length?start+1:0}-${end} 条，共 ${filteredInventoryItems.length} 条`; } // 分页按钮
+ const pager=document.getElementById('inventory-pagination-controls'); if(pager){ let html=''; for(let i=1;i<=totalPages;i++){ html+=`<button class="pagination-btn ${i===currentInventoryPage?'active':''}" onclick="changeInventoryPage(${i})">${i}</button>`; } pager.innerHTML=html; }
+}
+// ====== 原脚本后续（安全包装原重写） ======
+// 若后面脚本会再次定义 updateInventorySummary，这里先做占位；下面覆写逻辑中做兼容
 </script>
+<script>
+// ...existing code...
+// 原先的覆盖行替换为安全版本
+try { const _origUpdateInventorySummary2 = (typeof updateInventorySummary==='function')?updateInventorySummary:function(){}; updateInventorySummary = function(){ _origUpdateInventorySummary2(); writeInventorySnapshot(); const tenant=localStorage.getItem('selectedTenant')||'default'; localStorage.setItem(tenant+'_dashboard_lowstock_count', String(document.getElementById('lowstock-count')?.textContent.replace(/\D/g,'')||'0')); localStorage.setItem(tenant+'_dashboard_near_expiry_count', String(document.getElementById('near-expiry-count')?.textContent.replace(/\D/g,'')||'0')); }; } catch(e){ console.warn('包装 updateInventorySummary 失败',e); }
 </script>
 </body>
 </html>

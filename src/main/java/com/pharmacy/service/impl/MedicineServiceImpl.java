@@ -6,6 +6,7 @@ import com.pharmacy.entity.Medicine;
 import com.pharmacy.repository.MedicineRepository;
 import com.pharmacy.service.MedicineService;
 import com.pharmacy.service.InventoryService;
+import com.pharmacy.util.StockStatusUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -64,10 +65,8 @@ public class MedicineServiceImpl implements MedicineService {
     @Override
     public Page<Medicine> searchMedicines(String keyword, String category, int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size);
-
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // 根据关键词搜索
-            List<Medicine> medicines = medicineRepository.searchByKeyword(keyword);
+            List<Medicine> medicines = medicineRepository.searchActiveByKeyword(keyword);
 
             // 如果指定了分类，进行过滤
             if (category != null && !category.trim().isEmpty()) {
@@ -85,7 +84,7 @@ public class MedicineServiceImpl implements MedicineService {
             return new PageImpl<>(medicines.subList(start, end), pageable, medicines.size());
         } else {
             // 如果没有关键词，返回所有药品
-            return medicineRepository.findAll(pageable);
+            return medicineRepository.findAllActive(pageable);
         }
     }
 
@@ -132,14 +131,18 @@ public class MedicineServiceImpl implements MedicineService {
 
         List<MedicineWithStockDTO> dtos = medicinePage.getContent().stream()
                 .map(medicine -> {
-                    System.out.println("处理药品: " + medicine.getGenericName() + " (ID: " + medicine.getMedicineId() + ")");
-
                     MedicineWithStockDTO dto = new MedicineWithStockDTO();
                     dto.setMedicineId(medicine.getMedicineId());
                     dto.setGenericName(medicine.getGenericName());
                     dto.setTradeName(medicine.getTradeName());
                     dto.setSpec(medicine.getSpec());
                     dto.setManufacturer(medicine.getManufacturer());
+                    // 新增字段填充
+                    dto.setApprovalNo(medicine.getApprovalNo());
+                    dto.setBarcode(medicine.getBarcode());
+                    dto.setProductionDate(medicine.getProductionDate());
+                    dto.setExpiryDate(medicine.getExpiryDate());
+                    dto.setStatus(medicine.getStatus());
                     dto.setRetailPrice(medicine.getRetailPrice());
                     dto.setMemberPrice(medicine.getMemberPrice());
                     dto.setIsRx(medicine.getIsRx());
@@ -152,6 +155,22 @@ public class MedicineServiceImpl implements MedicineService {
                     System.out.println("药品 " + medicine.getMedicineId() + " 的库存结果: " + stockQuantity);
 
                     dto.setStockQuantity(stockQuantity);
+
+                    // 新增：批号与最早效期
+                    java.util.List<com.pharmacy.dto.InventoryDTO> invList = inventoryService.findDTOByMedicineId(medicine.getMedicineId());
+                    java.util.List<String> batchNos = invList.stream().map(com.pharmacy.dto.InventoryDTO::getBatchNo).filter(java.util.Objects::nonNull).distinct().toList();
+                    dto.setBatchNos(batchNos);
+                    java.time.LocalDate earliest = invList.stream().map(com.pharmacy.dto.InventoryDTO::getExpiryDate)
+                            .filter(d -> d != null && !d.isBefore(java.time.LocalDate.now()))
+                            .sorted().findFirst().orElse(null);
+                    dto.setEarliestExpiryDate(earliest);
+
+                    // 计算库存状态与效期状态
+                    Integer safeBase = invList.stream().map(com.pharmacy.dto.InventoryDTO::getMinStock).filter(ms->ms!=null && ms>0).sorted().findFirst().orElse(1);
+                    String stockStatus = StockStatusUtil.calcStockStatus(stockQuantity, safeBase);
+                    dto.setStockStatus(stockStatus);
+                    String expiryStatus = StockStatusUtil.calcExpiryStatus(medicine.getExpiryDate());
+                    dto.setExpiryStatus(expiryStatus);
 
                     return dto;
                 })
@@ -172,14 +191,18 @@ public class MedicineServiceImpl implements MedicineService {
 
         List<MedicineWithStockDTO> dtos = medicinePage.getContent().stream()
                 .map(medicine -> {
-                    System.out.println("处理药品: " + medicine.getGenericName() + " (ID: " + medicine.getMedicineId() + ")");
-
                     MedicineWithStockDTO dto = new MedicineWithStockDTO();
                     dto.setMedicineId(medicine.getMedicineId());
                     dto.setGenericName(medicine.getGenericName());
                     dto.setTradeName(medicine.getTradeName());
                     dto.setSpec(medicine.getSpec());
                     dto.setManufacturer(medicine.getManufacturer());
+                    // 新增字段填充
+                    dto.setApprovalNo(medicine.getApprovalNo());
+                    dto.setBarcode(medicine.getBarcode());
+                    dto.setProductionDate(medicine.getProductionDate());
+                    dto.setExpiryDate(medicine.getExpiryDate());
+                    dto.setStatus(medicine.getStatus());
                     dto.setRetailPrice(medicine.getRetailPrice());
                     dto.setMemberPrice(medicine.getMemberPrice());
                     dto.setIsRx(medicine.getIsRx());
@@ -192,6 +215,21 @@ public class MedicineServiceImpl implements MedicineService {
                     System.out.println("药品 " + medicine.getMedicineId() + " 的库存结果: " + stockQuantity);
 
                     dto.setStockQuantity(stockQuantity);
+
+                    java.util.List<com.pharmacy.dto.InventoryDTO> invList = inventoryService.findDTOByMedicineId(medicine.getMedicineId());
+                    java.util.List<String> batchNos = invList.stream().map(com.pharmacy.dto.InventoryDTO::getBatchNo).filter(java.util.Objects::nonNull).distinct().toList();
+                    dto.setBatchNos(batchNos);
+                    java.time.LocalDate earliest = invList.stream().map(com.pharmacy.dto.InventoryDTO::getExpiryDate)
+                            .filter(d -> d != null && !d.isBefore(java.time.LocalDate.now()))
+                            .sorted().findFirst().orElse(null);
+                    dto.setEarliestExpiryDate(earliest);
+
+                    // 计算库存与效期状态
+                    Integer safeBase2 = invList.stream().map(com.pharmacy.dto.InventoryDTO::getMinStock).filter(ms->ms!=null && ms>0).sorted().findFirst().orElse(1);
+                    String stockStatus2 = StockStatusUtil.calcStockStatus(stockQuantity, safeBase2);
+                    dto.setStockStatus(stockStatus2);
+                    String expiryStatus2 = StockStatusUtil.calcExpiryStatus(medicine.getExpiryDate());
+                    dto.setExpiryStatus(expiryStatus2);
 
                     return dto;
                 })
@@ -213,13 +251,69 @@ public class MedicineServiceImpl implements MedicineService {
     }
 
     @Override
+    public Medicine findByApprovalNo(String approvalNo) {
+        if (approvalNo == null) return null;
+        return medicineRepository.findByApprovalNo(approvalNo);
+    }
+
+    @Override
+    public Medicine findByGenericSpecManufacturer(String genericName, String spec, String manufacturer) {
+        if (genericName == null) genericName = "";
+        if (spec == null) spec = "";
+        if (manufacturer == null) manufacturer = "";
+        return medicineRepository.findByGenericNameAndSpecAndManufacturer(genericName, spec, manufacturer);
+    }
+
+    @Override
     public Medicine updateMedicine(String id, Medicine medicine) {
-        medicine.setMedicineId(id);
-        return medicineRepository.save(medicine);
+        Medicine existing = medicineRepository.findById(id).orElse(null);
+        if (existing == null) {
+            medicine.setMedicineId(id);
+            medicine.setDeleted(false);
+            return medicineRepository.save(medicine);
+        }
+        if(Boolean.TRUE.equals(existing.getDeleted())) {
+            // 不允许更新已软删除的记录
+            return existing;
+        }
+        // 仅覆盖非空字段
+        if (medicine.getGenericName() != null) existing.setGenericName(medicine.getGenericName());
+        if (medicine.getTradeName() != null) existing.setTradeName(medicine.getTradeName());
+        if (medicine.getSpec() != null) existing.setSpec(medicine.getSpec());
+        if (medicine.getApprovalNo() != null) existing.setApprovalNo(medicine.getApprovalNo());
+        if (medicine.getCategoryId() != null) existing.setCategoryId(medicine.getCategoryId());
+        if (medicine.getManufacturer() != null) existing.setManufacturer(medicine.getManufacturer());
+        if (medicine.getRetailPrice() != null) existing.setRetailPrice(medicine.getRetailPrice());
+        if (medicine.getMemberPrice() != null) existing.setMemberPrice(medicine.getMemberPrice());
+        if (medicine.getIsRx() != null) existing.setIsRx(medicine.getIsRx());
+        if (medicine.getUnit() != null) existing.setUnit(medicine.getUnit());
+        if (medicine.getDescription() != null) existing.setDescription(medicine.getDescription());
+        if (medicine.getBarcode() != null) existing.setBarcode(medicine.getBarcode());
+        if (medicine.getProductionDate() != null) existing.setProductionDate(medicine.getProductionDate());
+        if (medicine.getExpiryDate() != null) existing.setExpiryDate(medicine.getExpiryDate());
+        if (medicine.getStatus() != null) existing.setStatus(medicine.getStatus());
+        return medicineRepository.save(existing);
     }
 
     @Override
     public void deleteMedicine(String id) {
-        medicineRepository.deleteById(id);
+        Medicine existing = medicineRepository.findById(id).orElse(null);
+        if (existing != null) {
+            existing.setDeleted(true);
+            existing.setStatus("INACTIVE");
+            medicineRepository.save(existing);
+        }
+    }
+
+    @Override
+    public void restoreMedicine(String id) {
+        Medicine existing = medicineRepository.findById(id).orElse(null);
+        if (existing != null && Boolean.TRUE.equals(existing.getDeleted())) {
+            existing.setDeleted(false);
+            if (existing.getStatus() == null || existing.getStatus().equalsIgnoreCase("INACTIVE")) {
+                existing.setStatus("ACTIVE");
+            }
+            medicineRepository.save(existing);
+        }
     }
 }

@@ -64,6 +64,34 @@ class PharmacyAPI {
         }),
     };
 
+    // 药品API
+    medicineAPI = {
+        // 获取全部药品（分页/非分页兼容）
+        getAll: (page = 0, size = 100) => this.request(`/medicines?page=${page}&size=${size}`),
+        // 按关键字和分类搜索并包含库存
+        searchWithStock: (keyword = '', category = '', page = 1, size = 100) => this.request(`/medicines/search-with-stock?keyword=${encodeURIComponent(keyword)}&category=${encodeURIComponent(category)}&page=${page}&size=${size}`),
+        // 详情
+        getById: (id) => this.request(`/medicines/${encodeURIComponent(id)}`),
+        // 更新
+        update: (id, data) => this.request(`/medicines/${encodeURIComponent(id)}`, { method: 'PUT', body: data }),
+        // 删除
+        delete: (id) => this.request(`/medicines/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+        // 新增
+        create: (data) => this.request('/medicines', { method: 'POST', body: data })
+    };
+
+    // 库存API
+    inventoryAPI = {
+        // 获取全部库存（DTO）
+        getAll: () => this.request('/inventory'),
+        // 详情（按库存ID）
+        getDetail: (id) => this.request(`/inventory/${encodeURIComponent(id)}`),
+        // 按药品ID获取所有批次
+        getByMedicine: (medicineId) => this.request(`/inventory/by-medicine/${encodeURIComponent(medicineId)}`),
+        // 按批次号搜索库存
+        searchByBatch: (batchNo) => this.request(`/inventory/search-batch?batchNo=${encodeURIComponent(batchNo)}`)
+    };
+
     // 消息提示
     showMessage(message, type = 'success') {
         // 创建消息元素

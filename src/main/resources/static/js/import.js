@@ -13,7 +13,6 @@ class MedicineImporter {
             { field: 'maxStock', name: '最高库存', required: false, example: '500' },
             { field: 'batchNumber', name: '批号', required: false, example: 'BN20240501' },
             { field: 'expiryDate', name: '有效期至', required: false, example: '2025-12-31' },
-            { field: 'barcode', name: '条形码', required: false, example: '6931234567890' },
             { field: 'description', name: '药品说明', required: false, example: '用于治疗细菌感染' }
         ];
 

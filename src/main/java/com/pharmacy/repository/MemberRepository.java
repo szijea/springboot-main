@@ -26,8 +26,13 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     List<Member> findByPointsGreaterThan(Integer points);
 
     // 根据姓名模糊搜索
-    @Query("SELECT m FROM Member m WHERE m.name LIKE %:name%")
-    List<Member> findByNameContaining(@Param("name") String name);
+    // 修复: 原 @Query("SELECT m FROM Member m WHERE m.name LIKE %:name%") 在某些情况下不会正确匹配, 改为派生查询或 CONCAT 形式
+    // 使用派生查询自动生成: LIKE %name%
+    List<Member> findByNameContaining(String name);
+
+    // 备用显式 JPQL（如需强制使用，可改调用此方法）
+    @Query("SELECT m FROM Member m WHERE m.name LIKE CONCAT('%', :kw, '%')")
+    List<Member> findByNameLikeKeyword(@Param("kw") String kw);
 
     // 统计各等级会员数量
     @Query("SELECT m.level, COUNT(m) FROM Member m GROUP BY m.level")

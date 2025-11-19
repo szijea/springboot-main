@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 收银管理</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/tailwind.css" />
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="js/common.js"></script>
 
     <!-- 配置Tailwind -->
     <script>
@@ -94,92 +93,17 @@
           }
         }
     </style>
+
+    <!-- 如果未加载 tailwind (生产不建议 CDN，仅兜底防止 tailwind 未定义报错) -->
+    <script>
+      if(typeof tailwind==='undefined'){ window.tailwind={ config:{}, }; }
+    </script>
 </head>
-
 <body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex">
-<!-- 侧边栏 -->
-<aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen z-10">
-    <div class="p-4 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <i class="fa fa-medkit text-primary"></i>
-            </div>
-            <h1 class="font-bold text-lg">智慧药房系统</h1>
-        </div>
-    </div>
+<!-- 注入统一导航（侧边栏 + 顶部） -->
+<div id="common-nav" data-active="cashier"></div>
 
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-        <nav class="space-y-1">
-            <p class="text-xs font-medium text-gray-500 px-4 mb-2">主功能</p>
-            <a href="medicine-management.html" class="sidebar-item block">
-                <i class="fa fa-dashboard w-5 text-center"></i>
-                <span>控制台</span>
-            </a>
-            <a href="cashier.html" class="sidebar-item active block">
-                <i class="fa fa-shopping-cart w-5 text-center"></i>
-                <span>收银管理</span>
-            </a>
-            <a href="stock-in.html" class="sidebar-item block">
-                <i class="fa fa-box w-5 text-center"></i>
-                <span>药品入库</span>
-            </a>
-            <a href="inventory.html" class="sidebar-item block">
-                <i class="fa fa-warehouse w-5 text-center"></i>
-                <span>库存管理</span>
-            </a>
-            <a href="members.html" class="sidebar-item block">
-                <i class="fa fa-users w-5 text-center"></i>
-                <span>会员管理</span>
-
-                <a href="order-history.html" class="sidebar-item block">
-                    <i class="fa fa-history w-5 text-center"></i>
-                    <span>历史订单</span>
-                </a>
-            </a>
-        </nav>
-    </div>
-
-    <div class="p-4 border-t border-gray-200">
-        <div class="flex items-center gap-3">
-            <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
-            <div>
-                <p class="font-medium text-sm">张药师</p>
-                <p class="text-xs text-gray-500">管理员</p>
-            </div>
-            <a href="login.html" class="ml-auto text-gray-400 hover:text-accent transition-colors">
-                <i class="fa fa-sign-out"></i>
-            </a>
-        </div>
-    </div>
-</aside>
-
-<!-- 主内容区 -->
-<main class="flex-1 flex flex-col">
-    <!-- 顶部导航 -->
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div class="flex items-center gap-4">
-            <button id="sidebar-toggle" class="lg:hidden text-gray-500 hover:text-primary">
-                <i class="fa fa-bars text-xl"></i>
-            </button>
-            <div class="relative">
-                <input type="text" placeholder="搜索药品、会员、订单..." class="w-64 px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all">
-                <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-4">
-            <button class="relative p-2 text-gray-500 hover:text-primary hover:bg-gray-100 rounded-full transition-colors">
-                <i class="fa fa-bell text-xl"></i>
-                <span class="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-            </button>
-
-            <div class="text-right hidden md:block">
-                <p class="text-sm font-medium">今天 <span id="current-date"></span></p>
-                <p class="text-xs text-gray-500" id="current-time"></p>
-            </div>
-        </div>
-    </header>
-
+<main class="flex-1 flex flex-col pt-16">
     <!-- 可滚动内容区 -->
     <div class="main-content">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -233,7 +157,7 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">药品名称</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">规格</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">生产厂家</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">批号</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">单价</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">库存</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -371,6 +295,10 @@
     </div>
 </main>
 
+<!-- 注入统一导航脚本 -->
+<script src="js/common-nav.js"></script>
+<script src="js/common.js"></script>
+
 <!-- 支付确认模态框 -->
 <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
     <div class="bg-white rounded-xl p-6 w-full max-w-md">
@@ -387,7 +315,105 @@
 </div>
 
 <script>
-    // 全局变量
+    // 修改租户列表 rzt_db -> rzt
+function ensureTenant() {
+    const existing = localStorage.getItem('selectedTenant');
+    if (existing) {
+        console.log('[Tenant] 已选择租户:', existing);
+        return existing;
+    }
+    const tenants = [ {id:'bht', name:'博海堂'}, {id:'wx', name:'文轩店'}, {id:'rzt', name:'仁泽堂'} ];
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg w-96 shadow-lg p-6">
+        <h3 class="text-lg font-bold mb-4">请选择当前门店</h3>
+        <div class="space-y-2 mb-4">
+          ${tenants.map(t=>`<button data-id="${t.id}" class="tenant-btn w-full px-3 py-2 rounded border hover:bg-primary/10 flex justify-between items-center">
+              <span>${t.name}</span><span class='text-xs text-gray-500'>${t.id}</span>
+          </button>`).join('')}
+        </div>
+        <p class="text-xs text-gray-500">选择后会记住在本地，可随时通过开发者工具修改 selectedTenant。</p>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.querySelectorAll('.tenant-btn').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+            const id = btn.getAttribute('data-id');
+            localStorage.setItem('selectedTenant', id);
+            console.log('[Tenant] 已设置租户为', id);
+            modal.remove();
+            // 可在选择后自动刷新会员或库存数据
+        });
+    });
+    return null;
+}
+
+// 修改：会员搜索函数使用 quick-search + fallback
+async function searchMember() {
+    const searchInput = document.getElementById('member-search-input');
+    if (!searchInput) return;
+    const keyword = searchInput.value.trim();
+    if (!keyword) {
+        showMessage('请输入会员姓名、手机号或卡号', 'error');
+        return;
+    }
+    const tenant = localStorage.getItem('selectedTenant');
+    console.log('=== 开始搜索会员 ===');
+    console.log('租户:', tenant, '关键词:', keyword);
+    try {
+        let response = null;
+        // 优先 quick-search
+        const quickUrl = `/api/members/quick-search?keyword=${encodeURIComponent(keyword)}`;
+        console.log('[MemberSearch] 请求 quick-search:', quickUrl);
+        response = await fetch(quickUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(tenant? {'X-Shop-Id': tenant}: {})
+            }
+        }).then(r=>r.json()).catch(e=>{ console.warn('quick-search 请求异常, fallback:', e); return null; });
+
+        let usedEndpoint = 'quick-search';
+        if (!response || response.code !== 200) {
+            const searchUrl = `/api/members/search?keyword=${encodeURIComponent(keyword)}&page=1&size=10`;
+            console.log('[MemberSearch] 使用 fallback /search:', searchUrl);
+            response = await fetch(searchUrl, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(tenant? {'X-Shop-Id': tenant}: {})
+                }
+            }).then(r=>r.json());
+            usedEndpoint = 'search';
+        }
+        console.log(`[MemberSearch] 使用接口: ${usedEndpoint} 响应:`, response);
+        if (response && response.code === 200 && Array.isArray(response.data) && response.data.length > 0) {
+            currentMember = response.data[0];
+            if (!currentMember.id && currentMember.memberId) currentMember.id = currentMember.memberId;
+            const customerNameInput = document.getElementById('customerName');
+            if (customerNameInput) customerNameInput.value = currentMember.name;
+            displayMemberInfo(currentMember);
+            updateCart();
+            showMessage(`找到会员: ${currentMember.name}`);
+        } else {
+            console.warn('[MemberSearch] 无匹配会员 数据对象:', response);
+            if (tenant) {
+                showMessage(`该门店(${tenant})下未找到匹配会员`, 'error');
+            } else {
+                showMessage('未找到匹配的会员 (尚未选择门店)', 'error');
+            }
+            clearMemberInfo();
+        }
+    } catch (error) {
+        console.error('搜索会员失败:', error);
+        let msg = '搜索会员失败: ' + error.message;
+        if (error.message.includes('Failed to fetch')) msg += ' (可能后端未启动)';
+        showMessage(msg, 'error');
+        clearMemberInfo();
+    }
+}
+
+// 全局变量
     let cart = [];
     let currentMember = null;
     let selectedPaymentMethod = null;
@@ -428,7 +454,7 @@
         return 'text-green-600';
     }
 
-    // 显示消息提示
+    // ��示消息提示
     function showMessage(message, type = 'success') {
         // 创建消息元素
         const messageDiv = document.createElement('div');
@@ -608,92 +634,40 @@
     // ========== 搜索和分页相关函数 ==========
     async function performMedicineSearch() {
         try {
-            console.log('=== 开始搜索药品（包含库存信息）===');
-
             const searchInput = document.getElementById('medicine-search-input');
             const categoryFilter = document.getElementById('category-filter');
-
-            if (!searchInput || !categoryFilter) {
-                throw new Error('搜索元素未找到');
-            }
-
-            const searchParams = {
-                keyword: searchInput.value,
-                category: categoryFilter.value,
-                page: 1
-            };
-
-            console.log('搜索参数:', searchParams);
-
-            // 检查 API 对象
-            console.log('API对象状态:', {
-                api: typeof window.api,
-                medicineAPI: typeof window.api?.medicineAPI,
-                searchWithStock: typeof window.api?.medicineAPI?.searchWithStock
-            });
-
-            // 方法1: 直接使用 searchWithStock
-            if (window.api?.medicineAPI?.searchWithStock && typeof window.api.medicineAPI.searchWithStock === 'function') {
-                console.log('使用方法1: medicineAPI.searchWithStock');
-                const response = await window.api.medicineAPI.searchWithStock(
-                    searchParams.keyword,
-                    searchParams.category,
-                    searchParams.page,
-                    100
-                );
-                handleSearchResponse(response);
-            }
-            // 方法2: 使用普通的 search 方法
-            else if (window.api?.medicineAPI?.search && typeof window.api.medicineAPI.search === 'function') {
-                console.log('使用方法2: medicineAPI.search (备用方案)');
-                const response = await window.api.medicineAPI.search(
-                    searchParams.keyword,
-                    searchParams.category,
-                    searchParams.page,
-                    100
-                );
-                handleSearchResponse(response);
-            }
-            // 方法3: 直接调用 API
-            else {
-                console.log('使用方法3: 直接 API 调用');
-                let url = `http://localhost:8080/api/medicines/search-with-stock?page=1&size=100`;
-                if (searchParams.keyword) {
-                    url += `&keyword=${encodeURIComponent(searchParams.keyword)}`;
+            const keyword = searchInput ? searchInput.value.trim() : '';
+            const category = categoryFilter ? categoryFilter.value : '';
+            // 先药品搜索
+            let primaryResp = await window.api.medicineAPI.searchWithStock(keyword, category, 1, 100);
+            if(primaryResp.code===200 && Array.isArray(primaryResp.data) && primaryResp.data.length>0){
+                handleSearchResponse(primaryResp);
+            } else if(keyword){
+                // 回退批号搜索
+                console.log('药品搜索为空，尝试批号搜索:', keyword);
+                let batchResp = await window.api.inventoryAPI.searchByBatch(keyword);
+                // 将库存DTO适配为药品列表结构
+                if(batchResp.code===200){
+                    const adapted = (batchResp.data||[]).map(dto=>({
+                        medicineId: dto.medicineId,
+                        genericName: dto.genericName || dto.tradeName,
+                        tradeName: dto.tradeName,
+                        spec: dto.spec,
+                        retailPrice: dto.retailPrice,
+                        stockQuantity: dto.stockQuantity,
+                        batch: dto.batchNo,
+                        isRx: false
+                    }));
+                    handleSearchResponse({code:200,message:'success',data:adapted});
+                } else {
+                    handleSearchResponse(batchResp);
                 }
-                if (searchParams.category) {
-                    url += `&category=${encodeURIComponent(searchParams.category)}`;
-                }
-
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                handleSearchResponse(result);
+            } else {
+                handleSearchResponse(primaryResp);
             }
-
-        } catch (error) {
-            console.error('搜索出错:', error);
-            console.error('错误详情:', {
-                message: error.message,
-                stack: error.stack
-            });
-
-            let errorMessage = '搜索失败: ' + error.message;
-            if (error.message.includes('Failed to fetch')) {
-                errorMessage += ' (网络连接失败，请检查后端服务是否启动)';
-            }
-
-            showMessage(errorMessage, 'error');
-            updateMedicineList([]);
+        } catch(e){
+            console.error('搜索异常:', e);
+            handleSearchResponse({code:500,message:e.message,data:[]});
         }
     }
 
@@ -739,58 +713,60 @@
 
         console.log('找到药品数量:', medicines.length);
 
-        // 生成药品列表HTML - 使用新的库存字段
-        const html = medicines.map((medicine, index) => {
-            const price = medicine.retailPrice || medicine.price;
-            const memberPrice = medicine.memberPrice;
-            const stockQuantity = medicine.stockQuantity || medicine.totalStock || 0;
-            const unit = medicine.unit || '盒';
+        // 合并同名同规格药品（按 name + spec 聚合），累加库存并收集批号
+        const grouped = {};
+        medicines.forEach(m => {
+            const name = m.genericName || m.name || '未知药品';
+            const spec = m.spec || m.specification || '';
+            const key = name + '||' + spec;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    name: name,
+                    spec: spec,
+                    price: m.retailPrice || m.price || 0,
+                    memberPrice: m.memberPrice || null,
+                    unit: m.unit || '盒',
+                    isRx: m.isRx,
+                    medicineId: m.medicineId || m.id || (key.replace(/\s+/g,'_')),
+                    stockQuantity: 0,
+                    batches: []
+                };
+            }
+            const qty = Number(m.stockQuantity || m.totalStock || 0) || 0;
+            grouped[key].stockQuantity += qty;
+            // 收集批号（如果有）并去重
+            if (m.batch) {
+                if (!grouped[key].batches.includes(m.batch)) grouped[key].batches.push(m.batch);
+            }
+        });
 
-            return `
-            <tr class="hover:bg-gray-50 transition-colors">
+        const deduped = Object.keys(grouped).map(k => grouped[k]);
+
+        // 生成药品列表HTML
+        const html = deduped.map(medicine => {
+            const batches = (medicine.batches && medicine.batches.length) ? medicine.batches : [];
+            const batchPreview = batches.length ? batches.slice(0,3).join(', ') : '';
+            return `<tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                            <i class="fa fa-pills text-primary"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium">${medicine.genericName || medicine.name || '未知药品'}</div>
-                            <div class="text-xs text-gray-500">${medicine.tradeName || ''}</div>
-                            ${medicine.isRx ? '<span class="inline-block mt-1 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">处方药</span>' : ''}
-                        </div>
+                        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3"><i class="fa fa-pills text-primary"></i></div>
+                        <div><div class="text-sm font-medium">${medicine.name}</div>${medicine.isRx?'<div class="text-xs text-red-700">处方药</div>':''}</div>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.spec || medicine.specification || '暂无规格'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.manufacturer || '未知厂家'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">${medicine.spec || '暂无规格'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-xs">${batchPreview || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-medium">${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(price) : '¥' + (price || 0).toFixed(2)}</div>
-                    ${memberPrice ? `<div class="text-xs text-secondary">会员 ${window.api?.utils?.formatPrice ? window.api.utils.formatPrice(memberPrice) : '¥' + memberPrice.toFixed(2)}</div>` : ''}
+                    <div class="text-sm font-medium">¥${(medicine.price||0).toFixed(2)}</div>
+                    ${medicine.memberPrice?`<div class="text-xs text-secondary">会员 ¥${medicine.memberPrice.toFixed(2)}</div>`:''}
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <span class="${getStockStatusClass(stockQuantity)} font-medium">
-                        ${stockQuantity} ${unit}
-                    </span>
-                    ${stockQuantity <= 10 && stockQuantity > 0 ?
-                        '<span class="ml-1 text-xs text-yellow-600">(低库存)</span>' : ''}
-                    ${stockQuantity === 0 ?
-                        '<span class="ml-1 text-xs text-red-600">(缺货)</span>' : ''}
-                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="${getStockStatusClass(medicine.stockQuantity)} font-medium">${medicine.stockQuantity} ${medicine.unit||'件'}</span>${medicine.stockQuantity<=10&&medicine.stockQuantity>0?'<span class="ml-1 text-xs text-yellow-600">(低库存)</span>':''}${medicine.stockQuantity===0?'<span class="ml-1 text-xs text-red-600">(缺货)</span>':''}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <button class="btn btn-primary text-sm px-3 py-1 add-to-cart"
-                            data-id="${medicine.medicineId || medicine.id}"
-                            data-name="${medicine.genericName || medicine.name}"
-                            data-price="${medicine.retailPrice || medicine.price}"
-                            data-member-price="${medicine.memberPrice}"
-                            data-spec="${medicine.spec || medicine.specification}"
-                            data-is-rx="${medicine.isRx}"
-                            data-stock="${stockQuantity}"
-                            ${stockQuantity <= 0 ? 'disabled' : ''}>
-                        <i class="fa fa-plus-circle"></i>
-                        ${stockQuantity <= 0 ? '缺货' : '加入购物车'}
+                    <button class="btn btn-primary text-sm px-3 py-1 add-to-cart" data-id="${medicine.medicineId}" data-name="${medicine.name}" data-price="${medicine.price}" data-member-price="${medicine.memberPrice}" data-spec="${medicine.spec}" data-batches="${batches.join('|')}" data-batch="${batches[0]||''}" data-is-rx="${medicine.isRx}" data-stock="${medicine.stockQuantity}" ${medicine.stockQuantity<=0?'disabled':''}>
+                        <i class="fa fa-plus-circle"></i>${medicine.stockQuantity<=0?' 缺货':' 加入购物车'}
                     </button>
                 </td>
-            </tr>
-        `}).join('');
+            </tr>`;
+        }).join('');
 
         if (tbody) tbody.innerHTML = html;
         if (resultInfo) resultInfo.textContent = `找到 ${medicines.length} 个药品`;
@@ -809,6 +785,8 @@
                 const price = parseFloat(this.getAttribute('data-price'));
                 const memberPrice = this.getAttribute('data-member-price') ? parseFloat(this.getAttribute('data-member-price')) : null;
                 const spec = this.getAttribute('data-spec');
+                const batches = (this.getAttribute('data-batches') || '').split('|').filter(Boolean);
+                const selectedBatch = this.getAttribute('data-batch') || (batches[0] || '');
                 const isRx = this.getAttribute('data-is-rx') === 'true';
                 const stock = parseInt(this.getAttribute('data-stock'));
 
@@ -818,10 +796,10 @@
                     return;
                 }
 
-                // 检查是否已在购物车中
-                const existingItem = cart.find(item => item.id === id);
+                // 检查是否已在购物车中（按 id + batch 合并）
+                const existingItem = cart.find(item => item.id === id && item.batch === selectedBatch);
                 if (existingItem) {
-                    // 检查库存是否足够
+                    // 检查库��是否足够
                     if (existingItem.quantity >= stock) {
                         showMessage(`${name} 库存不足，当前库存: ${stock}`, 'error');
                         return;
@@ -839,6 +817,8 @@
                         price,
                         memberPrice,
                         spec,
+                        batch: selectedBatch,
+                        batches,
                         isRx,
                         stock, // 保存库存信息用于后续检查
                         quantity: 1
@@ -981,64 +961,13 @@
     async function createOrder(orderData) {
         console.log('=== 创建订单 ===');
         console.log('订单数据:', orderData);
-
-        // 首先尝试使用 window.api.orderAPI
-        if (window.api && window.api.orderAPI && typeof window.api.orderAPI.create === 'function') {
-            console.log('使用 window.api.orderAPI.create');
-            try {
-                const response = await window.api.orderAPI.create(orderData);
-                console.log('orderAPI.create 响应:', response);
-                return response;
-            } catch (error) {
-                console.error('window.api.orderAPI.create 调用失败:', error);
-                // 继续尝试直接调用
-            }
-        }
-
-        // 如果 orderAPI 不可用，尝试直接调用 API
-        console.log('使用直接 API 调用');
-
         try {
-            const response = await fetch('http://localhost:8080/api/orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderData)
-            });
-
-            console.log('API响应状态:', response.status);
-
-            if (!response.ok) {
-                // 尝试获取详细的错误信息
-                let errorDetail = '';
-                try {
-                    const errorResponse = await response.json();
-                    errorDetail = JSON.stringify(errorResponse);
-                    console.error('API错误响应:', errorResponse);
-
-                    // 提取具体的错误消息
-                    if (errorResponse.message) {
-                        errorDetail = errorResponse.message;
-                    } else if (errorResponse.errors) {
-                        errorDetail = Object.values(errorResponse.errors).join(', ');
-                    } else if (errorResponse.detail) {
-                        errorDetail = errorResponse.detail;
-                    }
-                } catch (e) {
-                    errorDetail = await response.text();
-                    console.error('API错误文本:', errorDetail);
-                }
-
-                throw new Error(`HTTP error! status: ${response.status}, 详情: ${errorDetail}`);
-            }
-
-            const result = await response.json();
-            console.log('API成功响应:', result);
+            // 统一通过 window.api.orderAPI 确保携带租户头
+            const result = await window.api.orderAPI.create(orderData);
             return result;
-        } catch (error) {
-            console.error('创建订单请求失败:', error);
-            throw error;
+        } catch (err){
+            console.error('orderAPI.create 调用失败, 详细: ', err);
+            throw err;
         }
     }
 
@@ -1151,7 +1080,7 @@
                         btn.classList.add('btn-outline');
                     });
 
-                    showMessage(`下单成功！订单号: ${response.orderId || response.id || '未知'}`);
+                    showMessage(`下单成功！订单号: ${response.orderId || response.data?.orderNumber || response.data?.orderId || response.id || '未知'}`);
                 })
                 .catch(error => {
                     console.error('下单失败:', error);
@@ -1182,31 +1111,7 @@
     }
 
     // 添加订单数据验证函数
-    function validateOrderData(orderData) {
-        if (!orderData.customerName) {
-            return '客户姓名不能为空';
-        }
-
-        if (!orderData.items || orderData.items.length === 0) {
-            return '订单商品不能为空';
-        }
-
-        // 检查每个商品项的ID
-        for (let i = 0; i < orderData.items.length; i++) {
-            const item = orderData.items[i];
-            if (!item.productId) {
-                return `第 ${i + 1} 个商品ID为空`;
-            }
-            if (item.quantity <= 0) {
-                return `商品 "${item.productName}" 数量必须大于0`;
-            }
-            if (item.unitPrice <= 0) {
-                return `商品 "${item.productName}" 价格必须大于0`;
-            }
-        }
-
-        return null; // 验证通过
-    }
+    function validateOrderData(order){ if(!order.items || !Array.isArray(order.items) || order.items.length===0) return '订单没有商品'; if(order.totalAmount<0) return '金额非法'; return null; }
 
     // ========== 挂单相关函数 ==========
     async function hangOrder() {
@@ -1481,13 +1386,15 @@
     // ========== 初始化 ==========
     document.addEventListener('DOMContentLoaded', function() {
         console.log('=== 页面开始初始化 ===');
+        const tenant = ensureTenant();
+        console.log('[Init] 当前租户:', tenant || '(待选择)');
 
         // 基础初始化
         initDateTime();
         initSidebar();
         initEvents();
 
-        // 使用本地分类数据，避免 API 调用失败
+        // 使用本地分���数据，避免 API 调用失败
         initCategoryFilter();
 
         // 初始化购物车
@@ -1499,6 +1406,10 @@
         console.log('2. 点击搜索按钮或按回车键');
         console.log('3. 检查控制台 Network 标签查看请求');
     });
+</script>
+
+<script>
+// 移除 patchThenSyntax 相关遗留（已在主流程修复 then 语法）
 </script>
 </body>
 </html>

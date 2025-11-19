@@ -22,4 +22,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     @Query("SELECT oi.medicineId, SUM(oi.quantity), SUM(oi.subtotal) FROM OrderItem oi GROUP BY oi.medicineId ORDER BY SUM(oi.quantity) DESC")
     List<Object[]> findTopProducts();
+
+    long countByMedicineId(String medicineId);
 }
