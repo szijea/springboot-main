@@ -12,7 +12,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/stats")
-@CrossOrigin(origins = "http://localhost:8080")
+// 使用全局 CORS 配置，移除局部 @CrossOrigin
 public class StatsController {
 
     @Autowired

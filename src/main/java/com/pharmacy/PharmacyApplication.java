@@ -1,6 +1,7 @@
 package com.pharmacy;
 
 import com.pharmacy.multitenant.MultiTenantDataSourceConfig;
+import com.pharmacy.multitenant.MultiTenantForeignKeyInitializer;
 import com.pharmacy.multitenant.MultiTenantSchemaInitializer;
 import com.pharmacy.multitenant.MultiTenantSupplierSeeder;
 import org.springframework.boot.SpringApplication;
@@ -18,7 +19,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EntityScan("com.pharmacy.entity")
 @EnableJpaRepositories("com.pharmacy.repository")
 @EnableScheduling
-@Import({MultiTenantDataSourceConfig.class, MultiTenantSchemaInitializer.class, MultiTenantSupplierSeeder.class})
+@Import({MultiTenantDataSourceConfig.class, MultiTenantSchemaInitializer.class, MultiTenantSupplierSeeder.class, MultiTenantForeignKeyInitializer.class})
 public class PharmacyApplication {
     // Docker 部署说明:
     // 1. 通过 docker-compose 启动 mysql 与应用；init-multitenant.sql 会创建多租户库结构与基础数据。

@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
+    <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
 
@@ -50,7 +51,7 @@
         .layout-main { flex: 1; }
     </style>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="staff"></div>
@@ -59,12 +60,19 @@
   <p class="text-gray-500">暂无通知</p>
 </div>
 <main class="flex-1 flex flex-col pt-16">
-  <div class="main-content" id="main-content"><div class="container-xl section-gap">
+  <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
       <div>
         <h2 class="page-title font-bold page-title-decor">员工管理</h2>
         <p class="text-gray-500">人员档案与权限配置</p>
       </div>
+    </div>
+
+    <div class="dashboard-kpis kpi-horizontal mb-6" id="staff-kpi-row">
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">员工总数</p><h3 class="text-xl font-bold" id="kpi-staff-total">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">在岗</p><h3 class="text-xl font-bold" id="kpi-staff-active">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">本月新增</p><h3 class="text-xl font-bold" id="kpi-staff-new">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">请假/离岗</p><h3 class="text-xl font-bold" id="kpi-staff-leave">--</h3></div>
     </div>
 
     <div class="layout-two-column">
@@ -112,7 +120,7 @@
         </div>
       </div>
     </div>
-  </div></div>
+  </div></div></div> <!-- close app-shell / container-fluid / main-content -->
 </main>
 <script>(function(){var nav=document.getElementById('common-nav');if(nav&&!nav.classList.contains('nav-glass'))nav.classList.add('nav-glass');})();</script>
 <script>
@@ -164,5 +172,27 @@ if(typeof initKeyInteractions!=='function'){ window.initKeyInteractions=function
       if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
   </script>
 <script src="js/a11y.js" defer></script>
+<script src="js/kpi.js"></script>
+<script>
+(function(){
+  function updateStaffKpis(){
+    const rows=[...document.querySelectorAll('#staff-table tr')];
+    const total=rows.length;
+    let active=0, leave=0, newMonth=0;
+    const monthStart=new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    rows.forEach(r=>{
+      const cells=r.children; if(!cells||cells.length<6) return;
+      const statusCell=cells[cells.length-3]; // heuristic
+      const dateCell=cells[5];
+      const statusText=statusCell?.textContent||'';
+      if(/在岗|正常/.test(statusText)) active++; else if(/请假|离岗|休/.test(statusText)) leave++;
+      try{ const d=new Date(dateCell.textContent.trim()); if(d>=monthStart) newMonth++; }catch(e){/* ignore */}
+    });
+    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val+(id==='kpi-staff-total'||id==='kpi-staff-active'||id==='kpi-staff-new'||id==='kpi-staff-leave'?'');};
+    set('kpi-staff-total',total); set('kpi-staff-active',active); set('kpi-staff-new',newMonth); set('kpi-staff-leave',leave);
+  }
+  document.addEventListener('DOMContentLoaded',()=>{ updateStaffKpis(); setInterval(updateStaffKpis,3000); });
+})();
+</script>
 </body>
 </html>

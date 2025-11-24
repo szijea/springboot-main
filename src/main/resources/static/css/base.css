@@ -63,4 +63,8 @@
 .cart-item-highlight {background:#fef9c3;}
 /* 统一控制台标题样式 */
 .page-title {font-size:clamp(1.25rem,2vw,1.75rem);line-height:1.2;}
-/* ...existing code... */
+.app-shell {max-width:1280px;margin-left:auto;margin-right:auto;width:100%;padding-left:1rem;padding-right:1rem;}
+@media (min-width:1600px){.app-shell{max-width:1400px;}}
+/* optional narrower variant */
+.app-shell-narrow {max-width:960px;margin:0 auto;padding-left:1rem;padding-right:1rem;}
+/* end app-shell additions */

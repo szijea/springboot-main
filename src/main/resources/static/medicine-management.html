@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -23,7 +24,7 @@
     <!-- 引入 Chart.js CDN，确保在自定义 JS 之前加载 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <!-- 注入统一导航（侧边栏 + 顶部） -->
@@ -35,7 +36,7 @@
 </div>
 
 <main class="flex-1 flex flex-col pt-16">
-    <div class="main-content" id="main-content"><div class="container-xl section-gap">
+    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
         <!-- 页面标题与操作按钮 -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
             <div>
@@ -53,7 +54,7 @@
         </div>
 
         <!-- 数据统计卡片 -->
-        <div class="dashboard-kpis grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6 mb-6">
+        <div class="dashboard-kpis kpi-horizontal mb-6" id="dashboard-kpi-row">
             <!-- 今日销售额 -->
             <div class="card card-interactive elevation-2 p-6">
                 <div class="flex justify-between items-start mb-4">
@@ -203,7 +204,7 @@
                 </table>
             </div>
         </div>
-    </div></div>
+    </div></div></div>
 </main>
 
 <!-- 盘点详情模态 -->

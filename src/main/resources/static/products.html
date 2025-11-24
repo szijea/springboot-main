@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
+    <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
@@ -25,7 +27,7 @@
       .pagination-btn.active{background:#165DFF;color:#fff;border-color:#165DFF;}
       .pagination-btn.disabled{color:#94a3b8;cursor:not-allowed;}
       .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;}
-      .modal-content{background:#fff;border-radius:1rem;box-shadow:0 10px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1);max-width:48rem;width:100%;margin:1rem;max-height:90vh;overflow-y:auto;}
+      .modal-content{background:#fff;border-radius:1rem;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1),0 8px 10px -6px rgba(0,0,0,0.1);max-width:48rem;width:100%;margin:1rem;max-height:90vh;overflow-y:auto;}
 
       /* 控制台统一滚动容器样式（若 layout.css 已定义可忽略） */
       .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
@@ -39,17 +41,14 @@
     <script src="js/common.js" defer></script>
     <script src="js/common-nav.js" defer></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
   <div id="common-nav" data-active="products"></div>
-  <div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm">
-    <div class="font-medium mb-2">通知面板</div>
-    <p class="text-gray-500">暂时无通知</p>
-  </div>
+  <div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm"><div class="font-medium mb-2">通知面板</div><p class="text-gray-500">暂时无通知</p></div>
   <main class="flex-1 flex flex-col pt-16">
     <div class="main-content" id="main-content">
-      <div class="container-xl section-gap">
+      <div class="container-fluid section-gap"><div class="app-shell">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
           <div>
             <h2 class="page-title font-bold page-title-decor">药品档案管理</h2>
@@ -60,6 +59,12 @@
             <button class="btn btn-outline" id="import-medicines"><i class="fa fa-upload"></i> 导入药品</button>
             <button id="batch-operate-btn" class="btn btn-outline"><i class="fa fa-cogs"></i> 批量操作</button>
           </div>
+        </div>
+        <div class="dashboard-kpis kpi-horizontal mb-6" id="products-kpi-row">
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">总药品数</p><h3 class="text-xl font-bold" id="kpi-prod-total">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">处方药</p><h3 class="text-xl font-bold" id="kpi-prod-prescription">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">OTC药品</p><h3 class="text-xl font-bold" id="kpi-prod-otc">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">中药</p><h3 class="text-xl font-bold" id="kpi-prod-chinese">--</h3></div>
         </div>
         <div class="layout-two-column">
           <aside class="layout-sidebar">
@@ -176,6 +181,7 @@
           </section>
         </div>
       </div>
+      </div>
     </div>
   </main>
 
@@ -291,5 +297,16 @@
 
   <script src="js/products.js"></script>
   <script src="js/a11y.js"></script>
+  <script src="js/kpi.js"></script>
+  <script>
+  (function(){
+    // 将侧边栏统计同步到 KPI 行（若存在）
+    function syncProductKpis(){
+      const map=[['total-medicines','kpi-prod-total'],['prescription-count','kpi-prod-prescription'],['otc-count','kpi-prod-otc'],['chinese-count','kpi-prod-chinese']];
+      map.forEach(([from,to])=>{ const src=document.getElementById(from); const dst=document.getElementById(to); if(src&&dst){ dst.textContent=src.textContent.replace(/\s+/g,' ').trim(); } });
+    }
+    document.addEventListener('DOMContentLoaded',()=>{ syncProductKpis(); setInterval(syncProductKpis,2000); });
+  })();
+  </script>
 </body>
 </html>

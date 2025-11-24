@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
-@CrossOrigin(origins = "*")
+// 使用全局 CORS 配置
 public class UserController {
 
     @PostMapping("/change-password")

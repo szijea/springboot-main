@@ -22,6 +22,9 @@ public class MemberService {
     @Autowired
     private MemberRepository memberRepository;
 
+    @Autowired
+    private com.pharmacy.repository.OrderRepository orderRepository; // 新增: 用于消费聚合
+
     // 改进的搜索方法 - 同时搜索所有条件并去重
     public List<Member> searchMembers(String keyword) {
         try {
@@ -219,6 +222,38 @@ public class MemberService {
             stats.setTodayGrowth(12);
             stats.setConsumptionGrowth(15.2);
             stats.setSleepingGrowth(-18);
+
+            // 计算附加指标：平均积分 / 活跃率 / 流失风险数量 (基于真实订单聚合)
+            List<Member> allMembers = memberRepository.findAll();
+            double sumPoints = 0.0; long totalCount = allMembers.size();
+            java.util.Set<String> allIds = allMembers.stream().map(Member::getMemberId).collect(java.util.stream.Collectors.toSet());
+            java.util.Map<String, java.time.LocalDateTime> lastMap = new java.util.HashMap<>();
+            try {
+                if(!allIds.isEmpty()){
+                    java.util.List<Object[]> rows = orderRepository.aggregateMemberConsumption(allIds); // [memberId, count, last]
+                    for(Object[] r: rows){
+                        String mid = (String) r[0];
+                        java.time.LocalDateTime last = (java.time.LocalDateTime) r[2];
+                        if(mid!=null) lastMap.put(mid,last);
+                    }
+                }
+            } catch(Exception ex){
+                System.err.println("订单聚合失败, 使用 createTime 近似: "+ex.getMessage());
+            }
+            int active = 0; int churn = 0; java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            java.time.LocalDateTime activeThreshold = now.minusDays(30);
+            java.time.LocalDateTime churnThreshold = now.minusDays(90);
+            for(Member m: allMembers){
+                int pts = m.getPoints()!=null? m.getPoints():0; sumPoints += pts;
+                java.time.LocalDateTime last = lastMap.get(m.getMemberId());
+                if(last!=null && last.isAfter(activeThreshold)) active++;
+                if(last==null || last.isBefore(churnThreshold)) churn++;
+            }
+            double avg = totalCount==0?0.0: (sumPoints / totalCount);
+            double activeRate = totalCount==0?0.0: (active * 100.0 / totalCount);
+            stats.setAvgPoints(Math.round(avg*10.0)/10.0); // 一位小数
+            stats.setActiveRate(String.format(java.util.Locale.ROOT, "%.1f%%", activeRate));
+            stats.setChurnCount(churn);
 
         } catch (Exception e) {
             System.err.println("获取会员统计数据失败: " + e.getMessage());

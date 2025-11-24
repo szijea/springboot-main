@@ -8,8 +8,11 @@
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/theme-enhanced.css" />
   <link rel="stylesheet" href="css/theme-premium.css" />
+  <link rel="stylesheet" href="css/theme-lightwide.css" />
+  <link rel="stylesheet" href="css/ui-enhanced.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>(function(){if(!window.tailwind){window.tailwind={config:{}};} if(!window.tailwind.config){window.tailwind.config={};}})();</script>
   <style>
     /* 统一主内容滚动样式 */
@@ -22,7 +25,7 @@
   <script src="js/common.js" defer></script>
   <script src="js/common-nav.js" defer></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="sales"></div>
@@ -31,7 +34,7 @@
   <p class="text-gray-500">暂无通知</p>
 </div>
 <main class="flex-1 flex flex-col pt-16">
-  <div class="main-content" id="main-content"><div class="container-xl section-gap">
+  <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
       <div>
         <h2 class="page-title font-bold page-title-decor heading-accent">销售统计</h2>
@@ -39,8 +42,15 @@
       </div>
       <!-- ...existing code... -->
     </div>
+    <div class="dashboard-kpis kpi-horizontal mb-6" id="sales-kpi-row">
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日销售额</p><h3 class="text-xl font-bold" id="sales-kpi-today">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日订单数</p><h3 class="text-xl font-bold" id="sales-kpi-order-count">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">会员销售占比</p><h3 class="text-xl font-bold" id="sales-kpi-member-rate">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">平均客单价</p><h3 class="text-xl font-bold" id="sales-kpi-avg-ticket">--</h3></div>
+      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">退款订单</p><h3 class="text-xl font-bold" id="sales-kpi-refund-count">--</h3></div>
+    </div>
     <!-- ...existing code... -->
-  </div></div>
+  </div></div></div> <!-- close app-shell / container-fluid / main-content wrappers -->
 </main>
 <script>
   (function(){
@@ -53,5 +63,9 @@
 (function(){var nav=document.getElementById('common-nav');if(nav&&!nav.classList.contains('nav-glass')){nav.classList.add('nav-glass');}})();
 </script>
 <script src="js/a11y.js" defer></script>
+<script src="js/kpi.js"></script>
+<script>
+(function(){ if(window.__salesKpiUnified) return; window.__salesKpiUnified=true; document.addEventListener('DOMContentLoaded',()=>{ KPI.fetchOrdersAndUpdate({limit:500}); }); })();
+</script>
 </body>
 </html>

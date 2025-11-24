@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/members")
-@CrossOrigin(origins = "*")
+// 使用全局 CORS 配置
 public class MemberController {
 
     @Autowired
@@ -461,5 +461,108 @@ public class MemberController {
             }
         }
         return new java.util.ArrayList<>(map.values());
+    }
+
+    // 高级筛选 + 分页 + 排序端点
+    @GetMapping("/advanced")
+    public ResponseEntity<Map<String,Object>> advancedMembers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String segment,
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer pointsMin,
+            @RequestParam(required = false) Integer pointsMax,
+            @RequestParam(required = false) Integer consumptionMin,
+            @RequestParam(required = false) Integer consumptionMax,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String phone
+    ) {
+        Map<String,Object> res = new HashMap<>();
+        try {
+            if(page < 1) page = 1; if(size < 1) size = 10; if(size > 200) size = 200; // 简单约束
+            List<MemberDTO> all = enrichMembersWithConsumption(memberService.findAll());
+            long nowMillis = System.currentTimeMillis();
+            long activeThreshold = nowMillis - 30L*24*3600*1000; // 最近30天
+            long sleepThreshold  = nowMillis - 90L*24*3600*1000; // 超过90天视为沉睡
+            // 基础过滤
+            List<MemberDTO> filtered = new ArrayList<>();
+            for(MemberDTO m : all){
+                if(name != null && !name.isBlank() && (m.getName()==null || !m.getName().contains(name.trim()))) continue;
+                if(phone != null && !phone.isBlank() && (m.getPhone()==null || !m.getPhone().contains(phone.trim()))) continue;
+                if(pointsMin != null && (m.getPoints()==null || m.getPoints() < pointsMin)) continue;
+                if(pointsMax != null && (m.getPoints()==null || m.getPoints() > pointsMax)) continue;
+                if(consumptionMin != null && (m.getConsumptionCount()==null || m.getConsumptionCount() < consumptionMin)) continue;
+                if(consumptionMax != null && (m.getConsumptionCount()==null || m.getConsumptionCount() > consumptionMax)) continue;
+                // segment 分组筛选
+                if(segment != null && !segment.isBlank()){
+                    boolean keep = true;
+                    switch(segment){
+                        case "vip": keep = m.getLevel()!=null && m.getLevel() >= 4; break;
+                        case "new30": keep = m.getCreateTime()!=null && m.getCreateTime().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() >= activeThreshold; break;
+                        case "sleep": {
+                            java.time.LocalDateTime last = m.getLastConsumptionDate();
+                            long lastMs = (last==null)?0:last.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                            keep = lastMs == 0 || lastMs < sleepThreshold; break; }
+                        case "highPoints": keep = m.getPoints()!=null && m.getPoints() >= 1000; break;
+                        default: break; // all
+                    }
+                    if(!keep) continue;
+                }
+                filtered.add(m);
+            }
+            // 排序
+            if(sort != null && !sort.isBlank()){
+                String[] parts = sort.split("_");
+                if(parts.length == 2){
+                    String field = parts[0]; String dir = parts[1];
+                    java.util.Comparator<MemberDTO> cmp = java.util.Comparator.comparingInt(a->0); // 默认
+                    switch(field){
+                        case "createTime": cmp = java.util.Comparator.comparing(a-> a.getCreateTime()==null? java.time.LocalDateTime.MIN : a.getCreateTime()); break;
+                        case "points": cmp = java.util.Comparator.comparing(a-> a.getPoints()==null?0:a.getPoints()); break;
+                        case "consumption": cmp = java.util.Comparator.comparing(a-> a.getConsumptionCount()==null?0:a.getConsumptionCount()); break;
+                        case "level": cmp = java.util.Comparator.comparing(a-> a.getLevel()==null?0:a.getLevel()); break;
+                    }
+                    if("desc".equalsIgnoreCase(dir)) cmp = cmp.reversed();
+                    filtered.sort(cmp);
+                }
+            }
+            // 全局聚合指标（基于筛选后的完整集合，不是当前页）
+            int total = filtered.size();
+            double avgPoints = 0.0; int activeCount = 0; int churnCount = 0; long now = System.currentTimeMillis();
+            if(total > 0){
+                for(MemberDTO m: filtered){
+                    avgPoints += (m.getPoints()==null?0:m.getPoints());
+                    Long lastMs = null;
+                    if(m.getLastConsumptionDate()!=null){
+                        lastMs = m.getLastConsumptionDate().atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                    }
+                    if(lastMs!=null && (now - lastMs) < 30L*24*3600*1000) activeCount++;
+                    if(lastMs==null || (now - lastMs) > 90L*24*3600*1000) churnCount++;
+                }
+                avgPoints = avgPoints / total;
+            }
+            double activeRate = total==0?0.0: (activeCount * 100.0 / total);
+            // 分页切片
+            int start = (page-1)*size;
+            if(start > total) start = total;
+            int end = Math.min(start + size, total);
+            List<MemberDTO> pageList = filtered.subList(start, end);
+            res.put("code", 200);
+            res.put("message", "success");
+            res.put("currentPage", page);
+            res.put("pageSize", size);
+            res.put("totalItems", total);
+            res.put("totalPages", (int)Math.ceil(total/(double)size));
+            res.put("data", pageList);
+            res.put("avgPoints", Math.round(avgPoints));
+            res.put("activeRate", String.format(java.util.Locale.ROOT, "%.1f%%", activeRate));
+            res.put("churnCount", churnCount);
+            return ResponseEntity.ok(res);
+        } catch(Exception e){
+            res.put("code", 500);
+            res.put("message", "advanced query failed: "+e.getMessage());
+            res.put("error", e.toString());
+            return ResponseEntity.internalServerError().body(res);
+        }
     }
 }

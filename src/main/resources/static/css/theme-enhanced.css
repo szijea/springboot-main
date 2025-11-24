@@ -202,7 +202,7 @@ html.dark .badge-soft{background:rgba(22,93,255,.25);color:#93c5fd;}
 html.dark .surface-alt{background:#1e293b;border-color:#334155;}
 
 /* Navigation glass enhancement */
-.nav-glass{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:linear-gradient(140deg,rgba(255,255,255,.65),rgba(255,255,255,.35));border:1px solid rgba(255,255,255,.5);} html.dark .nav-glass{background:linear-gradient(140deg,rgba(31,41,55,.65),rgba(31,41,55,.35));border-color:rgba(255,255,255,.08);}
+.nav-glass{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:linear-gradient(140deg,rgba(255,255,255,.65),rgba(255,255,255,.35));border:1px solid rgba(255,255,255,.5);} html.dark .nav-glass{background:linear-gradient(140deg,rgba(255,255,255,.65),rgba(255,255,255,.35));border-color:rgba(255,255,255,.45);color:#1e293b;}
 
 /* Accent underline heading */
 .heading-accent{position:relative;display:inline-block;padding-bottom:.35rem;}

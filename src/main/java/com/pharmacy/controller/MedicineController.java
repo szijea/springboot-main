@@ -19,7 +19,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/medicines")
-@CrossOrigin(origins = "*")
+// 使用全局 CORS 配置，移除局部 @CrossOrigin
 public class MedicineController {
 
     @Autowired
@@ -393,4 +393,3 @@ public class MedicineController {
     private Boolean boolField(Object v, Boolean def){ if (v==null) return def; if (v instanceof Boolean b) return b; return "true".equalsIgnoreCase(String.valueOf(v)); }
     private java.time.LocalDate dateField(Object v){ try { return v==null?null:java.time.LocalDate.parse(String.valueOf(v)); } catch(Exception e){ return null; } }
 }
-

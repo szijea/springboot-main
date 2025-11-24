@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "*")
+// 使用全局 CORS 配置
 public class SettingController {
 
     @Autowired

@@ -2,10 +2,7 @@
 <html lang="zh-CN">
 <head>
     <script>(function(){if(!window.tailwind){window.tailwind={config:{}};} if(!window.tailwind.config){window.tailwind.config={};}})();</script>
-
-    <!-- Tailwind 兜底，防止未加载时报错 -->
     <script>if(typeof tailwind==='undefined'){window.tailwind={config:{}};}</script>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 会员管理</title>
@@ -13,766 +10,202 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
-      /* 页面独有附加样式 */
       .member-level-tag{background:#eff6ff;color:#1d4ed8;}
-
-      /* 统一 main-content 滚动条样式 */
       .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
       .main-content::-webkit-scrollbar{width:8px}
       .main-content::-webkit-scrollbar-track{background:#f5f5f5;border-radius:4px}
       .main-content::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
       .main-content::-webkit-scrollbar-thumb:hover{background:#9ca3af}
+      .segment-btn.active{background:#165DFF;color:#fff;border-color:#165DFF}
+      .member-risk-churn{background:#fee2e2;color:#991b1b}
+      .member-risk-sleep{background:#ffedd5;color:#c2410c}
+      .member-risk-new{background:#dcfce7;color:#166534}
+      .member-risk-active{background:#dbeafe;color:#1e3a8a}
+      #advanced-filters{display:none}
+      #advanced-filters.open{display:block}
+      .member-cap{max-width:1800px;margin:0 auto;width:100%;}
+      /* 移除多模式宽度类定义，仅保留固定 1280 */
+      .member-two-col{display:grid;gap:1.5rem;align-items:start;}
+      @media(min-width:1024px){.member-two-col{grid-template-columns:280px 1fr;}}
+      .member-right-stack > * + *{margin-top:1.5rem;}
+      /* KPI 单行紧凑模式 */
+      .kpi-horizontal.no-wrap{flex-wrap:nowrap!important;overflow-x:auto;}
+      .kpi-horizontal.kpi-compact .card{flex:0 0 140px;min-width:140px;}
+      .kpi-horizontal.kpi-compact::-webkit-scrollbar{height:8px}
+      .kpi-horizontal.kpi-compact::-webkit-scrollbar-track{background:#f5f5f5;border-radius:4px}
+      .kpi-horizontal.kpi-compact::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+      .kpi-horizontal.kpi-compact::-webkit-scrollbar-thumb:hover{background:#9ca3af}
     </style>
     <script src="js/common.js" defer></script>
     <script src="js/common-nav.js" defer></script>
     <script src="js/ui-global.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
-  <!-- 注入统一导航（侧边栏 + 顶部） -->
-  <div id="common-nav" data-active="members"></div>
-  <div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm">
-    <div class="font-medium mb-2">通知面板</div>
-    <p class="text-gray-500">暂无通知</p>
-  </div>
-  <main class="flex-1 flex flex-col pt-16">
-    <div class="main-content" id="main-content"><div class="container-xl section-gap">
+<div id="common-nav" data-active="members"></div>
+<div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm">
+  <div class="font-medium mb-2">通知面板</div>
+  <p class="text-gray-500">暂时无通知</p>
+</div>
+<main class="flex-1 flex flex-col pt-16">
+  <div class="member-cap">
+    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell-narrow">
       <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
           <div>
               <h2 class="page-title font-bold page-title-decor heading-accent">会员管理</h2>
               <p class="text-gray-500">会员信息与消费记录管理</p>
           </div>
           <div class="flex gap-3">
-              <button class="btn btn-tonal btn-pill" id="import-btn">
-                  <i class="fa fa-upload"></i> 导入会员
-              </button>
-              <button class="btn btn-tonal btn-pill" id="export-btn">
-                  <i class="fa fa-download"></i> 导出会员
-              </button>
-              <button class="btn btn-gradient btn-pill" id="add-member">
-                  <i class="fa fa-plus"></i> 新增会员
-              </button>
+              <button class="btn btn-tonal btn-pill" id="import-btn"><i class="fa fa-upload"></i> 导入会员</button>
+              <button class="btn btn-tonal btn-pill" id="export-btn"><i class="fa fa-download"></i> 导出会员</button>
+              <button class="btn btn-primary btn-pill" id="add-member"><i class="fa fa-plus"></i> 新增会员</button>
+              <!-- 已移除宽度切换与下拉菜单 -->
           </div>
       </div>
-
-      <!-- KPI 行 -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-6" id="member-kpi-row">
-        <div class="card p-4"><p class="text-xs text-gray-500 mb-1">总会员数</p><h3 id="total-members" class="text-xl font-bold">0 人</h3></div>
-        <div class="card p-4"><p class="text-xs text-gray-500 mb-1">VIP会员</p><h3 id="vip-members" class="text-xl font-bold">0 人</h3></div>
-        <div class="card p-4"><p class="text-xs text-gray-500 mb-1">本月新增</p><h3 id="new-members" class="text-xl font-bold">0 人</h3></div>
-        <div class="card p-4"><p class="text-xs text-gray-500 mb-1">沉睡会员</p><h3 id="sleeping-members" class="text-xl font-bold">0 人</h3></div>
+      <div class="dashboard-kpis kpi-horizontal kpi-compact no-wrap mb-6" id="member-kpi-row">
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">总会员数</p><h3 id="total-members" class="text-xl font-bold">0 人</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">VIP会员</p><h3 id="vip-members" class="text-xl font-bold">0 人</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">本月新增</p><h3 id="new-members" class="text-xl font-bold">0 人</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">沉睡会员</p><h3 id="sleeping-members" class="text-xl font-bold">0 人</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">平均积分</p><h3 id="avg-points" class="text-xl font-bold">--</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">活跃率</p><h3 id="active-rate" class="text-xl font-bold">--</h3></div>
+        <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">流失风险</p><h3 id="churn-risk" class="text-xl font-bold">--</h3></div>
       </div>
-      <!-- 图表行 -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6" id="member-charts-row">
-        <div class="card p-6 lg:col-span-2">
-          <div class="flex justify-between items-center mb-4"><h3 class="font-bold">会员增长趋势</h3></div>
-          <div class="h-72"><canvas id="member-growth-chart"></canvas></div>
-        </div>
-        <div class="card p-6">
-          <h3 class="font-bold mb-4">会员等级占比</h3>
-          <div class="h-72"><canvas id="member-level-chart"></canvas></div>
-        </div>
-      </div>
-      <!-- 原 layout-two-column 替换为仅过滤 + 表格（保持ID兼容） -->
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6" id="member-main-row">
-        <aside class="space-y-6 lg:col-span-1" id="member-side">
-          <div id="member-filter-panel" class="card p-4">
+      <div class="member-two-col" id="member-two-col">
+        <aside class="space-y-6" id="member-side">
+          <div id="member-filter-panel" class="card p-4 card-interactive">
             <h3 class="font-bold text-sm mb-3">筛选条件</h3>
             <div class="space-y-3">
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1" for="filter-name">会员姓名</label>
-                <input type="text" id="filter-name" class="input text-sm" placeholder="输入会员姓名">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1" for="filter-phone">手机号</label>
-                <input type="text" id="filter-phone" class="input text-sm" placeholder="输入手机号">
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1" for="filter-level">会员等级</label>
-                <select id="filter-level" class="input text-sm">
-                  <option value="">全部等级</option>
-                  <option value="0">普通会员</option>
-                  <option value="1">白银会员</option>
-                  <option value="2">黄金会员</option>
-                  <option value="3">铂金会员</option>
-                  <option value="4">VIP会员</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1" for="filter-date">注册日期</label>
-                <input type="date" id="filter-date" class="input text-sm">
-              </div>
+              <div><label class="block text-xs font-medium text-gray-700 mb-1" for="filter-name">会员姓名</label><input type="text" id="filter-name" class="input text-sm" placeholder="输入会员姓名"></div>
+              <div><label class="block text-xs font-medium text-gray-700 mb-1" for="filter-phone">手机号</label><input type="text" id="filter-phone" class="input text-sm" placeholder="输入手机号"></div>
+              <div><label class="block text-xs font-medium text-gray-700 mb-1" for="filter-level">会员等级</label><select id="filter-level" class="input text-sm"><option value="">全部等级</option><option value="0">普通会员</option><option value="1">白银会员</option><option value="2">黄金会员</option><option value="3">铂金会员</option><option value="4">VIP会员</option></select></div>
+              <div><label class="block text-xs font-medium text-gray-700 mb-1" for="filter-date">注册日期</label><input type="date" id="filter-date" class="input text-sm"></div>
             </div>
-            <div class="flex justify-end gap-2 mt-4">
-              <button class="btn btn-outline text-xs" id="reset-filter">重置</button>
-              <button class="btn btn-primary text-xs" id="apply-filter">查询</button>
+            <div class="flex justify-end gap-2 mt-4"><button class="btn btn-outline text-xs" id="reset-filter">重置</button><button class="btn btn-primary text-xs" id="apply-filter">查询</button></div>
+            <button class="btn btn-outline text-xs mt-3" id="toggle-advanced"><i class="fa fa-sliders"></i> 高级筛选</button>
+            <div id="advanced-filters" class="mt-4 space-y-3 border-t pt-4">
+              <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-medium text-gray-700 mb-1" for="points-min">积分下限</label><input type="number" id="points-min" class="input text-xs" placeholder="如 100"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1" for="points-max">积分上限</label><input type="number" id="points-max" class="input text-xs" placeholder="如 1000"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1" for="cons-min">消费次数下限</label><input type="number" id="cons-min" class="input text-xs" placeholder="0"></div>
+                <div><label class="block text-xs font-medium text-gray-700 mb-1" for="cons-max">消费次数上限</label><input type="number" id="cons-max" class="input text-xs" placeholder="50"></div>
+              </div>
+              <div class="flex gap-2 justify-end"><button class="btn btn-outline text-xs" id="advanced-reset">清空</button><button class="btn btn-primary text-xs" id="advanced-apply">应用</button></div>
             </div>
           </div>
         </aside>
-        <div class="layout-main space-y-6 lg:col-span-3" id="member-table-wrapper">
-          <div class="card">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 class="font-bold">会员列表</h3>
-              <div class="text-sm text-gray-500" id="member-count">共 0 位会员</div>
-            </div>
+        <div class="member-right-stack" id="member-right">
+          <div class="flex gap-2 overflow-x-auto pb-1" id="member-segments">
+            <button class="btn btn-outline text-xs segment-btn" data-seg="all">全部</button>
+            <button class="btn btn-outline text-xs segment-btn" data-seg="vip">VIP</button>
+            <button class="btn btn-outline text-xs segment-btn" data-seg="new30">30天新增</button>
+            <button class="btn btn-outline text-xs segment-btn" data-seg="sleep">沉睡</button>
+            <button class="btn btn-outline text-xs segment-btn" data-seg="highPoints">高积分</button>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="member-charts-row">
+            <div class="card p-6 lg:col-span-2 card-interactive"><div class="flex justify-between items-center mb-4"><h3 class="font-bold">会员增长趋势</h3></div><div class="h-72"><canvas id="member-growth-chart"></canvas></div></div>
+            <div class="card p-6 card-interactive"><h3 class="font-bold mb-4">会员等级占比</h3><div class="h-72"><canvas id="member-level-chart"></canvas></div></div>
+          </div>
+          <div class="card card-interactive" id="member-table-card">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold">会员列表</h3><div class="text-sm text-gray-500" id="member-count">共 0 位会员</div></div>
             <div class="overflow-x-auto">
               <table class="table-modern w-full" id="members-table">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员信息</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">手机号</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员等级</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">累计积分</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">消费次数</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最近消费</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                  </tr>
-                </thead>
+                <thead class="bg-gray-50"><tr>
+                  <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><label for="select-all-members" class="sr-only">全选会员</label><input type="checkbox" id="select-all-members" aria-label="全选会员" class="rounded border-gray-300"></th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员信息</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">手机号</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会员等级</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">累计积分</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">消费次数</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最近消费</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">风险标签</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                </tr></thead>
                 <tbody class="bg-white divide-y divide-gray-200" id="members-tbody"></tbody>
               </table>
             </div>
-            <div class="p-4 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div class="text-sm text-gray-500" id="pagination-info">显示 0-0 条，共 0 条</div>
-              <div class="flex gap-1" id="pagination-buttons"></div>
-            </div>
+            <div class="p-4 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4"><div class="text-sm text-gray-500" id="pagination-info">显示 0-0 条，共 0 条</div><div class="flex gap-1" id="pagination-buttons"></div></div>
           </div>
         </div>
       </div>
-    </div></div>
-  </main>
-
-  <!-- 新增会员弹窗 -->
-  <div id="member-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-      <div class="card w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-          <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-              <h3 class="font-bold text-lg" id="modal-title">新增会员</h3>
-              <button id="close-modal" class="text-gray-400 hover:text-gray-600">
-                  <i class="fa fa-times"></i>
-              </button>
-          </div>
-
-          <div class="flex-1 overflow-y-auto p-6">
-              <div class="space-y-4">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1" for="member-name">会员姓名 <span class="text-accent">*</span></label>
-                          <input type="text" id="member-name" class="input" placeholder="请输入会员姓名" required>
-                      </div>
-                      <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1" for="member-phone">手机号码 <span class="text-accent">*</span></label>
-                          <input type="tel" id="member-phone" class="input" placeholder="请输入手机号码" required>
-                      </div>
-                  </div>
-
-                  <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1" for="member-level">会员等级</label>
-                      <select id="member-level" class="input">
-                          <option value="0">普通会员</option>
-                          <option value="1">白银会员</option>
-                          <option value="2">黄金会员</option>
-                          <option value="3">铂金会员</option>
-                          <option value="4">VIP会员</option>
-                      </select>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
-                          <div class="flex gap-4">
-                              <label class="flex items-center gap-2">
-                                  <input type="radio" id="gender-male" name="gender" value="male" class="text-primary focus:ring-primary/30" checked>
-                                  <span>男</span>
-                              </label>
-                              <label class="flex items-center gap-2">
-                                  <input type="radio" id="gender-female" name="gender" value="female" class="text-primary focus:ring-primary/30">
-                                  <span>女</span>
-                              </label>
-                          </div>
-                      </div>
-                      <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1" for="birth-date">出生日期</label>
-                          <input type="date" id="birth-date" class="input">
-                      </div>
-                  </div>
-
-                  <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1" for="address">家庭住址</label>
-                      <input type="text" id="address" class="input" placeholder="请输入家庭住址">
-                  </div>
-
-                  <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1" for="allergy-history">过敏史</label>
-                      <textarea id="allergy-history" class="input" rows="3" placeholder="请输入药品过敏史（如有）"></textarea>
-                  </div>
-
-                  <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-1" for="remark">备注</label>
-                      <textarea id="remark" class="input" rows="2" placeholder="请输入备注信息"></textarea>
-                  </div>
-              </div>
-          </div>
-
-          <div class="p-6 border-t border-gray-100 flex justify-end gap-3">
-              <button class="btn btn-outline" id="cancel-member">取消</button>
-              <button class="btn btn-primary" id="save-member">保存会员</button>
-          </div>
-      </div>
+    </div></div></div>
   </div>
-
-  <script>
-      // API 配置
-      const api = {
-          baseUrl: '/api/members',
-
-          async request(endpoint, options = {}) {
-              try {
-                  const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-                  console.log('API请求:', url, options);
-
-                  const response = await fetch(url, {
-                      headers: {
-                          'Content-Type': 'application/json',
-                          ...options.headers
-                      },
-                      ...options
-                  });
-
-                  if (!response.ok) {
-                      const errorText = await response.text();
-                      throw new Error(`HTTP ${response.status}: ${errorText}`);
-                  }
-
-                  return await response.json();
-              } catch (error) {
-                  console.error('API请求失败:', error);
-                  this.showMessage('网络请求失败: ' + error.message, 'error');
-                  throw error;
-              }
-          },
-
-          // 会员API
-          memberAPI: {
-              getAll: () => api.request(''),
-              getById: (id) => api.request(`/${id}`),
-              create: (data) => api.request('', {
-                  method: 'POST',
-                  body: JSON.stringify(data)
-              }),
-              update: (id, data) => api.request(`/${id}`, {
-                  method: 'PUT',
-                  body: JSON.stringify(data)
-              }),
-              delete: (id) => api.request(`/${id}`, { method: 'DELETE' }),
-              search: (keyword) => api.request(`/search?keyword=${encodeURIComponent(keyword)}`),
-              getStats: () => api.request('/stats'),
-              checkPhone: (phone) => api.request(`/check-phone?phone=${encodeURIComponent(phone)}`)
-          },
-
-          showMessage: (message, type = 'success') => {
-              console.log(`${type}: ${message}`);
-              // 简单的消息提示实现
-              const alertClass = type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
-                               type === 'warning' ? 'bg-yellow-100 border-yellow-400 text-yellow-700' :
-                               'bg-green-100 border-green-400 text-green-700';
-
-              const iconClass = type === 'error' ? 'fa-exclamation-circle' :
-                               type === 'warning' ? 'fa-warning' : 'fa-check-circle';
-
-              const messageDiv = document.createElement('div');
-              messageDiv.className = `fixed top-4 right-4 border px-4 py-3 rounded ${alertClass} z-50 shadow-lg transition-all duration-300`;
-              messageDiv.innerHTML = `
-                  <div class="flex items-center">
-                      <i class="fa ${iconClass} mr-2"></i>
-                      <span>${message}</span>
-                  </div>
-              `;
-              document.body.appendChild(messageDiv);
-
-              setTimeout(() => {
-                  if (messageDiv.parentNode) {
-                      messageDiv.parentNode.removeChild(messageDiv);
-                  }
-              }, 3000);
-          },
-
-          utils: {
-              formatDate: (dateString) => {
-                  if (!dateString) return '-';
-                  try {
-                      const date = new Date(dateString);
-                      return date.toLocaleDateString('zh-CN');
-                  } catch (e) {
-                      return dateString;
-                  }
-              },
-
-              formatPhone: (phone) => {
-                  if (!phone) return '-';
-                  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
-              },
-
-              escapeHtml: (unsafe) => {
-                  if (typeof unsafe !== 'string') return unsafe;
-                  return unsafe
-                      .replace(/&/g, "&amp;")
-                      .replace(/</g, "&lt;")
-                      .replace(/>/g, "&gt;")
-                      .replace(/"/g, "&quot;")
-                      .replace(/'/g, "&#039;");
-              }
-          }
-      };
-
-      // 主应用
-      document.addEventListener('DOMContentLoaded', function() {
-          // 初始化变量
-          let membersData = [];
-          let currentPage = 1;
-          const pageSize = 10;
-          let currentEditingMember = null;
-          let isSearching = false;
-
-          // DOM 元素
-          const elements = {
-              memberTableBody: document.getElementById('members-tbody'),
-              searchInput: document.getElementById('search-input'),
-              addMemberBtn: document.getElementById('add-member'),
-              memberModal: document.getElementById('member-modal'),
-              closeModalBtn: document.getElementById('close-modal'),
-              cancelMemberBtn: document.getElementById('cancel-member'),
-              saveMemberBtn: document.getElementById('save-member'),
-              modalTitle: document.getElementById('modal-title'),
-              importBtn: document.getElementById('import-btn'),
-              exportBtn: document.getElementById('export-btn'),
-              resetFilterBtn: document.getElementById('reset-filter'),
-              applyFilterBtn: document.getElementById('apply-filter'),
-              memberCount: document.getElementById('member-count'),
-              paginationInfo: document.getElementById('pagination-info'),
-              prevPageBtn: document.getElementById('prev-page'),
-              nextPageBtn: document.getElementById('next-page')
-          };
-
-          // 新增: 等级徽章生成函数，避免 ReferenceError
-          function getLevelBadge(level){
-              const lv = Number(level);
-              let text = '普通会员';
-              let cls = 'bg-gray-100 text-gray-600';
-              switch(lv){
-                  case 1: text='白银会员'; cls='bg-slate-200 text-slate-700'; break;
-                  case 2: text='黄金会员'; cls='bg-yellow-100 text-yellow-700'; break;
-                  case 3: text='铂金会员'; cls='bg-blue-100 text-blue-700'; break;
-                  case 4: text='VIP会员'; cls='bg-purple-100 text-purple-700'; break;
-              }
-              return `<span class="px-2 py-1 rounded-full text-xs font-medium ${cls}">${text}</span>`;
-          }
-
-          // 新增: 重置筛选函数（目前仅清空搜索框，可扩展其他筛选条件）
-          function resetFilter(){
-              if(elements.searchInput){ elements.searchInput.value=''; }
-              // 若未来添加 level/points 等筛选，在此归位
-              loadMembers(1);
-              api.showMessage('筛选已重置', 'info');
-          }
-
-          // 若后端未提供 /api/members/stats，则添加兜底 polyfill，抛出错误以触发前端 fallback
-          if(!api.memberAPI.getStats){
-              api.memberAPI.getStats = async function(){
-                  throw new Error('stats endpoint not available');
-              };
-          }
-
-          // 全局函数: 会员详情 / 编辑 / 删除（占位实现，避免点击报错，可后续完善）
-          window.showMemberDetail = function(memberId){
-              const m = membersData.find(x=> x.memberId === memberId);
-              if(!m){ api.showMessage('未找到该会员', 'warning'); return; }
-              console.log('[MemberDetail]', m);
-              api.showMessage(`会员: ${m.name || m.memberId}`, 'info');
-          };
-          window.editMember = function(memberId){
-              const m = membersData.find(x=> x.memberId === memberId);
-              if(!m){ api.showMessage('未找到会员', 'warning'); return; }
-              currentEditingMember = m;
-              if(elements.memberModal){ elements.memberModal.classList.remove('hidden'); }
-              if(elements.modalTitle){ elements.modalTitle.textContent = '编辑会员'; }
-              // TODO: 将会员数据填入表单（若表单存在）
-              console.log('[EditMember] 当前编辑', m);
-          };
-          window.deleteMember = function(memberId){
-              const idx = membersData.findIndex(x=> x.memberId === memberId);
-              if(idx === -1){ api.showMessage('会员不存在', 'warning'); return; }
-              // 前端模拟删除
-              membersData.splice(idx,1);
-              loadMembers(currentPage);
-              api.showMessage('会员已删除(前端模拟)', 'success');
-          };
-
-          // 初始化应用
-          async function initApp() {
-              try {
-                  await loadMembers();
-                  await loadMemberStats();
-                  setupEventListeners();
-                  console.log('应用初始化完成');
-              } catch (error) {
-                  console.error('应用初始化失败:', error);
-              }
-          }
-
-          // 设置事件监听器
-          function setupEventListeners() {
-              // 搜索功能
-              if (elements.searchInput) {
-                  elements.searchInput.addEventListener('input', debounce(handleSearch, 500));
-              }
-
-              // 模态框控制
-              if (elements.addMemberBtn) {
-                  elements.addMemberBtn.addEventListener('click', showAddMemberModal);
-              }
-
-              if (elements.closeModalBtn) {
-                  elements.closeModalBtn.addEventListener('click', hideMemberModal);
-              }
-
-              if (elements.cancelMemberBtn) {
-                  elements.cancelMemberBtn.addEventListener('click', hideMemberModal);
-              }
-
-              if (elements.saveMemberBtn) {
-                  elements.saveMemberBtn.addEventListener('click', handleSaveMember);
-              }
-
-              // 筛选功能
-              if (elements.resetFilterBtn) {
-                  elements.resetFilterBtn.addEventListener('click', resetFilter);
-              }
-
-              if (elements.applyFilterBtn) {
-                  elements.applyFilterBtn.addEventListener('click', handleFilter);
-              }
-
-              // 导入导出
-              if (elements.importBtn) {
-                  elements.importBtn.addEventListener('click', () => {
-                      api.showMessage('导入功能开发中', 'warning');
-                  });
-              }
-
-              if (elements.exportBtn) {
-                  elements.exportBtn.addEventListener('click', () => {
-                      api.showMessage('导出功能开发中', 'warning');
-                  });
-              }
-
-              // 分页
-              if (elements.prevPageBtn) {
-                  elements.prevPageBtn.addEventListener('click', () => {
-                      if (currentPage > 1) {
-                          loadMembers(currentPage - 1);
-                      }
-                  });
-              }
-
-              if (elements.nextPageBtn) {
-                  elements.nextPageBtn.addEventListener('click', () => {
-                      loadMembers(currentPage + 1);
-                  });
-              }
-          }
-
-          // 加载会员数据
-          async function loadMembers(page = 1) {
-              try {
-                  console.log(`加载会员数据，第 ${page} 页`);
-                  const response = await api.memberAPI.getAll();
-                  membersData = Array.isArray(response) ? response : [];
-                  console.log(`获取到 ${membersData.length} 条会员数据`);
-
-                  // 简单分页逻辑
-                  const startIndex = (page - 1) * pageSize;
-                  const endIndex = startIndex + pageSize;
-                  const pagedData = membersData.slice(startIndex, endIndex);
-
-                  renderMemberTable(pagedData);
-                  updatePagination(membersData.length, page);
-                  currentPage = page;
-                  isSearching = false;
-              } catch (error) {
-                  console.error('加载会员数据失败:', error);
-                  showEmptyState('数据加载失败，请检查网络连接或后端服���');
-              }
-          }
-
-          // 加载会员统计
-          async function loadMemberStats() {
-              try {
-                  const stats = await api.memberAPI.getStats();
-                  updateStatsCards(stats);
-              } catch (error) {
-                  console.error('加载统计数据失败:', error);
-                  // 使用前端计算的统计数据
-                  updateStatsCards(calculateStatsFromData(membersData));
-              }
-          }
-
-          // 从前端数据计算统计
-          function calculateStatsFromData(members) {
-              const total = members.length;
-              const vipCount = members.filter(m => m.level >= 3).length;
-
-              // 计算最近30天新增会员
-              const thirtyDaysAgo = new Date();
-              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              const newCount = members.filter(m => {
-                  if (!m.createTime) return false;
-                  return new Date(m.createTime) >= thirtyDaysAgo;
-              }).length;
-
-              // 沉睡会员（假设90天未消费）
-              const ninetyDaysAgo = new Date();
-              ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-              const sleepingCount = members.filter(m => {
-                  if (!m.lastConsumptionDate) return true;
-                  return new Date(m.lastConsumptionDate) < ninetyDaysAgo;
-              }).length;
-
-              return {
-                  totalMembers: total,
-                  vipMembers: vipCount,
-                  newMembers: newCount,
-                  sleepingMembers: sleepingCount,
-                  totalGrowth: Math.floor(total * 0.1),
-                  vipGrowth: Math.floor(vipCount * 0.1),
-                  newGrowth: newCount,
-                  sleepingGrowth: -Math.floor(sleepingCount * 0.1)
-              };
-          }
-
-          // 渲染会员表格
-          function renderMemberTable(members) {
-              if (!elements.memberTableBody) {
-                  console.error('会员表格tbody未找到');
-                  return;
-              }
-
-              elements.memberTableBody.innerHTML = '';
-
-              if (!members || members.length === 0) {
-                  showEmptyState('暂无会员数据');
-                  return;
-              }
-
-              members.forEach((member, index) => {
-                  const row = document.createElement('tr');
-                  row.className = 'hover:bg-gray-50 transition-colors';
-
-                  const levelBadge = getLevelBadge(member.level);
-                  const consumptionCount = member.consumptionCount || 0;
-                  const lastConsumption = member.lastConsumptionDate ?
-                      api.utils.formatDate(member.lastConsumptionDate) : '-';
-
-                  row.innerHTML = `
-                      <td class="px-6 py-4 whitespace-nowrap">
-                          <div class="flex items-center">
-                              <img src="https://picsum.photos/40/40?random=${index + 40}"
-                                   alt="会员头像"
-                                   class="w-10 h-10 rounded-full mr-3">
-                              <div>
-                                  <div class="text-sm font-medium">${api.utils.escapeHtml(member.name)}</div>
-                                  <div class="text-xs text-gray-500">ID: ${member.memberId}</div>
-                              </div>
-                          </div>
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">${api.utils.formatPhone(member.phone)}</td>
-                      <td class="px-6 py-4 whitespace-nowrap">${levelBadge}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">${member.points || 0}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">${consumptionCount}次</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">${lastConsumption}</td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm">
-                          <button class="text-primary hover:underline mr-3" onclick="showMemberDetail('${member.memberId}')">详情</button>
-                          <button class="text-secondary hover:underline mr-3" onclick="editMember('${member.memberId}')">编辑</button>
-                          <button class="text-red-500 hover:underline" onclick="deleteMember('${member.memberId}')">删除</button>
-                      </td>
-                  `;
-                  elements.memberTableBody.appendChild(row);
-              });
-          }
-
-          // 显示空状态
-          function showEmptyState(message) {
-              if (!elements.memberTableBody) return;
-
-              elements.memberTableBody.innerHTML = `
-                  <tr>
-                      <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                          <i class="fa fa-users text-4xl mb-2 text-gray-300"></i>
-                          <p>${message}</p>
-                          ${!isSearching ? `<button onclick="showAddMemberModal()" class="mt-2 btn btn-primary">
-                              <i class="fa fa-plus"></i> 新增会员
-                          </button>` : ''}
-                      </td>
-                  </tr>
-              `;
-          }
-
-          // 更新统计卡片
-          function updateStatsCards(stats) {
-              if (!stats) return;
-
-              // 总会员数
-              const totalElement = document.getElementById('total-members');
-              const totalGrowthElement = document.getElementById('total-growth');
-              if (totalElement) totalElement.textContent = `${stats.totalMembers || 0} 人`;
-              if (totalGrowthElement) totalGrowthElement.innerHTML = `<i class="fa fa-arrow-up mr-1"></i> ${stats.totalGrowth || 0} 人`;
-
-              // VIP会员数
-              const vipElement = document.getElementById('vip-members');
-              const vipGrowthElement = document.getElementById('vip-growth');
-              if (vipElement) vipElement.textContent = `${stats.vipMembers || 0} 人`;
-              if (vipGrowthElement) vipGrowthElement.innerHTML = `<i class="fa fa-arrow-up mr-1"></i> ${stats.vipGrowth || 0} 人`;
-
-              // 新增会员
-              const newElement = document.getElementById('new-members');
-              const newGrowthElement = document.getElementById('new-growth');
-              if (newElement) newElement.textContent = `${stats.newMembers || 0} 人`;
-              if (newGrowthElement) newGrowthElement.innerHTML = `<i class="fa fa-arrow-up mr-1"></i> ${stats.newGrowth || 0} 人`;
-
-              // 沉睡会员
-              const sleepingElement = document.getElementById('sleeping-members');
-              const sleepingGrowthElement = document.getElementById('sleeping-growth');
-              if (sleepingElement) sleepingElement.textContent = `${stats.sleepingMembers || 0} 人`;
-              if (sleepingGrowthElement) sleepingGrowthElement.innerHTML = `<i class="fa fa-arrow-down mr-1"></i> ${Math.abs(stats.sleepingGrowth || 0)} 人`;
-          }
-
-          // 搜索处理
-          async function handleSearch(event) {
-              const keyword = event.target.value.trim();
-
-              if (keyword === '') {
-                  await loadMembers();
-                  return;
-              }
-
-              try {
-                  console.log('搜索关键词:', keyword);
-                  isSearching = true;
-                  const response = await api.memberAPI.search(keyword);
-                  const members = response.data || response;
-                  console.log(`搜索到 ${members.length} 条结果`);
-                  renderMemberTable(members);
-
-                  // 更新分页信息
-                  if (elements.memberCount) {
-                      elements.memberCount.textContent = `共 ${members.length} 位会员`;
-                  }
-
-                  // 简单分页信息更新
-                  if (elements.paginationInfo) {
-                      elements.paginationInfo.textContent = `显示 1-${members.length} 条，共 ${members.length} 条`;
-                  }
-              } catch (err) {
-                  console.error('会员搜索失败:', err);
-                  api.showMessage('搜索失败: ' + err.message, 'error');
-              }
-          }
-
-          // 防抖函数
-          function debounce(fn, delay) {
-              let timer = null;
-              return function(...args) {
-                  clearTimeout(timer);
-                  timer = setTimeout(() => fn.apply(this, args), delay);
-              };
-          }
-
-          // 显示/隐藏会员弹窗
-          function showAddMemberModal(){
-              if(elements.memberModal){ elements.memberModal.classList.remove('hidden'); }
-              currentEditingMember = null;
-              elements.modalTitle && (elements.modalTitle.textContent='新增会员');
-          }
-          function hideMemberModal(){
-              if(elements.memberModal){ elements.memberModal.classList.add('hidden'); }
-          }
-
-          // 保存会员（简化演示）
-          async function handleSaveMember(){
-              api.showMessage('保存会员功能待实现','info');
-              hideMemberModal();
-          }
-
-          // 编辑/删除占位
-          window.showMemberDetail = (id)=> api.showMessage('查看会员 '+id,'info');
-          window.editMember = (id)=> api.showMessage('编辑会员 '+id,'info');
-          window.deleteMember = (id)=> api.showMessage('删除会员 '+id,'warning');
-
-          function updatePagination(total, page){
-              if(elements.paginationInfo){
-                  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
-                  const end = Math.min(page * pageSize, total);
-                  elements.paginationInfo.textContent = `显示 ${start}-${end} 条，共 ${total} 条`;
-              }
-              if(elements.memberCount){ elements.memberCount.textContent = `共 ${total} 位会员`; }
-              if(elements.prevPageBtn){ elements.prevPageBtn.disabled = page <= 1; }
-              if(elements.nextPageBtn){ elements.nextPageBtn.disabled = page * pageSize >= total; }
-          }
-
-          function handleFilter(){
-              // 基于前端数据的简单筛选
-              const nameVal = (document.getElementById('filter-name')?.value || '').trim();
-              const phoneVal = (document.getElementById('filter-phone')?.value || '').trim();
-              const levelVal = (document.getElementById('filter-level')?.value || '').trim();
-              const dateVal = (document.getElementById('filter-date')?.value || '').trim();
-              let filtered = membersData.slice();
-              if(nameVal){ filtered = filtered.filter(m => (m.name||'').includes(nameVal)); }
-              if(phoneVal){ filtered = filtered.filter(m => (m.phone||'').includes(phoneVal)); }
-              if(levelVal !== ''){ filtered = filtered.filter(m => String(m.level) === levelVal); }
-              if(dateVal){
-                  try{ const target = new Date(dateVal).toDateString(); filtered = filtered.filter(m => m.createTime && new Date(m.createTime).toDateString() === target); }catch(e){/* ignore */}
-              }
-              currentPage = 1;
-              renderMemberTable(filtered.slice(0, pageSize));
-              updatePagination(filtered.length, 1);
-              api.showMessage(`筛选结果：${filtered.length} 条`, 'info');
-          }
-
-          // 初始加载
-          initApp();
-      });
-  </script>
-  <script>
-  // 如果不存在图表初始化则新增
-  (function initMemberCharts(){
-    if(typeof Chart==='undefined') return;
-    const growthCtx=document.getElementById('member-growth-chart');
-    const levelCtx=document.getElementById('member-level-chart');
-    if(growthCtx){ window.memberGrowthChart=new Chart(growthCtx,{type:'line',data:{labels:[],datasets:[{label:'新增会员',data:[],borderColor:'#165DFF',backgroundColor:'rgba(22,93,255,0.1)',tension:.3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}}); }
-    if(levelCtx){ window.memberLevelChart=new Chart(levelCtx,{type:'doughnut',data:{labels:['普通','白银','黄金','铂金','VIP'],datasets:[{data:[0,0,0,0,0],backgroundColor:['#93c5fd','#cbd5e1','#fde68a','#bfdbfe','#e9d5ff'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false}}); }
-  })();
-  // 简易更新函数，可在获取 stats 后调用
-  function updateMemberCharts(stats){
-    try{ if(stats && window.memberGrowthChart){ window.memberGrowthChart.data.labels = stats.growth?.labels||[]; window.memberGrowthChart.data.datasets[0].data = stats.growth?.data||[]; window.memberGrowthChart.update('none'); }
-      if(stats && window.memberLevelChart){ window.memberLevelChart.data.datasets[0].data = stats.levelDistribution||window.memberLevelChart.data.datasets[0].data; window.memberLevelChart.update('none'); }
-    }catch(e){ console.warn('更新会员图表失败',e); }
-  }
-  </script>
-  <script>
-    (function(){
-      const bar=document.getElementById('scroll-progress');
-      function update(){const h=document.documentElement.scrollHeight - window.innerHeight;const sc=window.scrollY;bar&&(bar.style.width=(h>0?(sc/h)*100:0)+'%');}
-      window.addEventListener('scroll',update,{passive:true});update();
-      if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
-  </script>
+</main>
+<div id="member-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+  <div class="card w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+    <div class="p-6 border-b border-gray-100 flex justify-between items-center"><h3 class="font-bold text-lg" id="modal-title">新增会员</h3><button id="close-modal" class="text-gray-400 hover:text-gray-600"><i class="fa fa-times"></i></button></div>
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1" for="member-name">会员姓名 <span class="text-accent">*</span></label><input type="text" id="member-name" class="input" placeholder="请输入会员姓名" required></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1" for="member-phone">手机号码 <span class="text-accent">*</span></label><input type="tel" id="member-phone" class="input" placeholder="请输入手机号码" required></div>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1" for="member-level">会员等级</label><select id="member-level" class="input"><option value="0">普通会员</option><option value="1">白银会员</option><option value="2">黄金会员</option><option value="3">铂金会员</option><option value="4">VIP会员</option></select></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div><label class="block text-sm font-medium text-gray-700 mb-1">性别</label><div class="flex gap-4"><label class="flex items-center gap-2"><input type="radio" name="gender" value="male" class="text-primary" checked><span>男</span></label><label class="flex items-center gap-2"><input type="radio" name="gender" value="female" class="text-primary"><span>女</span></label></div></div>
+          <div><label class="block text-sm font-medium text-gray-700 mb-1" for="birth-date">出生日期</label><input type="date" id="birth-date" class="input"></div>
+        </div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1" for="address">家庭住址</label><input type="text" id="address" class="input" placeholder="请输入家庭住址"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1" for="allergy-history">过敏史</label><textarea id="allergy-history" class="input" rows="3" placeholder="请输入药品过敏史（如有）"></textarea></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1" for="remark">备注</label><textarea id="remark" class="input" rows="2" placeholder="请输入备注信息"></textarea></div>
+      </div>
+    </div>
+    <div class="p-6 border-t border-gray-100 flex justify-end gap-3"><button class="btn btn-outline" id="cancel-member">取消</button><button class="btn btn-primary" id="save-member">保存会员</button></div>
+  </div>
+</div>
+<div id="batch-bar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-white shadow-lg rounded-full px-6 py-2 flex items-center gap-4 text-sm z-50 border">
+  <span id="batch-count">已选择 0 条</span>
+  <button class="btn btn-outline btn-pill text-xs" id="batch-export-csv"><i class="fa fa-file-text-o"></i> CSV</button>
+  <button class="btn btn-outline btn-pill text-xs" id="batch-export-json"><i class="fa fa-code"></i> JSON</button>
+  <button class="btn btn-outline btn-pill text-xs" id="batch-export-xlsx"><i class="fa fa-file-excel-o"></i> Excel</button>
+  <button class="btn btn-outline btn-pill text-xs" id="batch-clear"><i class="fa fa-times"></i> 清空</button>
+</div>
 <script>
-// 导航玻璃效果
-(function(){var nav=document.getElementById('common-nav');if(nav&&!nav.classList.contains('nav-glass')){nav.classList.add('nav-glass');}})();
+// --- API & Utilities (restored) ---
+const api = { baseUrl:'/api/members', async request(ep,opt={}){ try{ const url=ep.startsWith('http')?ep:`${this.baseUrl}${ep}`; const r=await fetch(url,{headers:{'Content-Type':'application/json',...opt.headers},...opt}); if(!r.ok){ throw new Error('HTTP '+r.status+': '+await r.text()); } return await r.json(); }catch(e){ console.error('[API]',e); this.showMessage('网络请求失败: '+e.message,'error'); throw e;} }, memberAPI:{ getAll:()=>api.request(''), getById:id=>api.request(`/${id}`), create:data=>api.request('',{method:'POST',body:JSON.stringify(data)}), update:(id,data)=>api.request(`/${id}`,{method:'PUT',body:JSON.stringify(data)}), delete:id=>api.request(`/${id}`,{method:'DELETE'}), search:kw=>api.request(`/search?keyword=${encodeURIComponent(kw)}`), getStats:()=>api.request('/stats'), checkPhone:p=>api.request(`/check-phone?phone=${encodeURIComponent(p)}`) }, showMessage(msg,type='success'){ const alertClass= type==='error'? 'bg-red-100 border-red-400 text-red-700': type==='warning'? 'bg-yellow-100 border-yellow-400 text-yellow-700':'bg-green-100 border-green-400 text-green-700'; const iconClass= type==='error'?'fa-exclamation-circle': type==='warning'?'fa-warning':'fa-check-circle'; const d=document.createElement('div'); d.className=`fixed top-4 right-4 border px-4 py-3 rounded ${alertClass} z-50 shadow-lg`; d.innerHTML=`<div class='flex items-center'><i class='fa ${iconClass} mr-2'></i><span>${msg}</span></div>`; document.body.appendChild(d); setTimeout(()=>d.remove(),3000); }, utils:{ formatDate(s){ if(!s) return '-'; try{ return new Date(s).toLocaleDateString('zh-CN'); }catch(e){ return s;} }, formatPhone(p){ if(!p) return '-'; return p.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2'); }, escapeHtml(u){ if(typeof u!=='string') return u; return u.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); } } };
 </script>
-<script src="js/a11y.js" defer></script>
-</body>
-</html>
+<script>
+// --- Main App (restored) ---
+let membersData=[]; let currentPage=1; const pageSize=10; let isSearching=false; let currentEditingMember=null;
+const elements={ memberTableBody:document.getElementById('members-tbody'), addMemberBtn:document.getElementById('add-member'), memberModal:document.getElementById('member-modal'), closeModalBtn:document.getElementById('close-modal'), cancelMemberBtn:document.getElementById('cancel-member'), saveMemberBtn:document.getElementById('save-member'), importBtn:document.getElementById('import-btn'), exportBtn:document.getElementById('export-btn'), memberCount:document.getElementById('member-count'), paginationInfo:document.getElementById('pagination-info') };
+function getLevelBadge(level){ const lv=Number(level); let text='普通会员', cls='bg-gray-100 text-gray-600'; switch(lv){ case 1:text='白银会员';cls='bg-slate-200 text-slate-700';break; case 2:text='黄金会员';cls='bg-yellow-100 text-yellow-700';break; case 3:text='铂金会员';cls='bg-blue-100 text-blue-700';break; case 4:text='VIP会员';cls='bg-purple-100 text-purple-700';break;} return `<span class='px-2 py-1 rounded-full text-xs font-medium ${cls}'>${text}</span>`; }
+function resetFilter(){ ['filter-name','filter-phone','filter-level','filter-date','points-min','points-max','cons-min','cons-max'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';}); loadMembers(1); api.showMessage('筛选已重置','info'); }
+async function initApp(){ try{ await loadMembers(); await loadMemberStats(); setupEventListeners(); }catch(e){ console.error('[Init]失败',e);} }
+function setupEventListeners(){ elements.addMemberBtn?.addEventListener('click',showAddMemberModal); elements.closeModalBtn?.addEventListener('click',hideMemberModal); elements.cancelMemberBtn?.addEventListener('click',hideMemberModal); elements.saveMemberBtn?.addEventListener('click',handleSaveMember); document.getElementById('reset-filter')?.addEventListener('click',resetFilter); document.getElementById('apply-filter')?.addEventListener('click',()=>{ applyAllFilters&&applyAllFilters(); }); document.getElementById('toggle-advanced')?.addEventListener('click',()=>document.getElementById('advanced-filters').classList.toggle('open')); document.getElementById('advanced-reset')?.addEventListener('click',()=>{ ['points-min','points-max','cons-min','cons-max'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';}); applyAllFilters&&applyAllFilters(); }); document.getElementById('advanced-apply')?.addEventListener('click',()=>applyAllFilters&&applyAllFilters()); elements.importBtn?.addEventListener('click',()=>api.showMessage('导入功能开发中','warning')); elements.exportBtn?.addEventListener('click',()=>api.showMessage('导出功能开发中','warning')); }
+async function loadMembers(page=1){ try{ const resp=await api.memberAPI.getAll(); membersData=Array.isArray(resp)? resp:[]; const start=(page-1)*pageSize; const end=start+pageSize; const paged=membersData.slice(start,end); renderMemberTable(paged); updatePagination(membersData.length,page); currentPage=page; isSearching=false; }catch(e){ console.error('[LoadMembers]',e); showEmptyState('数据加载失败'); } }
+async function loadMemberStats(){ try{ const stats=await api.memberAPI.getStats(); updateStatsCards(stats); updateMemberCharts(stats); }catch(e){ console.warn('[Stats]失败',e); updateStatsCards(calculateStatsFromData(membersData)); } }
+function calculateStatsFromData(list){ const total=list.length; const vip=list.filter(m=>m.level>=3).length; const days30=new Date(Date.now()-30*86400000); const newCount=list.filter(m=> m.createTime && new Date(m.createTime)>=days30).length; const days90=new Date(Date.now()-90*86400000); const sleep=list.filter(m=> !m.lastConsumptionDate || new Date(m.lastConsumptionDate)<days90).length; return { totalMembers:total, vipMembers:vip, newMembers:newCount, sleepingMembers:sleep, totalGrowth:Math.floor(total*0.1), vipGrowth:Math.floor(vip*0.1), newGrowth:newCount, sleepingGrowth:-Math.floor(sleep*0.1) }; }
+function renderMemberTable(members){ const body=elements.memberTableBody; if(!body) return; body.innerHTML=''; if(!members||!members.length){ showEmptyState('暂无会员数据'); return;} members.forEach((m,i)=>{ const row=document.createElement('tr'); row.className='hover:bg-gray-50 transition-colors'; const last=m.lastConsumptionDate? api.utils.formatDate(m.lastConsumptionDate):'-'; row.innerHTML=`<td class='px-3 py-4'><input type='checkbox' class='member-select' data-id='${m.memberId}'></td><td class='px-6 py-4 whitespace-nowrap'><div class='flex items-center'><img src='https://picsum.photos/40/40?random=${i+60}' alt='会员' class='w-10 h-10 rounded-full mr-3'><div><div class='text-sm font-medium'>${api.utils.escapeHtml(m.name)}</div><div class='text-xs text-gray-500'>ID: ${m.memberId}</div></div></div></td><td class='px-6 py-4 text-sm'>${api.utils.formatPhone(m.phone)}</td><td class='px-6 py-4'>${getLevelBadge(m.level)}</td><td class='px-6 py-4 text-sm'>${m.points||0}</td><td class='px-6 py-4 text-sm'>${m.consumptionCount||0}次</td><td class='px-6 py-4 text-sm'>${last}</td><td class='px-6 py-4 text-xs'><span class='px-2 py-1 rounded-full ${getRiskClass(m)}'>${getRiskLabel(m)}</span></td><td class='px-6 py-4 text-sm'><button class='text-primary hover:underline mr-3' onclick='showMemberDetail("${m.memberId}")'>详情</button><button class='text-secondary hover:underline mr-3' onclick='editMember("${m.memberId}")'>编辑</button><button class='text-red-500 hover:underline' onclick='deleteMember("${m.memberId}")'>删除</button></td>`; body.appendChild(row); }); attachRowHover&&attachRowHover(); }
+function showEmptyState(msg){ elements.memberTableBody.innerHTML=`<tr><td colspan='9' class='px-6 py-8 text-center text-gray-500'><i class='fa fa-users text-4xl mb-2 text-gray-300'></i><p>${msg}</p><button onclick='showAddMemberModal()' class='mt-2 btn btn-primary'><i class='fa fa-plus'></i> 新增会员</button></td></tr>`; }
+function updateStatsCards(s){ if(!s) return; const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;}; set('total-members',`${s.totalMembers||0} 人`); set('vip-members',`${s.vipMembers||0} 人`); set('new-members',`${s.newMembers||0} 人`); set('sleeping-members',`${s.sleepingMembers||0} 人`); }
+function updatePagination(total,page){ const info=document.getElementById('pagination-info'); const btns=document.getElementById('pagination-buttons'); if(!info||!btns) return; const start= total? (page-1)*pageSize+1:0; const end=Math.min(page*pageSize,total); info.textContent=`显示 ${start}-${end} 条，共 ${total} 条`; btns.innerHTML=''; const totalPages=Math.ceil(total/pageSize)||1; const mk=(label,p,dis=false,act=false)=>{ const b=document.createElement('button'); b.className='btn btn-outline text-xs'+(act?' bg-primary text-white':''); b.textContent=label; b.disabled=dis; if(!dis&&!act) b.onclick=()=>{ loadMembers(p); }; btns.appendChild(b); }; mk('首页',1,page===1); mk('上一页',Math.max(1,page-1),page===1); mk('下一页',Math.min(totalPages,page+1),page===totalPages); mk('末页',totalPages,page===totalPages); }
+function showAddMemberModal(){ elements.memberModal?.classList.remove('hidden'); currentEditingMember=null; document.getElementById('modal-title').textContent='新增会员'; }
+function hideMemberModal(){ elements.memberModal?.classList.add('hidden'); }
+function handleSaveMember(){ api.showMessage('保存会员功能待实现','info'); hideMemberModal(); }
+window.showMemberDetail=id=> api.showMessage('会员详情 '+id,'info'); window.editMember=id=> api.showMessage('编辑会员 '+id,'info'); window.deleteMember=id=> api.showMessage('删除会员 '+id,'warning');
+initApp();
+</script>
+<script>
+// Charts init
+(function(){ if(typeof Chart==='undefined') return; const growthCtx=document.getElementById('member-growth-chart'); const levelCtx=document.getElementById('member-level-chart'); if(growthCtx){ window.memberGrowthChart=new Chart(growthCtx,{type:'line',data:{labels:[],datasets:[{label:'新增会员',data:[],borderColor:'#165DFF',backgroundColor:'rgba(22,93,255,0.12)',tension:.3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});} if(levelCtx){ window.memberLevelChart=new Chart(levelCtx,{type:'doughnut',data:{labels:['普通','白银','黄金','铂金','VIP'],datasets:[{data:[0,0,0,0,0],backgroundColor:['#93c5fd','#cbd5e1','#fde68a','#bfdbfe','#e9d5ff'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false}});} })();
+function updateMemberCharts(stats){ try{ if(stats?.growth && window.memberGrowthChart){ window.memberGrowthChart.data.labels=stats.growth.labels||[]; window.memberGrowthChart.data.datasets[0].data=stats.growth.data||[]; window.memberGrowthChart.update('none'); } if(stats?.levelDistribution && window.memberLevelChart){ window.memberLevelChart.data.datasets[0].data=stats.levelDistribution; window.memberLevelChart.update('none'); } }catch(e){ console.warn('[Charts]更新失败',e);} }
+</script>
+<script>
+// Enhancements (risk, segments, batch export, hover toolbar) - removed global search & sort
+(function(){ const state={raw:[],segment:'all',selected:new Set(),page:1,pageSize:10}; const SLEEP=90*86400000, ACTIVE=30*86400000; window.getRiskClass=m=>{ const last=m.lastConsumptionDate? new Date(m.lastConsumptionDate).getTime():0; if(!last||Date.now()-last>SLEEP) return 'member-risk-churn'; if(m.createTime && new Date(m.createTime).getTime()>Date.now()-ACTIVE) return 'member-risk-new'; return 'member-risk-active'; }; window.getRiskLabel=m=>{ const c=getRiskClass(m); if(c==='member-risk-churn') return '流失风险'; if(c==='member-risk-new') return '新会员'; if(c==='member-risk-active') return '活跃'; return '未知'; }; document.querySelectorAll('#member-segments .segment-btn').forEach(b=> b.addEventListener('click',()=>{ document.querySelectorAll('#member-segments .segment-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); state.segment=b.dataset.seg||'all'; applyAllFilters&&applyAllFilters(); }));
+  // 批量导出
+  document.getElementById('batch-export-csv')?.addEventListener('click',()=>exportSelected('csv')); document.getElementById('batch-export-json')?.addEventListener('click',()=>exportSelected('json')); document.getElementById('batch-export-xlsx')?.addEventListener('click',()=>exportSelected('xlsx'));
+  function exportSelected(kind){ const selected=[...document.querySelectorAll('.member-select:checked')].map(cb=> cb.getAttribute('data-id')); if(!selected.length){ api.showMessage('未选择任何会员','warning'); return;} const rows=membersData.filter(m=> selected.includes(String(m.memberId))); if(!rows.length){ api.showMessage('匹配数据为空','warning'); return;} const summary= buildSummary(rows); if(kind==='csv'){ const header='ID,姓名,手机号,等级,积分,消费次数,最近消费\n'; const csv= header + rows.map(r=>`${r.memberId},${(r.name||'').replace(/,/g,' ')},${r.phone||''},${r.level||0},${r.points||0},${r.consumptionCount||0},${r.lastConsumptionDate||''}`).join('\n')+'\n'; triggerDownload(csv,'members_selected.csv','text/csv'); } else if(kind==='json'){ triggerDownload(JSON.stringify({meta:summary,data:rows},null,2),'members_selected.json','application/json'); } else if(kind==='xlsx'){ if(typeof XLSX==='undefined'){ api.showMessage('Excel库未加载','error'); return;} const sheet=XLSX.utils.json_to_sheet(rows.map(r=>({ID:r.memberId,姓名:r.name,手机号:r.phone,等级:r.level,积分:r.points,消费次数:r.consumptionCount,最近消费:r.lastConsumptionDate}))); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,sheet,'Members'); const out=XLSX.write(wb,{bookType:'xlsx',type:'array'}); const blob=new Blob([out],{type:'application/octet-stream'}); const url=URL.createObjectURL(blob); triggerDownload(url,'members_selected.xlsx',null,true);} api.showMessage('导出完成','success'); }
+  function buildSummary(list){ return { count:list.length, exportTime:new Date().toLocaleString('zh-CN') }; }
+  window.triggerDownload=function(data,name,mime,isUrl){ if(isUrl){ const a=document.createElement('a'); a.href=data; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{a.remove(); URL.revokeObjectURL(data);},500); return;} const a=document.createElement('a'); if(mime==='text/csv'){ data='\uFEFF'+data; } a.href='data:'+mime+';charset=utf-8,'+encodeURIComponent(data); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>a.remove(),500); };
+  // Hover quick toolbar
+  const bar=document.createElement('div'); bar.id='row-quick-bar'; bar.style.cssText='position:absolute;pointer-events:none;z-index:70;opacity:0;transition:opacity .15s;'; document.body.appendChild(bar); window.attachRowHover=function(){ document.querySelectorAll('#members-tbody tr').forEach(tr=>{ tr.addEventListener('mouseenter',()=>{ const rect=tr.getBoundingClientRect(); const idCell=tr.querySelector('div.text-xs.text-gray-500'); const id=idCell? idCell.textContent.replace('ID:','').trim():''; bar.innerHTML=`<div class='bg-white/95 backdrop-blur shadow px-3 py-1 rounded-full border text-xs flex gap-2 items-center'><button class='text-primary hover:underline' onclick='showMemberDetail("${id}")'>详情</button><button class='text-secondary hover:underline' onclick='editMember("${id}")'>积分+</button><button class='text-red-500 hover:underline' onclick='deleteMember("${id}")'>删除</button></div>`; bar.style.top=(window.scrollY+rect.top-30)+'px'; bar.style.left=(rect.right-180)+'px'; bar.style.opacity='1'; }); tr.addEventListener('mouseleave',()=>{ bar.style.opacity='0'; }); }); };
+})();
+</script>

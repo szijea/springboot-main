@@ -5,11 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>智慧药房收银系统 - 系统设置</title>
-  <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/tailwind.css" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/theme-enhanced.css" />
   <link rel="stylesheet" href="css/theme-premium.css" />
+  <link rel="stylesheet" href="css/theme-lightwide.css" />
+  <link rel="stylesheet" href="css/ui-enhanced.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <style>
@@ -26,7 +27,7 @@
   <script src="js/common.js" defer></script>
   <script src="js/common-nav.js" defer></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#settings-main" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="settings"></div>
@@ -36,8 +37,7 @@
   <p class="text-gray-500">暂无通知</p>
 </div>
 <main class="flex-1 flex flex-col pt-16">
-  <div id="settings-main" class="main-content" >
-  <div class="container-xl section-gap">
+  <div id="settings-main" class="main-content" ><div class="container-fluid section-gap"><div class="app-shell">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 action-bar mb-2">
       <div>
         <h2 class="page-title font-bold page-title-decor">系统设置</h2>
@@ -665,7 +665,7 @@
         </div>
       </div>
     </div>
-  </div></div>
+  </div></div></div> <!-- close app-shell / container-fluid / main-content -->
 </main>
 <!-- 密码修改模态框 -->
 <div class="modal-backdrop" id="pwd-modal-backdrop"></div>
@@ -905,5 +905,26 @@ function showTempMsg(msg,type){ const d=document.createElement('div'); d.classNa
       if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
   </script>
 <script src="js/a11y.js" defer></script>
+<div class="dashboard-kpis kpi-horizontal mb-6" id="settings-kpi-row">
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">设置分类</p><h3 class="text-xl font-bold" id="kpi-settings-cats">--</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">支付方式</p><h3 class="text-xl font-bold" id="kpi-settings-pay">--</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">库存策略(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-inv">--</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">打印模板(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-print">--</h3></div>
+</div>
+<script src="js/kpi.js"></script>
+<script>
+(function(){
+  function updateSettingsKpis(){
+    const catBtns=document.querySelectorAll('#settings-main .sidebar-item');
+    const payMethods=['现金','微信','支付宝','医保','银行卡'];
+    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+    set('kpi-settings-cats',catBtns.length||'--');
+    set('kpi-settings-pay',payMethods.length);
+    set('kpi-settings-inv','待配置');
+    set('kpi-settings-print','默认');
+  }
+  document.addEventListener('DOMContentLoaded',updateSettingsKpis);
+})();
+</script>
 </body>
 </html>

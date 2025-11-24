@@ -16,6 +16,11 @@ public class MemberStatsDTO {
     private Double consumptionGrowth;
     private Integer sleepingGrowth;
 
+    // 全局附加指标
+    private Double avgPoints;      // 平均积分
+    private String activeRate;     // 活跃率(字符串百分比)
+    private Integer churnCount;    // 流失风险数量
+
     public MemberStatsDTO() {}
 
     // Getter 和 Setter 方法
@@ -54,4 +59,13 @@ public class MemberStatsDTO {
 
     public Integer getSleepingGrowth() { return sleepingGrowth; }
     public void setSleepingGrowth(Integer sleepingGrowth) { this.sleepingGrowth = sleepingGrowth; }
+
+    public Double getAvgPoints() { return avgPoints; }
+    public void setAvgPoints(Double avgPoints) { this.avgPoints = avgPoints; }
+
+    public String getActiveRate() { return activeRate; }
+    public void setActiveRate(String activeRate) { this.activeRate = activeRate; }
+
+    public Integer getChurnCount() { return churnCount; }
+    public void setChurnCount(Integer churnCount) { this.churnCount = churnCount; }
 }

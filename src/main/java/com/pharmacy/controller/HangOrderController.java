@@ -7,7 +7,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/hang-orders")
-@CrossOrigin(origins = "http://localhost:8080")
+// 移除局部 @CrossOrigin，使用全局 CORS 配置
 public class HangOrderController {
 
     @GetMapping

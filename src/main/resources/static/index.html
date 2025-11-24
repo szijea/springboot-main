@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧药房收银系统 - 登录</title>
     <link rel="stylesheet" href="css/tailwind.css" />
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
 
     <!-- 高级感配色配置 (安全包装，避免 tailwind 未定义时报错) -->
     <script>
@@ -35,54 +34,128 @@
     <style>
         @layer utilities {
             .content-auto { content-visibility: auto; }
-            .card-luxury { @apply bg-white rounded-2xl shadow-soft border border-neutral-200 overflow-hidden transition-all duration-500 hover:shadow-hover; }
-            .input-lux { @apply w-full px-5 py-3.5 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-800 placeholder:text-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all duration-300; }
-            .btn-lux { @apply w-full py-3.5 bg-primary text-white rounded-xl font-medium transition-all duration-300 hover:bg-primary/95 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20; }
+            .card-luxury { @apply bg-white/90 backdrop-blur-xl rounded-2xl shadow-soft border border-neutral-200 overflow-hidden transition-all duration-500 hover:shadow-hover; }
+            .input-lux { @apply w-full px-5 py-3.5 bg-neutral-50/70 backdrop-blur-sm border border-neutral-200 rounded-xl text-neutral-800 placeholder:text-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary/30 outline-none transition-all duration-300; }
+            .btn-lux { @apply relative overflow-hidden w-full py-3.5 bg-primary text-white rounded-xl font-medium transition-all duration-300 hover:bg-primary/95 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-primary/20; }
             .link-elegant { @apply text-neutral-600 hover:text-primary transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-0 after:bg-primary after:transition-all hover:after:w-full; }
-            .divider-fine { @apply h-[1px] bg-neutral-200 my-8; }
-            .bg-pattern { background-image:radial-gradient(circle at 25% 25%, rgba(30,58,138,0.05) 0%, transparent 50%),radial-gradient(circle at 75% 75%, rgba(30,58,138,0.05) 0%, transparent 50%);background-size:100px 100px; }
+            .divider-fine { @apply h-[1px] bg-neutral-200 my-8 relative; }
+            .bg-pattern { background-image:radial-gradient(circle at 25% 25%, rgba(255,255,255,0.08) 0%, transparent 50%),radial-gradient(circle at 75% 75%, rgba(255,255,255,0.07) 0%, transparent 52%);background-size:120px 120px; }
+            .gradient-animated { background:linear-gradient(115deg,#1e3a8a 0%,#3b82f6 40%,#6366f1 70%,#1e3a8a 100%); background-size:300% 300%; animation:heroGradient 18s ease-in-out infinite; }
+            .floating-shape { position:absolute; border-radius:50%; background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.05)); box-shadow:0 8px 32px -8px rgba(0,0,0,0.2); backdrop-filter:blur(10px); animation:floating 14s linear infinite; }
+            .glass-bar { @apply px-3 py-1.5 rounded-full text-[11px] tracking-wide uppercase font-medium bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-sm; }
         }
+        @keyframes heroGradient { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+        @keyframes floating { 0%{transform:translateY(0) translateX(0)} 50%{transform:translateY(-40px) translateX(20px)} 100%{transform:translateY(0) translateX(0)} }
+        @keyframes fadeSlide { 0%{opacity:0; transform:translateY(20px)} 100%{opacity:1; transform:translateY(0)} }
+        @media (prefers-reduced-motion: reduce){ .gradient-animated{animation:none} .floating-shape{animation:none} }
+        .typed-cursor { display:inline-block; width:3px; background:#fff; animation:blink 1s steps(2,start) infinite; margin-left:4px; }
+        @keyframes blink { 50%{opacity:0} }
+        .tilt-hover { transform-style:preserve-3d; transition:transform .35s ease; }
+        .tilt-hover:hover { transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateZ(4px); }
+        .ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,.4); transform:scale(0); animation:ripple .6s ease-out; pointer-events:none; }
+        @keyframes ripple { to { transform:scale(3); opacity:0; } }
+        .theme-palette { @apply flex gap-1 bg-white/40 backdrop-blur-md rounded-full px-2 py-1 border border-white/50 shadow-sm; }
+        .theme-swatch { @apply w-5 h-5 rounded-full cursor-pointer ring-2 ring-transparent transition; }
+        .theme-swatch:hover { @apply ring-white; }
+        .login-ambient { position:absolute; inset:0; pointer-events:none; background:radial-gradient(circle at 60% 40%,rgba(255,255,255,.25),transparent 60%),radial-gradient(circle at 30% 70%,rgba(255,255,255,.2),transparent 65%); opacity:.4; mix-blend-mode:overlay; }
+        .kpi-soft { @apply card p-4 card-interactive bg-white/80 backdrop-blur-md border border-neutral-200; }
+        /* 粒子画��层 */
+        #hero-particles { position:absolute; inset:0; width:100%; height:100%; z-index:1; pointer-events:none; }
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:none; align-items:center; justify-content:center; z-index:120; }
+        .modal-overlay.active { display:flex; animation:fadeModal .25s ease; }
+        @keyframes fadeModal { from{opacity:0; transform:scale(.98);} to{opacity:1; transform:scale(1);} }
+        .modal-panel { width:100%; max-width:460px; background:#fff; border-radius:20px; box-shadow:0 12px 40px -12px rgba(0,0,0,.25); position:relative; display:flex; flex-direction:column; overflow:hidden; }
+        .modal-header { padding:1.25rem 1.5rem; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
+        .modal-body { padding:1.25rem 1.5rem 1.75rem; max-height:65vh; overflow-y:auto; }
+        .close-btn { @apply text-neutral-400 hover:text-primary transition-colors; }
+        .qr-preview { width:180px; height:180px; background:repeating-linear-gradient(45deg,#eee,#eee 8px,#ddd 8px,#ddd 16px); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#666; position:relative; overflow:hidden; }
+        .qr-preview:before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 30%,rgba(59,130,246,.3),transparent 60%); mix-blend-mode:multiply; }
+        .card-input { @apply input-lux; }
+        .focus-ring:focus { outline:2px solid #3b82f6; outline-offset:2px; }
+        /* 新增美化样式 */
+        .card-gradient-outline {position:relative; border:1px solid transparent; background:linear-gradient(#ffffffdd,#ffffffdd) padding-box,linear-gradient(135deg,#3b82f6,#6366f1,#8b5cf6) border-box; box-shadow:0 20px 40px -15px rgba(0,0,0,.15);}
+        .floating-group { position:relative; }
+        .floating-group input.input-lux, .floating-group select.input-lux { padding-left:48px; }
+        .floating-group .field-icon { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:20px; height:20px; display:flex; align-items:center; justify-content:center; color:#64748b; pointer-events:none; transition:color .3s; }
+        .floating-group label.f-label { position:absolute; left:48px; top:50%; transform:translateY(-50%); font-size:14px; color:#94a3b8; pointer-events:none; letter-spacing:.5px; transition: all .25s cubic-bezier(.4,0,.2,1); background:transparent; padding:0 4px; }
+        .floating-group.filled label.f-label, .floating-group:focus-within label.f-label { top:8px; transform:none; }
+        /* select 初始隐藏标签以避免与占位 option 重叠 */
+        .floating-group select + label.f-label { opacity:0; transition:opacity .25s; }
+        .floating-group.filled select + label.f-label, .floating-group:focus-within select + label.f-label { opacity:1; }
+        .floating-group.filled input.input-lux, .floating-group.filled select.input-lux { padding-top:22px; }
+        .form-hint { font-size:11px; margin-top:6px; color:#94a3b8; display:flex; align-items:center; gap:4px; }
+        .form-hint i { opacity:.7; }
+        .btn-lux { letter-spacing:.5px; font-weight:600; }
+        .btn-alt { @apply w-full py-3.5 rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary/20 bg-neutral-200 text-neutral-700 hover:bg-neutral-300 active:scale-[0.985]; }
+        .login-divider-text { background:#fff; box-shadow:0 0 0 4px #fff; }
+        /* 固定标签防重叠修复 */
+        .fg-fixed label.f-label {position:absolute; left:48px; top:10px; font-size:12px; color:#64748b; letter-spacing:.5px; pointer-events:none; transition:color .25s;}
+        .fg-fixed input.input-lux,.fg-fixed select.input-lux {padding-top:38px;}
+        .fg-fixed:focus-within label.f-label {color:#3b82f6;}
+        /* 移除旧浮动样式影响 */
+        .floating-group.filled label.f-label {top:10px; transform:none; font-size:12px;}
+        .floating-group.filled input.input-lux,.floating-group.filled select.input-lux {padding-top:38px;}
     </style>
 </head>
-<body class="font-sans text-neutral-800 min-h-screen enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-sans text-neutral-800 min-h-screen enhanced-ui theme-modern theme-lightwide page-enter">
 <div class="scroll-progress" id="scroll-progress"></div>
-<!-- 主容器 - 左右分栏布局 -->
-<div class="flex flex-col lg:flex-row min-h-screen container-xl section-gap">
+<div class="flex flex-col lg:flex-row min-h-screen container-fluid section-gap">
     <!-- 左侧背景区域 -->
-    <div class="lg:w-3/5 bg-gradient-to-br from-primary to-primary/80 relative overflow-hidden hidden lg:block">
-        <!-- 装饰图形 -->
-        <div class="absolute inset-0 bg-pattern opacity-60"></div>
-        <div class="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-        <div class="absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full bg-white/5 blur-3xl"></div>
-
+    <div class="lg:w-1/2 gradient-animated relative overflow-hidden hidden lg:block">
+        <canvas id="hero-particles" aria-hidden="true"></canvas>
+        <div class="login-ambient"></div>
+        <!-- 装饰图形旧内容移除，使用新的漂浮形状 -->
+        <div class="floating-shape" style="top:8%; left:12%; width:140px; height:140px; animation-delay:0s"></div>
+        <div class="floating-shape" style="top:55%; left:68%; width:200px; height:200px; animation-delay:3s"></div>
+        <div class="floating-shape" style="bottom:10%; left:28%; width:110px; height:110px; animation-delay:6s"></div>
+        <div class="absolute top-6 left-8 flex items-center gap-2 animate-[fadeSlide_.8s_ease]">
+            <div class="glass-bar">Pharmacy Cloud</div>
+            <div class="glass-bar">Secure</div>
+            <div class="glass-bar">AI Assist</div>
+        </div>
+        <div class="absolute top-6 right-8 theme-palette">
+            <div class="theme-swatch" data-theme="light" style="background:#fff"></div>
+            <div class="theme-swatch" data-theme="mid" style="background:#3b82f6"></div>
+            <div class="theme-swatch" data-theme="dark" style="background:#0f172a"></div>
+        </div>
         <!-- 左侧内容 -->
         <div class="relative z-10 h-full flex flex-col justify-center p-16 text-white">
-            <div class="max-w-md">
-                <div class="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center mb-8 backdrop-blur-sm">
-                    <i class="fa fa-medkit text-2xl"></i>
+            <div class="max-w-xl">
+                <div class="w-20 h-20 bg-white/15 rounded-2xl flex items-center justify-center mb-10 backdrop-blur-sm shadow-inner">
+                    <i class="fa fa-medkit text-3xl"></i>
                 </div>
-                <h2 class="text-[clamp(1.8rem,5vw,2.8rem)] font-bold leading-tight mb-6">
-                    智慧药房<br>专业管理系统
+                <h2 class="text-[clamp(2rem,4.8vw,3.2rem)] font-bold leading-[1.1] mb-6 drop-shadow-sm">
+                    智慧药房 · 经营加速平台
                 </h2>
-                <p class="text-white/80 text-lg mb-8 max-w-md">
-                    高效、安全、智能的医药零售解决方案，为药房管理提供全方位支持
-                </p>
+                <p class="text-white/85 text-lg mb-8 max-w-lg font-light" id="typed-tagline" aria-label="系统特性自动播放">高效安全的数字药房运营套件</p>
+                <div class="grid grid-cols-2 gap-4 mb-10">
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-check-circle text-white/90 mt-0.5"></i>
+                        <div><p class="font-medium">实时库存预警</p><p class="text-xs text-white/70">智能识别低库存与临期药品</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-check-circle text-white/90 mt-0.5"></i>
+                        <div><p class="font-medium">会员精准洞察</p><p class="text-xs text-white/70">活跃/流失人群一目了然</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-check-circle text-white/90 mt-0.5"></i>
+                        <div><p class="font-medium">销售趋势预测</p><p class="text-xs text-white/70">辅助进货与营销决策</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa fa-check-circle text-white/90 mt-0.5"></i>
+                        <div><p class="font-medium">多租户隔离</p><p class="text-xs text-white/70">独立数据安全合规</p></div>
+                    </div>
+                </div>
                 <div class="flex gap-4">
-                    <div class="flex items-center gap-2">
-                        <i class="fa fa-check-circle text-white/90"></i>
-                        <span class="text-white/90">高效收银流程</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fa fa-check-circle text-white/90"></i>
-                        <span class="text-white/90">药品管理系统</span>
-                    </div>
+                    <button type="button" id="go-dashboard" class="glass-bar !bg-white/30 !text-white hover:!bg-white/45" aria-label="查看控制台示例">试用演示</button>
+                    <button type="button" id="toggle-dark" class="glass-bar !bg-white/25 !text-white hover:!bg-white/40" aria-label="切换主题模式">切换主题</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 右侧登录区域 -->
-    <div class="lg:w-2/5 flex items-center justify-center p-6 lg:p-16 bg-neutral-50">
+    <div class="lg:w-1/2 flex items-center justify-center p-6 lg:p-16 bg-neutral-50">
         <div class="w-full max-w-md">
             <!-- 移动端品牌标识 -->
             <div class="text-center mb-10 lg:hidden">
@@ -94,74 +167,55 @@
             </div>
 
             <!-- 登录卡片 -->
-            <div class="card-luxury p-8 md:p-10">
-                <!-- 桌面端标题（左侧已有品牌信息，这里简化） -->
-                <div class="text-center mb-10 hidden lg:block">
-                    <h1 class="text-[clamp(1.6rem,4vw,2rem)] font-bold text-neutral-900 page-title-decor">账户登录</h1>
-                    <p class="text-neutral-500 mt-2.5">请输入您的账号信息</p>
+            <div class="card-luxury card-gradient-outline p-8 md:p-10 tilt-hover" id="login-card" aria-describedby="login-accessibility-hint">
+                <div class="text-center mb-8">
+                    <h1 class="text-[clamp(1.6rem,4vw,2rem)] font-bold text-neutral-900 tracking-tight">欢迎登录</h1>
+                    <p class="text-sm text-neutral-500 mt-2">进入智慧药房管理平台</p>
                 </div>
-
-                <!-- 消息容器 - 放在标题下方 -->
-                <div id="message-container" class="mb-6"></div>
-
-                <!-- 登录表单 -->
-                <form id="login-form" class="space-y-6">
-                    <div class="space-y-2.5">
-                        <label class="block text-sm font-medium text-neutral-700">店铺 / 租户</label>
-                        <div class="relative">
-                            <label for="tenant-select" class="sr-only">店铺 / 租户</label>
-                            <select id="tenant-select" class="input-lux" required name="tenant" aria-label="店铺 / 租户">
-                                <option value="" disabled selected>请选择店铺</option>
-                            </select>
-                        </div>
-                        <p id="tenant-hint" class="text-xs text-neutral-500 mt-1">登录前必须选择对应店铺数据库 (bht / wx / rzt)</p>
+                <div id="message-container" class="mb-5" aria-live="polite" aria-atomic="true"></div>
+                <form id="login-form" class="space-y-7" novalidate>
+                    <div class="floating-group fg-fixed" id="fg-tenant">
+                        <i class="fa fa-building field-icon" aria-hidden="true"></i>
+                        <select id="tenant-select" class="input-lux" required name="tenant" aria-label="店铺 / 租户">
+                            <option value="" disabled selected>请选择店铺</option>
+                            <option value="bht">bht</option>
+                            <option value="wx">wx</option>
+                            <option value="rzt">rzt</option>
+                        </select>
+                        <label for="tenant-select" class="f-label">店铺 / 租户</label>
+                        <div class="form-hint"><i class="fa fa-info-circle"></i> 必须选择对应数据库 (示例)</div>
                     </div>
-
-                    <div class="space-y-2.5">
-                        <label class="block text-sm font-medium text-neutral-700">用户名</label>
-                        <div class="relative">
-                            <label for="login-username" class="sr-only">用户名</label>
-                            <input id="login-username" name="username" type="text" class="input-lux" placeholder="请输入用户名" required aria-label="用户名">
-                        </div>
+                    <div class="floating-group fg-fixed" id="fg-user">
+                        <i class="fa fa-user field-icon" aria-hidden="true"></i>
+                        <input id="login-username" name="username" type="text" class="input-lux" placeholder="" required aria-label="用户名" autocomplete="username" />
+                        <label for="login-username" class="f-label">用户名</label>
                     </div>
-
-                    <div class="space-y-2.5">
-                        <label class="block text-sm font-medium text-neutral-700">密码</label>
-                        <div class="relative">
-                            <label for="login-password" class="sr-only">密码</label>
-                            <input id="login-password" name="password" type="password" class="input-lux" placeholder="请输入密码" required aria-label="密码">
-                            <button id="password-toggle" type="button" class="absolute right-5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors duration-300 p-1" aria-label="显示或隐藏密码">
-                                <i class="fa fa-eye-slash"></i>
-                            </button>
-                        </div>
+                    <div class="floating-group fg-fixed" id="fg-pass">
+                        <i class="fa fa-lock field-icon" aria-hidden="true"></i>
+                        <input id="login-password" name="password" type="password" class="input-lux" placeholder="" required aria-label="密码" autocomplete="current-password" />
+                        <label for="login-password" class="f-label">密码</label>
+                        <button id="password-toggle" type="button" class="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors duration-300 p-1" aria-label="显示或隐藏密码">
+                            <i class="fa fa-eye-slash"></i>
+                        </button>
+                        <div class="form-hint"><i class="fa fa-shield"></i> 已加密传输</div>
                     </div>
-
                     <div class="flex items-center justify-between pt-1">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" class="w-4.5 h-4.5 rounded border-neutral-300 text-primary focus:ring-primary/30 transition-all">
-                            <span class="text-sm text-neutral-600">记住登录状态</span>
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" class="w-4.5 h-4.5 rounded border-neutral-300 text-primary focus:ring-primary/30 transition-all" aria-label="记住登录状态">
+                            <span class="text-xs text-neutral-600">记住状态</span>
                         </label>
-                        <a href="#" class="text-sm link-elegant">忘记密码?</a>
+                        <a href="#" class="text-xs link-elegant">忘记密码?</a>
                     </div>
-
-                    <button type="submit" class="btn-lux mt-3">
-                        登录系统
-                    </button>
+                    <button type="submit" class="btn-lux ripple-origin" aria-live="polite">登录系统</button>
                 </form>
-
-                <!-- 分隔线 -->
-                <div class="divider-fine relative">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-xs text-neutral-400">
-                        其他登录方式
-                    </div>
+                <div class="divider-fine relative my-10">
+                    <div class="login-divider-text absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-4 text-[11px] tracking-wider text-neutral-400 uppercase">其他方式</div>
                 </div>
-
-                <!-- 快捷登录 -->
                 <div class="flex justify-center gap-6">
-                    <button class="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 hover:bg-primary hover:text-white transition-all duration-300">
+                    <button id="open-qr-login" class="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm" aria-haspopup="dialog" aria-controls="qr-login-modal">
                         <i class="fa fa-qrcode"></i>
                     </button>
-                    <button class="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-600 hover:bg-primary hover:text-white transition-all duration-300">
+                    <button id="open-card-login" class="w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-600 hover:bg-primary hover:text-white transition-all duration-300 shadow-sm" aria-haspopup="dialog" aria-controls="card-login-modal">
                         <i class="fa fa-id-card-o"></i>
                     </button>
                 </div>
@@ -197,5 +251,91 @@
    if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
 </script>
 <script>(function(){var nav=document.getElementById('common-nav');if(nav&&!nav.classList.contains('nav-glass'))nav.classList.add('nav-glass');})();</script>
+<script src="js/kpi.js"></script>
+<script>
+(function(){
+  // 精简：移除 KPI 统计逻辑，仅保留主题与时间（可选）
+  function updateTime(){ const el=document.getElementById('kpi-current-time'); if(el){ el.textContent=new Date().toLocaleTimeString('zh-CN'); } }
+  document.addEventListener('DOMContentLoaded',()=>{ updateTime(); setInterval(updateTime,1000); });
+})();
+</script>
+
+<!-- 打字动画 & 交互增强 -->
+<script>
+// 打字动画 & 交互增强
+(function(){
+  const lines=["高效 · 智能 · 安全","助力药房数字增长","打造会员与库存新体验"];
+  let idx=0, char=0, el=document.getElementById('typed-tagline');
+  function type(){ if(!el) return; if(char<=lines[idx].length){ el.innerHTML=lines[idx].slice(0,char)+'<span class="typed-cursor"></span>'; char++; } else { setTimeout(()=>{ char=0; idx=(idx+1)%lines.length; },1600); } }
+  setInterval(type,70);
+})();
+// Ripple 效果
+(function(){ document.addEventListener('click',e=>{ const target=e.target.closest('.btn-lux,.glass-bar,.ripple-origin'); if(!target) return; const r=document.createElement('span'); r.className='ripple'; const rect=target.getBoundingClientRect(); const size=Math.max(rect.width,rect.height); r.style.width=r.style.height=size+'px'; r.style.left=(e.clientX-rect.left - size/2)+'px'; r.style.top=(e.clientY-rect.top - size/2)+'px'; target.appendChild(r); setTimeout(()=>r.remove(),600); }); })();
+// 主题快速调色板
+(function(){ const swatches=document.querySelectorAll('.theme-swatch'); swatches.forEach(s=> s.addEventListener('click',()=>{ const theme=s.dataset.theme; if(theme==='dark'){ document.documentElement.classList.add('dark'); } else if(theme==='light'){ document.documentElement.classList.remove('dark'); } else { document.documentElement.classList.toggle('dark'); } const k=document.getElementById('kpi-theme-mode'); if(k) k.textContent=document.documentElement.classList.contains('dark')?'Dark':'Light'; })); document.getElementById('toggle-dark')?.addEventListener('click',()=>{ document.documentElement.classList.toggle('dark'); const k=document.getElementById('kpi-theme-mode'); if(k) k.textContent=document.documentElement.classList.contains('dark')?'Dark':'Light'; }); })();
+// 登录卡片 3D Tilt (仅桌面)
+(function(){ const card=document.getElementById('login-card'); if(!card) return; const sens=18; function handle(e){ const rect=card.getBoundingClientRect(); const x=(e.clientX-rect.left)/rect.width; const y=(e.clientY-rect.top)/rect.height; const ry=(x-0.5)*sens; const rx=-(y-0.5)*sens; card.style.setProperty('--rx', rx+'deg'); card.style.setProperty('--ry', ry+'deg'); } card.addEventListener('pointermove',handle); card.addEventListener('pointerleave',()=>{ card.style.setProperty('--rx','0deg'); card.style.setProperty('--ry','0deg'); }); })();
+// 表单验证提示 & aria-live 信息
+(function(){ const form=document.getElementById('login-form'); const msg=document.getElementById('message-container'); if(!form||!msg) return; form.addEventListener('submit',e=>{ e.preventDefault(); const tenant=document.getElementById('tenant-select').value; const user=document.getElementById('login-username').value.trim(); const pass=document.getElementById('login-password').value.trim(); if(!tenant){ announce('请先选择店铺 / 租户'); return; } if(!user || !pass){ announce('用户名或密码不能为空'); return; } announce('正在验证登录...'); setTimeout(()=>{ announce('登录成功 (示例)'); form.reset(); },1200); }); function announce(text,type='info'){ msg.innerHTML=`<div class='text-sm px-4 py-2 rounded-xl ${type==='info'?'bg-primary/10 text-primary':'bg-red-100 text-red-600'} shadow-sm'>${text}</div>`; } })();
+</script>
+<script>
+// 星空粒子与弹窗逻辑
+(function(){
+  // 粒子
+  const canvas=document.getElementById('hero-particles'); if(canvas){ const ctx=canvas.getContext('2d'); let w=canvas.width=canvas.offsetWidth; let h=canvas.height=canvas.offsetHeight; const reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; const COUNT= reduce? 40: 120; let stars=[]; function init(){ stars=[]; for(let i=0;i<COUNT;i++){ stars.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.4+0.4,dx:(Math.random()-.5)*0.05,dy:(Math.random()-.5)*0.05,alpha:Math.random()*0.6+0.2}); } } function resize(){ w=canvas.width=canvas.offsetWidth; h=canvas.height=canvas.offsetHeight; init(); } window.addEventListener('resize',()=>{ resize(); }); init(); function frame(){ ctx.clearRect(0,0,w,h); ctx.globalCompositeOperation='lighter'; stars.forEach(s=>{ s.x+=s.dx; s.y+=s.dy; if(s.x<0||s.x>w) s.dx*=-1; if(s.y<0||s.y>h) s.dy*=-1; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,'+s.alpha+')'; ctx.fill(); }); requestAnimationFrame(frame); } requestAnimationFrame(frame); }
+  // 聚焦陷阱 & 弹窗
+  const openers=[{btn:'#open-qr-login', modal:'#qr-login-modal', focus:'#refresh-qr'},{btn:'#open-card-login', modal:'#card-login-modal', focus:'#card-number'}];
+  function trap(modal){ const focusable=modal.querySelectorAll('button,[href],input,textarea,select,[tabindex]:not([tabindex="-1"])'); const first=focusable[0]; const last=focusable[focusable.length-1]; modal.addEventListener('keydown',e=>{ if(e.key==='Tab'){ if(e.shiftKey){ if(document.activeElement===first){ e.preventDefault(); last.focus(); } } else { if(document.activeElement===last){ e.preventDefault(); first.focus(); } } } if(e.key==='Escape'){ closeModal(modal.id); } }); }
+  function openModal(id,focusSel){ const m=document.getElementById(id); if(!m) return; m.classList.add('active'); document.body.style.overflow='hidden'; const f= m.querySelector(focusSel); (f||m).focus(); trap(m); }
+  function closeModal(id){ const m=document.getElementById(id); if(!m) return; m.classList.remove('active'); document.body.style.overflow=''; }
+  openers.forEach(o=>{ const b=document.querySelector(o.btn); if(b){ b.addEventListener('click',()=> openModal(o.modal.substring(1), o.focus)); } });
+  document.querySelectorAll('[data-close-modal]').forEach(btn=> btn.addEventListener('click',()=> closeModal(btn.getAttribute('data-close-modal'))));
+  // 外部点击关闭
+  document.querySelectorAll('.modal-overlay').forEach(ov=> ov.addEventListener('click',e=>{ if(e.target===ov) closeModal(ov.id); }));
+  // 员工卡示例验证
+  const cardBtn=document.getElementById('card-login-submit'); const cardMsg=document.getElementById('card-login-msg'); if(cardBtn){ cardBtn.addEventListener('click',()=>{ const num=document.getElementById('card-number').value.trim(); const pin=document.getElementById('card-pin').value.trim(); if(!num||!pin){ cardMsg.textContent='卡号或 PIN 不能为空'; return; } cardMsg.textContent='验证中...'; setTimeout(()=>{ cardMsg.textContent='登录成功 (示例)'; closeModal('card-login-modal'); },1000); }); }
+  // 二维码刷新示例
+  const refresh=document.getElementById('refresh-qr'); if(refresh){ refresh.addEventListener('click',()=>{ const box=document.querySelector('#qr-login-modal .qr-preview'); if(box){ box.style.animation='none'; void box.offsetWidth; box.style.animation='pulseQR .6s'; } }); }
+})();
+</script>
+<script>
+// 实际登录逻辑替换示例逻辑
+(function(){
+  const form=document.getElementById('login-form');
+  const msg=document.getElementById('message-container');
+  if(!form||!msg) return;
+  const submitBtn=form.querySelector('button[type="submit"]');
+  function show(message,type='info'){ msg.innerHTML=`<div class='text-sm px-4 py-2 rounded-xl ${type==='error'?'bg-red-100 text-red-600':'bg-primary/10 text-primary'} shadow-sm'>${message}</div>`; }
+  async function doLogin(tenant,user,pass){
+    try {
+      submitBtn.disabled=true; submitBtn.textContent='登录中...';
+      const resp= await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json','X-Shop-Id':tenant||''},body:JSON.stringify({username:user,password:pass})});
+      const data= await resp.json().catch(()=>({success:false,message:'解析响应失败'}));
+      if(!resp.ok || !data.success){
+        show(data.message||('登录失败: '+resp.status),'error');
+        submitBtn.disabled=false; submitBtn.textContent='登录系统';
+        return;
+      }
+      // 保存 token 与用户信息
+      try { localStorage.setItem('authToken', data.token); localStorage.setItem('authUser', JSON.stringify(data.user)); localStorage.setItem('authTenant', tenant); } catch(e){ console.warn('存储失败',e); }
+      show('登录成功，正在跳转...');
+      setTimeout(()=>{ window.location.href='medicine-management.html'; },600);
+    } catch(err){
+      show('网络异常: '+ err.message,'error');
+      submitBtn.disabled=false; submitBtn.textContent='登录系统';
+    }
+  }
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const tenant=document.getElementById('tenant-select').value;
+    const user=document.getElementById('login-username').value.trim();
+    const pass=document.getElementById('login-password').value.trim();
+    if(!tenant){ show('请选择店铺 / 租户','error'); return; }
+    if(!user||!pass){ show('用户名或密码不能为空','error'); return; }
+    show('正在验证登录...');
+    doLogin(tenant,user,pass);
+  });
+})();
+</script>
 </body>
 </html>

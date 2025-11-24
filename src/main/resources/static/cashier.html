@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/layout.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -28,7 +29,7 @@
     <script src="js/common.js" defer></script>
     <script src="js/common-nav.js" defer></script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
   <div id="common-nav" data-active="cashier"></div>
@@ -37,7 +38,7 @@
     <p class="text-gray-500">暂时无通知</p>
   </div>
   <main class="flex-1 flex flex-col pt-16">
-    <div class="main-content" id="main-content"><div class="container-xl section-gap">
+    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
       <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
         <div>
           <h2 class="text-[clamp(1.25rem,2vw,1.75rem)] font-bold page-title-decor">收银台</h2>
@@ -50,8 +51,9 @@
       </div>
 
       <!-- 顶部搜索区 -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 cozy-grid cols-3">
-        <div class="card p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6 cozy-grid cols-4" id="cashier-top-row">
+        <!-- 药品扫码/搜索 -->
+        <div class="card p-6 card-interactive">
           <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fa fa-barcode text-primary"></i> 药品扫码/搜索</h3>
 <label for="barcode-input" class="sr-only">药品条码输入</label>
 <input id="barcode-input" class="input" placeholder="扫码或输入条码" autocomplete="off" />
@@ -71,7 +73,8 @@
   <button id="medicine-search-btn" class="btn btn-outline flex-shrink-0"><i class="fa fa-search"></i> 搜索</button>
 </div>
         </div>
-        <div class="card p-6">
+        <!-- 会员选择 -->
+        <div class="card p-6 card-interactive">
           <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fa fa-user text-primary"></i> 会员选择</h3>
 <div class="space-y-3">
   <div class="relative">
@@ -83,7 +86,8 @@
   <button id="clear-member-btn" class="btn btn-outline text-xs hidden"><i class="fa fa-times"></i> 移除会员</button>
 </div>
         </div>
-        <div class="card p-6">
+        <!-- 支付与折扣 -->
+        <div class="card p-6 card-interactive">
           <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fa fa-cny text-primary"></i> 支付与折扣</h3>
 <label for="payment-method" class="sr-only">支付方式</label>
 <select id="payment-method" class="input">
@@ -101,8 +105,8 @@
   <input id="use-points" type="number" min="0" class="input" placeholder="使用积分(可选)" />
 </div>
         </div>
-        <!-- 新增第4列：订单汇总 (从下方移动) -->
-        <div class="card p-6 flex flex-col" id="order-summary-card">
+        <!-- 订单汇总 -->
+        <div class="card p-6 flex flex-col card-interactive" id="order-summary-card">
           <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fa fa-list-alt"></i> 订单汇总</h3>
           <div class="space-y-2 text-sm">
             <div class="flex justify-between"><span>商品总额</span><span id="summary-original">¥0.00</span></div>
@@ -118,18 +122,27 @@
         </div>
       </div>
 
+      <!-- KPI 行 -->
+      <div class="dashboard-kpis kpi-horizontal mb-6" id="cashier-kpi-row">
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">商品行数</p><h3 class="text-xl font-bold" id="kpi-order-items">0</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">原价合计</p><h3 class="text-xl font-bold" id="kpi-order-original">¥0.00</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">折扣与积分</p><h3 class="text-xl font-bold" id="kpi-order-discount">¥0.00</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">应付金额</p><h3 class="text-xl font-bold" id="kpi-order-payable">¥0.00</h3></div>
+  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">会员使用积分</p><h3 class="text-xl font-bold" id="kpi-order-points">0</h3></div>
+</div>
+
       <!-- 购物车与汇总 -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6 section-gap">
-        <div class="card xl:col-span-1 p-6" id="cart-card">
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6 section-gap" id="cashier-cart-row">
+        <div class="card xl:col-span-1 p-6 card-interactive" id="cart-card">
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold flex items-center gap-2"><i class="fa fa-shopping-cart"></i> 购物车</h3>
             <button id="clear-cart-btn" class="btn btn-outline text-xs"><i class="fa fa-trash"></i> 清空</button>
           </div>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <table class="min-w-full divide-y divide-gray-200 text-sm table-modern">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-2 text-left font-medium text-gray-600">药��</th>
+                  <th class="px-4 py-2 text-left font-medium text-gray-600">药品</th>
                   <th class="px-4 py-2 text-left font-medium text-gray-600">规格</th>
                   <th class="px-4 py-2 text-left font-medium text-gray-600">单价</th>
                   <th class="px-4 py-2 text-left font-medium text-gray-600">数量</th>
@@ -142,7 +155,6 @@
           </div>
           <div id="cart-empty" class="p-6 text-center text-gray-400">暂无商品，请搜索添加</div>
         </div>
-        <!-- 删除原位置订单汇总卡片：已上移，保留占位可选 -->
         <div class="hidden" id="order-summary-card-old"></div>
       </div>
 
@@ -150,7 +162,7 @@
       <div id="recent-added-hint" class="hidden p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm mb-6"></div>
 
       <!-- 挂单列表(占位) -->
-      <div class="card p-6" id="hang-list-card">
+      <div class="card p-6 card-interactive" id="hang-list-card">
         <div class="flex justify-between items-center mb-4">
           <h3 class="font-bold flex items-center gap-2"><i class="fa fa-pause-circle"></i> 挂单列表</h3>
           <button id="refresh-hang-btn" class="btn btn-outline text-xs"><i class="fa fa-refresh"></i> 刷新</button>
@@ -158,11 +170,29 @@
         <div id="hang-orders-empty" class="text-gray-400 text-sm">暂无挂单</div>
         <div id="hang-orders-container" class="space-y-2 text-sm"></div>
       </div>
-    </div></div>
+    </div></div></div> <!-- close app-shell / container-fluid / main-content -->
   </main>
 <script src="js/cashier.js" defer></script>
 <script src="js/a11y.js" defer></script>
 <script src="js/ui-global.js" defer></script>
-<!-- 移除内联滚动/主题脚本：统一由 ui-global.js 管理 -->
+<script src="js/kpi.js"></script>
+<script>
+(function(){
+  function syncCashierKpis(){
+    const items=document.querySelectorAll('#cart-card tbody tr');
+    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val;};
+    set('kpi-order-items',items.length);
+    set('kpi-order-original',document.getElementById('summary-original')?.textContent||'¥0.00');
+    const discount=(document.getElementById('summary-discount')?.textContent||'��0.00');
+    const points=(document.getElementById('summary-points')?.textContent||'¥0.00');
+    set('kpi-order-discount',discount+' / '+points);
+    set('kpi-order-payable',document.getElementById('summary-payable')?.textContent||'¥0.00');
+    // Points numeric
+    const ptsInput=document.getElementById('use-points');
+    set('kpi-order-points', ptsInput && ptsInput.value ? ptsInput.value : '0');
+  }
+  document.addEventListener('DOMContentLoaded',()=>{ syncCashierKpis(); setInterval(syncCashierKpis,1500); });
+})();
+</script>
 </body>
 </html>

@@ -10,9 +10,11 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/theme-enhanced.css" />
     <link rel="stylesheet" href="css/theme-premium.css" />
+    <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="css/layout.css" />
     <style>
         /* 统一主内容区滚动条样式 */
         .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
@@ -27,38 +29,65 @@
     </style>
     <script src="js/common.js" defer></script>
     <script src="js/common-nav.js" defer></script>
+    <script src="js/kpi.js"></script>
+    <script>
+    // 使用统一 KPI 管理替换内联计算（猴补 loadOrders 保留原有逻辑）
+    (function(){
+      if(window.__orderKpiUnified) return; window.__orderKpiUnified=true;
+      function attach(){
+        if(typeof window.loadOrders==='function' && !window.__loadOrdersUnified){
+          const orig = window.loadOrders;
+          window.loadOrders = async function(){ const r = await orig.apply(this, arguments); try{ KPI.updateOrderKpis(window.allOrders||[],{}); }catch(e){ console.warn('KPI update failed',e); } return r; };
+          window.__loadOrdersUnified=true;
+        } else {
+          // 若加载顺序较晚，稍后重试
+          setTimeout(()=>KPI.updateOrderKpis(window.allOrders||[],{}),800);
+        }
+      }
+      if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',attach); else attach();
+    })();
+    </script>
 </head>
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-premium page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <!-- 注入统一导航（侧边栏 + 顶部） -->
 <div id="common-nav" data-active="order-history"></div>
 <div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm">
   <div class="font-medium mb-2">通知面板</div>
-  <p class="text-gray-500">暂无通知</p>
+  <p class="text-gray-500">暂时无通知</p>
 </div>
 
 <main class="flex-1 flex flex-col pt-16">
-    <div class="main-content" id="main-content"><div class="container-xl section-gap">
+    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
             <div>
                 <h2 class="page-title font-bold page-title-decor heading-accent">历史订单</h2>
                 <p class="text-gray-500">订单查询与售后处理</p>
             </div>
             <div class="flex gap-3">
-                <button class="btn btn-tonal btn-pill" id="export-orders-btn">
+                <button class="btn btn-outline btn-pill" id="export-orders-btn">
                     <i class="fa fa-download"></i> 导出订单
                 </button>
-                <button class="btn btn-gradient btn-pill" id="refresh-orders-btn">
+                <button class="btn btn-primary btn-pill" id="refresh-orders-btn">
                     <i class="fa fa-refresh"></i> 刷新数据
                 </button>
             </div>
         </div>
 
+        <!-- KPI 横向展示条 -->
+        <div class="dashboard-kpis kpi-horizontal mb-6 max-w-none" id="order-kpi-row">
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日订单数</p><h3 class="text-xl font-bold" id="kpi-orders-today">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日销售额</p><h3 class="text-xl font-bold" id="kpi-sales-today">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">待支付订单</p><h3 class="text-xl font-bold" id="kpi-pending-count">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">已退款订单</p><h3 class="text-xl font-bold" id="kpi-refund-count">--</h3></div>
+          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">平均客单价</p><h3 class="text-xl font-bold" id="kpi-avg-ticket">--</h3></div>
+        </div>
+
         <!-- 订单筛选与列表 -->
         <div class="space-y-6" id="order-history-content">
           <!-- 新增横向过滤条 -->
-          <div class="card p-4" id="order-filter-bar">
+          <div class="card p-4 card-interactive" id="order-filter-bar">
             <div class="flex flex-wrap items-end gap-4">
               <div class="w-full sm:w-40">
                 <label class="block text-xs font-medium text-gray-700 mb-1" for="order-date-filter">订单日期</label>
@@ -106,7 +135,7 @@
                 <div class="text-sm text-gray-500" id="orders-count">共 0 条订单</div>
               </div>
               <div id="loading-orders" class="hidden text-center py-8"><i class="fa fa-spinner fa-spin text-2xl text-primary mb-2"></i><p class="text-gray-500">加载中...</p></div>
-              <div id="empty-orders" class="hidden text-center py-12"><i class="fa fa-file-text-o text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">暂无订单数据</p><p class="text-sm text-gray-400 mt-1">请尝试其它筛选条件</p></div>
+              <div id="empty-orders" class="hidden text-center py-12"><i class="fa fa-file-text-o text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">暂时无订单数据</p><p class="text-sm text-gray-400 mt-1">请尝试其它筛选条件</p></div>
               <div class="overflow-x-auto">
                 <table class="table-modern w-full">
                   <thead class="bg-gray-50">
@@ -128,7 +157,7 @@
             </div>
           </div>
         </div>
-    </div>
+    </div></div>
 </main>
 
 <!-- 订��详情模态框 -->

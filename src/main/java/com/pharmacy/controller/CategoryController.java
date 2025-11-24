@@ -13,7 +13,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/categories")
-@CrossOrigin(origins = "http://localhost:8080")
+// 使用全局 CORS 配置，移除局部 @CrossOrigin
 public class CategoryController {
 
     @Autowired
@@ -275,7 +275,7 @@ public class CategoryController {
 
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("code", 500);
-            errorResponse.put("message", "搜索分类失败: " + e.getMessage());
+            errorResponse.put("message", "搜索分类���败: " + e.getMessage());
             return ResponseEntity.internalServerError().body(errorResponse);
         }
     }

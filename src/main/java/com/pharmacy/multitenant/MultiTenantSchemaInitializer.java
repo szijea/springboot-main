@@ -23,6 +23,16 @@ public class MultiTenantSchemaInitializer {
                 try (Connection conn = ds.getConnection()) {
                     String catalog = conn.getCatalog();
                     System.out.println("[SchemaInit] 租户=" + tenantId + " 库=" + catalog);
+                    // 新增：保证核心业务表存在（避免 member / category 不存在导致 1146 错误）
+                    ensureCategoryTable(conn, catalog);
+                    ensureRoleTable(conn, catalog);
+                    ensureMemberTable(conn, catalog);
+                    ensureEmployeeTable(conn, catalog);
+                    ensureMedicineTable(conn, catalog);
+                    ensureInventoryTable(conn, catalog);
+                    ensureOrderTable(conn, catalog);
+                    ensureOrderItemTable(conn, catalog);
+                    // 已有：供应商与入库相关
                     ensureSupplierTable(conn, catalog);
                     ensureStockInTable(conn, catalog);
                     ensureStockInItemTable(conn, catalog);
@@ -180,6 +190,172 @@ public class MultiTenantSchemaInitializer {
             addColumnIfMissing(conn, "stock_in_item", "production_date", "DATE NULL");
             addColumnIfMissing(conn, "stock_in_item", "expiry_date", "DATE NULL");
             // 若原先缺失外键且 medicine 表现在存在，可考虑后续人工补充，不在此强制 ALTER 以避免锁等待
+        }
+    }
+
+    private void ensureMemberTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "member")) {
+            String ddl = "CREATE TABLE member (" +
+                    "member_id VARCHAR(32) PRIMARY KEY, " +
+                    "name VARCHAR(50) NOT NULL, " +
+                    "phone VARCHAR(20) NOT NULL, " +
+                    "card_no VARCHAR(50), " +
+                    "level TINYINT DEFAULT 0, " +
+                    "points INT DEFAULT 0, " +
+                    "allergic_history TEXT, " +
+                    "medical_card_no VARCHAR(50), " +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "UNIQUE KEY uk_phone(phone)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 member"); }
+        } else {
+            // 补齐缺失列（如果旧脚本仅建了基础列）
+            addColumnIfMissing(conn, "member", "card_no", "VARCHAR(50)");
+            addColumnIfMissing(conn, "member", "allergic_history", "TEXT");
+            addColumnIfMissing(conn, "member", "medical_card_no", "VARCHAR(50)");
+        }
+    }
+    private void ensureCategoryTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "category")) {
+            String ddl = "CREATE TABLE category (" +
+                    "category_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "category_name VARCHAR(50) NOT NULL, " +
+                    "parent_id INT DEFAULT 0, " +
+                    "sort INT DEFAULT 0, " +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "UNIQUE KEY uk_name(category_name)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 category"); }
+        }
+    }
+    private void ensureRoleTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "role")) {
+            String ddl = "CREATE TABLE role (" +
+                    "role_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "role_name VARCHAR(50) NOT NULL, " +
+                    "permissions TEXT, " +
+                    "UNIQUE KEY uk_role_name(role_name)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 role"); }
+        }
+    }
+    private void ensureEmployeeTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "employee")) {
+            String ddl = "CREATE TABLE employee (" +
+                    "employee_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "username VARCHAR(50) NOT NULL, " +
+                    "password VARCHAR(100) NOT NULL, " +
+                    "name VARCHAR(50) NOT NULL, " +
+                    "role_id INT NOT NULL, " +
+                    "phone VARCHAR(20), " +
+                    "status TINYINT DEFAULT 1, " +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "UNIQUE KEY uk_username(username), " +
+                    "KEY idx_role(role_id)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 employee"); }
+        }
+    }
+    private void ensureMedicineTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "medicine")) {
+            String ddl = "CREATE TABLE medicine (" +
+                    "medicine_id VARCHAR(32) PRIMARY KEY, " +
+                    "generic_name VARCHAR(100) NOT NULL, " +
+                    "trade_name VARCHAR(100), " +
+                    "spec VARCHAR(50) NOT NULL, " +
+                    "approval_no VARCHAR(50) NOT NULL, " +
+                    "category_id INT NOT NULL, " +
+                    "manufacturer VARCHAR(100), " +
+                    "barcode VARCHAR(64), " +
+                    "retail_price DECIMAL(10,2) NOT NULL, " +
+                    "member_price DECIMAL(10,2), " +
+                    "production_date DATE, " +
+                    "expiry_date DATE, " +
+                    "status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE', " +
+                    "deleted TINYINT(1) NOT NULL DEFAULT 0, " +
+                    "is_rx TINYINT(1) NOT NULL DEFAULT 0, " +
+                    "unit VARCHAR(20), " +
+                    "description TEXT, " +
+                    "supplier_id INT, " +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
+                    "update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                    "KEY idx_category(category_id)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 medicine"); }
+        } else {
+            addColumnIfMissing(conn, "medicine", "barcode", "VARCHAR(64)");
+            addColumnIfMissing(conn, "medicine", "production_date", "DATE");
+            addColumnIfMissing(conn, "medicine", "expiry_date", "DATE");
+            addColumnIfMissing(conn, "medicine", "status", "VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'");
+            addColumnIfMissing(conn, "medicine", "deleted", "TINYINT(1) NOT NULL DEFAULT 0");
+            addColumnIfMissing(conn, "medicine", "is_rx", "TINYINT(1) NOT NULL DEFAULT 0");
+            addColumnIfMissing(conn, "medicine", "unit", "VARCHAR(20)");
+            addColumnIfMissing(conn, "medicine", "description", "TEXT");
+            addColumnIfMissing(conn, "medicine", "supplier_id", "INT");
+        }
+    }
+    private void ensureInventoryTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "inventory")) {
+            String ddl = "CREATE TABLE inventory (" +
+                    "inventory_id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "medicine_id VARCHAR(32) NOT NULL, " +
+                    "batch_no VARCHAR(50), " +
+                    "create_time DATETIME, " +
+                    "expiry_date DATE, " +
+                    "stock_quantity INT NOT NULL DEFAULT 0, " +
+                    "min_stock INT DEFAULT 10, " +
+                    "max_stock INT, " +
+                    "purchase_price DECIMAL(10,2), " +
+                    "supplier VARCHAR(100), " +
+                    "update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
+                    "KEY idx_med(medicine_id)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 inventory"); }
+        } else {
+            addColumnIfMissing(conn, "inventory", "max_stock", "INT");
+            addColumnIfMissing(conn, "inventory", "min_stock", "INT DEFAULT 10");
+            addColumnIfMissing(conn, "inventory", "purchase_price", "DECIMAL(10,2)");
+            addColumnIfMissing(conn, "inventory", "supplier", "VARCHAR(100)");
+        }
+    }
+    private void ensureOrderTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "order")) {
+            String ddl = "CREATE TABLE `order` (" +
+                    "order_id VARCHAR(32) PRIMARY KEY, " +
+                    "customer_name VARCHAR(100), " +
+                    "member_id VARCHAR(32), " +
+                    "cashier_id INT, " +
+                    "total_amount DECIMAL(10,2) NOT NULL DEFAULT 0, " +
+                    "discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0, " +
+                    "actual_payment DECIMAL(10,2) NOT NULL DEFAULT 0, " +
+                    "payment_type TINYINT DEFAULT 1, " +
+                    "payment_status TINYINT DEFAULT 1, " +
+                    "order_time DATETIME, " +
+                    "pay_time DATETIME, " +
+                    "refund_time DATETIME, " +
+                    "refund_reason VARCHAR(200), " +
+                    "used_points INT, " +
+                    "created_points INT, " +
+                    "remark VARCHAR(200), " +
+                    "KEY idx_member(member_id), " +
+                    "KEY idx_cashier(cashier_id)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 order"); }
+        }
+    }
+    private void ensureOrderItemTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "order_item")) {
+            String ddl = "CREATE TABLE order_item (" +
+                    "id INT PRIMARY KEY AUTO_INCREMENT, " +
+                    "order_id VARCHAR(32) NOT NULL, " +
+                    "medicine_id VARCHAR(32) NOT NULL, " +
+                    "quantity INT NOT NULL, " +
+                    "unit_price DECIMAL(10,2) NOT NULL, " +
+                    "subtotal DECIMAL(10,2) NOT NULL, " +
+                    "KEY idx_order(order_id), " +
+                    "KEY idx_med(medicine_id)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 order_item"); }
         }
     }
 
