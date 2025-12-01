@@ -64,7 +64,7 @@ member:
   cache:
     ttl-minutes: 10
     batch-refresh-cron: "0 */15 * * * *" # 每15分钟执行批量刷新
-    evict-cron: "0 */20 * * * * *"      # 修正为6字段标准 cron, 每20分钟清理过期缓存
+    evict-cron: "0 */20 * * * *"      # 修正为6字段标准 cron, 每20分钟清理过期缓存
 
 logging:
   level:
