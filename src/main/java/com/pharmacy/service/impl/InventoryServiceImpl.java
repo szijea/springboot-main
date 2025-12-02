@@ -2,10 +2,15 @@ package com.pharmacy.service.impl;
 
 import com.pharmacy.entity.Inventory;
 import com.pharmacy.dto.InventoryDTO;
+import com.pharmacy.dto.CurrentStockDTO;
 import com.pharmacy.repository.InventoryRepository;
+import com.pharmacy.repository.MedicineRepository;
 import com.pharmacy.service.InventoryService;
 import com.pharmacy.util.StockStatusUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +24,9 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Autowired
     private InventoryRepository inventoryRepository;
+
+    @Autowired
+    private MedicineRepository medicineRepository;
 
     @Override
     @Transactional
@@ -368,5 +376,53 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo) {
         return replenish(medicineId, addQuantity, preferredBatchNo, null);
+    }
+
+    @Override
+    public List<CurrentStockDTO> getCurrentStocks(List<String> medicineIds) {
+        if (medicineIds == null || medicineIds.isEmpty()) return java.util.Collections.emptyList();
+        // 读取全部库存聚合一次减少 N+1
+        List<Object[]> aggregates = inventoryRepository.getCurrentStockByMedicine();
+        java.util.Map<String,Integer> stockMap = new java.util.HashMap<>();
+        for(Object[] row: aggregates){
+            if(row!=null && row.length>=2){
+                String mid = String.valueOf(row[0]);
+                Integer qty = row[1]==null?0:Integer.valueOf(String.valueOf(row[1]));
+                stockMap.put(mid, qty);
+            }
+        }
+        List<com.pharmacy.entity.Medicine> meds = medicineRepository.findActiveByMedicineIdIn(medicineIds);
+        java.util.Map<String, com.pharmacy.entity.Medicine> medMap = new java.util.HashMap<>();
+        for(com.pharmacy.entity.Medicine m : meds){ medMap.put(m.getMedicineId(), m); }
+        List<CurrentStockDTO> result = new java.util.ArrayList<>();
+        for(String id : medicineIds){
+            com.pharmacy.entity.Medicine m = medMap.get(id);
+            Integer qty = stockMap.getOrDefault(id,0);
+            CurrentStockDTO dto = new CurrentStockDTO(id, m!=null?m.getGenericName():null, m!=null?m.getTradeName():null, qty);
+            result.add(dto);
+        }
+        return result;
+    }
+
+    @Override
+    public Page<CurrentStockDTO> pageCurrentStocks(int page, int size) {
+        if(page < 0) page = 0; if(size <= 0) size = 10; // 基本兜底
+        var pageable = PageRequest.of(page, size);
+        Page<com.pharmacy.entity.Medicine> medPage = medicineRepository.findAllActive(pageable);
+        // 预取聚合库存
+        List<Object[]> aggregates = inventoryRepository.getCurrentStockByMedicine();
+        java.util.Map<String,Integer> stockMap = new java.util.HashMap<>();
+        for(Object[] row: aggregates){
+            if(row!=null && row.length>=2){
+                String mid = String.valueOf(row[0]);
+                Integer qty = row[1]==null?0:Integer.valueOf(String.valueOf(row[1]));
+                stockMap.put(mid, qty);
+            }
+        }
+        List<CurrentStockDTO> content = medPage.getContent().stream().map(m -> {
+            Integer qty = stockMap.getOrDefault(m.getMedicineId(),0);
+            return new CurrentStockDTO(m.getMedicineId(), m.getGenericName(), m.getTradeName(), qty);
+        }).toList();
+        return new PageImpl<>(content, pageable, medPage.getTotalElements());
     }
 }

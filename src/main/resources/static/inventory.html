@@ -13,7 +13,11 @@
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" />
-  <style>.main-content{flex:1;padding:1.5rem;}</style>
+  <style>
+    .main-content{flex:1;padding:1.5rem;} .badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-size:.75rem} .btn{display:inline-flex;align-items:center;gap:.25rem}
+    .spinner{border:2px solid #eee;border-top-color:#3b82f6;border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
   <script src="js/common-nav.js" defer></script>
 </head>
 <body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
@@ -22,10 +26,467 @@
     <div class="main-content" id="main-content">
       <div class="container-fluid">
         <h2 class="page-title font-bold page-title-decor mb-4">库存管理</h2>
-        <p class="text-gray-500 mb-6">(简化测试骨架) 实时监控药品库存状态与变动</p>
-        <div class="card p-4"><p class="text-sm text-gray-600">页面骨架已加载。</p></div>
+        <p class="text-gray-500 mb-6">查询药品当前库存，按租户环境隔离</p>
+
+        <!-- 过滤与操作栏 -->
+        <div class="card p-4 mb-4">
+          <div class="flex flex-wrap items-end gap-4">
+            <div>
+              <label for="tenant" class="block text-sm text-gray-600 mb-1">选择租户</label>
+              <select id="tenant" class="border rounded px-3 py-2">
+                <option value="bht">bht</option>
+                <option value="wx">wx</option>
+                <option value="rzt">rzt</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[240px]">
+              <label for="medicineId" class="block text-sm text-gray-600 mb-1">药品ID</label>
+              <input id="medicineId" class="border rounded w-full px-3 py-2" placeholder="例如 MED001 或真实药品ID" />
+            </div>
+            <button id="btnQuery" class="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              <i class="fa fa-search"></i>查询当前库存
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">提示：后端接口约定为 GET /api/inventory/current-stock?medicineId=... ，请求头携带 X-Shop-Id。</p>
+
+          <!-- 名称搜索与选择 -->
+          <div class="mt-4">
+            <label for="keyword" class="block text-sm text-gray-600 mb-1">按名称搜索药品</label>
+            <div class="flex gap-2">
+              <input id="keyword" class="border rounded px-3 py-2 flex-1" placeholder="输入通用名/商品名关键字" />
+              <button id="btnSearchName" class="btn bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded"><i class="fa fa-search"></i> 搜索</button>
+            </div>
+            <div id="searchResults" class="mt-2 border rounded hidden">
+              <!-- 动态：搜索结果列表 -->
+            </div>
+          </div>
+
+          <!-- 批量查询 -->
+          <div class="mt-4">
+            <label for="batchIds" class="block text-sm text-gray-600 mb-1">批量查询药品ID（逗号分隔）</label>
+            <div class="flex gap-2">
+              <input id="batchIds" class="border rounded px-3 py-2 flex-1" placeholder="如：MED001,MED002,M1763466568444" />
+              <button id="btnBatchQuery" class="btn bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"><i class="fa fa-list"></i> 批量查询</button>
+            </div>
+          </div>
+
+          <!-- 库存变动（入库/出库） -->
+          <div class="mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-3 border rounded">
+                <h4 class="font-semibold mb-2">入库操作</h4>
+                <div class="flex flex-col gap-2">
+                  <label for="stockInMed" class="text-sm text-gray-600">药品ID</label>
+                  <input id="stockInMed" class="border rounded px-3 py-2" placeholder="药品ID" />
+                  <label for="stockInQty" class="text-sm text-gray-600">入库数量</label>
+                  <input id="stockInQty" type="number" min="1" class="border rounded px-3 py-2" placeholder="入库数量" />
+                  <label for="stockInBatch" class="text-sm text-gray-600">批次号（可选）</label>
+                  <input id="stockInBatch" class="border rounded px-3 py-2" placeholder="批次号（可选）" />
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div>
+                      <label for="stockInPrice" class="text-sm text-gray-600">进价（可选）</label>
+                      <input id="stockInPrice" type="number" step="0.01" class="border rounded px-3 py-2" placeholder="如 12.34" />
+                    </div>
+                    <div>
+                      <label for="stockInProd" class="text-sm text-gray-600">生产日期（可选）</label>
+                      <input id="stockInProd" type="date" class="border rounded px-3 py-2" />
+                    </div>
+                    <div>
+                      <label for="stockInExp" class="text-sm text-gray-600">失效日期（可选）</label>
+                      <input id="stockInExp" type="date" class="border rounded px-3 py-2" />
+                    </div>
+                  </div>
+                  <button id="btnStockIn" class="btn bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"><i class="fa fa-plus"></i> 入库</button>
+                </div>
+              </div>
+              <div class="p-3 border rounded">
+                <h4 class="font-semibold mb-2">出库操作</h4>
+                <div class="flex flex-col gap-2">
+                  <label for="stockOutMed" class="text-sm text-gray-600">药品ID</label>
+                  <input id="stockOutMed" class="border rounded px-3 py-2" placeholder="药品ID" />
+                  <label for="stockOutQty" class="text-sm text-gray-600">出库数量</label>
+                  <input id="stockOutQty" type="number" min="1" class="border rounded px-3 py-2" placeholder="出库数量" />
+                  <button id="btnStockOut" class="btn bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"><i class="fa fa-minus"></i> 出库</button>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">后端建议接口：POST /api/inventory/stock-in, /api/inventory/stock-out；请求体包含 medicineId, quantity, 以及可选 batchNo。</p>
+          </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="card p-4">
+          <div id="alert" class="hidden mb-3 p-3 rounded"></div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left">
+              <thead>
+                <tr class="border-b">
+                  <th class="px-3 py-2">租户</th>
+                  <th class="px-3 py-2">药品ID</th>
+                  <th class="px-3 py-2">当前库存</th>
+                  <th class="px-3 py-2">查询时间</th>
+                </tr>
+              </thead>
+              <tbody id="resultBody">
+                <!-- 动态填充 -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 全量库存分页列表 -->
+          <div class="mt-6">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-sm text-gray-600">所有药品当前库存（分页）</span>
+              <button id="btnLoadPage" class="btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"><i class="fa fa-refresh"></i> 加载</button>
+              <label class="text-sm text-gray-600">页码 <input id="pageNo" type="number" min="0" value="0" class="border rounded px-2 py-1 w-20 ml-1" /></label>
+              <label class="text-sm text-gray-600">每页 <input id="pageSize" type="number" min="1" value="10" class="border rounded px-2 py-1 w-20 ml-1" /></label>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-left">
+                <thead>
+                  <tr class="border-b">
+                    <th class="px-3 py-2">租户</th>
+                    <th class="px-3 py-2">药品ID</th>
+                    <th class="px-3 py-2">通用名</th>
+                    <th class="px-3 py-2">商品名</th>
+                    <th class="px-3 py-2">当前库存</th>
+                  </tr>
+                </thead>
+                <tbody id="pageBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+    <!-- 页面右下角租户ID显示区域（用于检测） -->
+    <div id="tenantBadge" class="fixed bottom-3 right-3 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow">租户：<span id="tenantIdDisplay">bht</span></div>
   </main>
+
+  <div id="globalLoading" class="fixed inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="flex flex-col items-center gap-3">
+      <div class="spinner"></div>
+      <div id="globalLoadingText" class="text-sm text-gray-600">处理中...</div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    const $ = (id) => document.getElementById(id);
+    const tenantEl = $('tenant');
+    const medEl = $('medicineId');
+    const btn = $('btnQuery');
+    const alertEl = $('alert');
+    const tbody = $('resultBody');
+
+    function showAlert(type, msg){
+      alertEl.className = 'mb-3 p-3 rounded ' + (type==='error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200');
+      alertEl.textContent = msg;
+      alertEl.classList.remove('hidden');
+      setTimeout(()=> alertEl.classList.add('hidden'), 4000);
+    }
+
+    async function fetchCurrentStock(shopId, medicineId){
+      const url = `/api/inventory/current-stock?medicineId=${encodeURIComponent(medicineId)}`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-Shop-Id': shopId,
+          'Accept': 'application/json'
+        }
+      });
+      if(!res.ok){
+        const text = await res.text().catch(()=> '');
+        throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+      }
+      // 后端可能返回 { stock: number } 或 直接返回数字
+      const data = await res.json().catch(()=> null);
+      if(data == null){
+        // 尝试纯文本数字
+        const txt = await res.text();
+        const num = Number(txt);
+        if(Number.isFinite(num)) return num;
+        throw new Error('响应不是有效的 JSON 或数字');
+      }
+      if(typeof data === 'number') return data;
+      if(typeof data.stock === 'number') return data.stock;
+      // 兼容 { medicineId, currentStock }
+      if(typeof data.currentStock === 'number') return data.currentStock;
+      throw new Error('无法识别的响应结构');
+    }
+
+    function appendRow(shopId, medicineId, stock){
+      const tr = document.createElement('tr');
+      tr.className = 'border-b';
+      tr.innerHTML = `
+        <td class="px-3 py-2"><span class="badge bg-gray-100">${shopId}</span></td>
+        <td class="px-3 py-2 font-mono text-sm">${medicineId}</td>
+        <td class="px-3 py-2">${stock}</td>
+        <td class="px-3 py-2 text-gray-500 text-sm">${new Date().toLocaleString()}</td>
+      `;
+      tbody.prepend(tr);
+    }
+
+    async function fetchJson(url, shopId, opts={}){
+      const res = await fetch(url, Object.assign({
+        method: 'GET',
+        headers: { 'X-Shop-Id': shopId, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+      }, opts));
+      if(!res.ok){
+        const text = await res.text().catch(()=> '');
+        throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+      }
+      return res.json().catch(async()=>{ const t = await res.text(); try{ return JSON.parse(t);}catch{ return t; }});
+    }
+
+    // 名称搜索
+    const keywordEl = document.getElementById('keyword');
+    const btnSearchName = document.getElementById('btnSearchName');
+    const searchResults = document.getElementById('searchResults');
+
+    async function searchMedicineByName(shopId, keyword){
+      const url = `/api/medicine/search?keyword=${encodeURIComponent(keyword)}`;
+      return fetchJson(url, shopId);
+    }
+
+    function renderSearchResults(items){
+      if(!items || items.length===0){
+        searchResults.classList.remove('hidden');
+        searchResults.innerHTML = '<div class="p-3 text-sm text-gray-500">未找到匹配药品</div>';
+        return;
+      }
+      const html = items.map(it => `
+        <div class="flex justify-between items-center p-2 border-b">
+          <div>
+            <div class="font-mono text-sm">${it.medicineId || it.medicine_id || ''}</div>
+            <div class="text-sm text-gray-700">${it.genericName || it.generic_name || ''} ${it.tradeName || it.trade_name ? ' / '+(it.tradeName || it.trade_name) : ''}</div>
+          </div>
+          <button class="btn bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded" data-med-id="${it.medicineId || it.medicine_id || ''}"><i class="fa fa-check"></i> 选择</button>
+        </div>
+      `).join('');
+      searchResults.classList.remove('hidden');
+      searchResults.innerHTML = html;
+      // 绑定选择按钮
+      searchResults.querySelectorAll('button[data-med-id]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const medId = e.currentTarget.getAttribute('data-med-id');
+          medEl.value = medId;
+          // 直接触发查询
+          const shopId = tenantEl.value;
+          try{
+            const stock = await fetchCurrentStock(shopId, medId);
+            appendRow(shopId, medId, stock);
+            showAlert('success', `查询成功：药品 ${medId} 当前库存为 ${stock}`);
+          }catch(err){
+            showAlert('error', `查询失败：${err.message}`);
+          }
+        });
+      });
+    }
+
+    btnSearchName.addEventListener('click', async () => {
+      const shopId = tenantEl.value;
+      const keyword = keywordEl.value.trim();
+      if(!keyword){ showAlert('error','请输入关键字'); return; }
+      try{
+        const items = await searchMedicineByName(shopId, keyword);
+        renderSearchResults(items);
+      }catch(err){
+        showAlert('error', `搜索失败：${err.message}`);
+      }
+    });
+
+    // 批量查询
+    const batchIdsEl = document.getElementById('batchIds');
+    const btnBatchQuery = document.getElementById('btnBatchQuery');
+    btnBatchQuery.addEventListener('click', async () => {
+      const shopId = tenantEl.value;
+      const raw = batchIdsEl.value.trim();
+      if(!raw){ showAlert('error','请输入多个药品ID，以逗号分隔'); return; }
+      const ids = raw.split(',').map(s => s.trim()).filter(Boolean);
+      if(ids.length===0){ showAlert('error','未解析到有效ID'); return; }
+      try{
+        const url = `/api/inventory/current-stocks?ids=${encodeURIComponent(ids.join(','))}`;
+        const data = await fetchJson(url, shopId);
+        // data 可能是 { results: [{ medicineId, stock }] } 或 数组
+        const list = Array.isArray(data) ? data : (data.results || []);
+        list.forEach(item => {
+          const medId = item.medicineId || item.medicine_id || item.id;
+          const stock = item.stock ?? item.currentStock ?? item.quantity ?? 0;
+          appendRow(shopId, medId, stock);
+        });
+        showAlert('success', `批量查询完成：${ids.length} 个ID`);
+      }catch(err){
+        showAlert('error', `批量查询失败：${err.message}`);
+      }
+    });
+
+    // 入库 / 出库
+    const stockInMed = document.getElementById('stockInMed');
+    const stockInQty = document.getElementById('stockInQty');
+    const stockInBatch = document.getElementById('stockInBatch');
+    const btnStockIn = document.getElementById('btnStockIn');
+
+    const stockOutMed = document.getElementById('stockOutMed');
+    const stockOutQty = document.getElementById('stockOutQty');
+    const btnStockOut = document.getElementById('btnStockOut');
+
+    async function postJson(url, shopId, body){
+      return fetchJson(url, shopId, { method:'POST', body: JSON.stringify(body) });
+    }
+
+    btnStockIn.addEventListener('click', async () => {
+      const shopId = tenantEl.value;
+      const medId = stockInMed.value.trim();
+      const qty = Number(stockInQty.value);
+      const batchNo = stockInBatch.value.trim();
+      const unitPrice = stockInPrice.value ? Number(stockInPrice.value) : undefined;
+      const productionDate = stockInProd.value || undefined;
+      const expiryDate = stockInExp.value || undefined;
+      if(!medId || !Number.isFinite(qty) || qty<=0){ showAlert('error','请输入有效的入库药品ID与数量'); return; }
+      try{
+        await postJson('/api/inventory/stock-in', shopId, { medicineId: medId, quantity: qty, batchNo, unitPrice, productionDate, expiryDate });
+        const stock = await fetchCurrentStock(shopId, medId);
+        appendRow(shopId, medId, stock);
+        showAlert('success', `入库成功：${medId} +${qty}，当前库存 ${stock}`);
+      }catch(err){
+        showAlert('error', `入库失败：${err.message}`);
+      }
+    });
+
+    btnStockOut.addEventListener('click', async () => {
+      const shopId = tenantEl.value;
+      const medId = stockOutMed.value.trim();
+      const qty = Number(stockOutQty.value);
+      if(!medId || !Number.isFinite(qty) || qty<=0){ showAlert('error','请输入有效的出库药品ID与数量'); return; }
+      try{
+        await postJson('/api/inventory/stock-out', shopId, { medicineId: medId, quantity: qty });
+        const stock = await fetchCurrentStock(shopId, medId);
+        appendRow(shopId, medId, stock);
+        showAlert('success', `出库成功：${medId} -${qty}，当前库存 ${stock}`);
+      }catch(err){
+        showAlert('error', `出库失败：${err.message}`);
+      }
+    });
+
+    // 全量库存分页
+    const pageNoEl = document.getElementById('pageNo');
+    const pageSizeEl = document.getElementById('pageSize');
+    const pageBody = document.getElementById('pageBody');
+    const btnLoadPage = document.getElementById('btnLoadPage');
+
+    async function loadPage(shopId, pageNo, pageSize){
+      const url = `/api/inventory/page-current-stocks?page=${pageNo}&size=${pageSize}`;
+      const data = await fetchJson(url, shopId);
+      const list = Array.isArray(data) ? data : (data.content || data.items || []);
+      pageBody.innerHTML = list.map(item => `
+        <tr class="border-b">
+          <td class="px-3 py-2"><span class="badge bg-gray-100">${shopId}</span></td>
+          <td class="px-3 py-2 font-mono text-sm">${item.medicineId || item.medicine_id || ''}</td>
+          <td class="px-3 py-2">${item.genericName || item.generic_name || ''}</td>
+          <td class="px-3 py-2">${item.tradeName || item.trade_name || ''}</td>
+          <td class="px-3 py-2">${item.stock ?? item.currentStock ?? 0}</td>
+        </tr>
+      `).join('');
+    }
+
+    btnLoadPage.addEventListener('click', async () => {
+      const shopId = tenantEl.value;
+      const pageNo = Number(pageNoEl.value) || 0;
+      const pageSize = Number(pageSizeEl.value) || 10;
+      try{
+        await loadPage(shopId, pageNo, pageSize);
+        showAlert('success', '分页列表加载完成');
+      }catch(err){
+        showAlert('error', `分页加载失败：${err.message}`);
+      }
+    });
+
+    // 初始示例填充
+    medEl.value = 'MED001';
+    const globalLoading = document.getElementById('globalLoading');
+    const globalLoadingText = document.getElementById('globalLoadingText');
+    const tenantIdDisplay = document.getElementById('tenantIdDisplay');
+
+    function setLoading(loading){
+      if(loading){
+        globalLoading.classList.remove('hidden');
+        globalLoadingText.classList.remove('hidden');
+      }else{
+        globalLoading.classList.add('hidden');
+        globalLoadingText.classList.add('hidden');
+      }
+    }
+
+    // 根据页面右下角ID判断租户（如 wx01 => wx）
+    function deriveTenantFromBadgeText(text){
+      if(!text) return null;
+      // 取前缀字母序列作为租户ID，例如 wx01 -> wx, bht02 -> bht
+      const m = String(text).match(/^[a-zA-Z]+/);
+      return m ? m[0].toLowerCase() : null;
+    }
+
+    // 如果右下角有显示租户标识，则同步下拉选择
+    const badgeTenant = deriveTenantFromBadgeText(tenantIdDisplay?.textContent || '');
+    if(badgeTenant){ tenantEl.value = badgeTenant; }
+
+    // 包装按钮防重复点击
+    function withButtonLock(button, fn){
+      return async function(){
+        if(button.disabled) return;
+        button.disabled = true;
+        button.classList.add('opacity-60');
+        setLoading(true);
+        try{ await fn(); }
+        finally{
+          button.disabled = false;
+          button.classList.remove('opacity-60');
+          setLoading(false);
+        }
+      }
+    }
+
+    // 替换现有点击事件为带锁版本
+    btn.addEventListener('click', withButtonLock(btn, async () => {
+      const shopId = tenantEl.value;
+      const medicineId = medEl.value.trim();
+      if(!medicineId){ showAlert('error', '请输入药品ID'); medEl.focus(); return; }
+      const stock = await fetchCurrentStock(shopId, medicineId);
+      appendRow(shopId, medicineId, stock);
+      showAlert('success', `查询成功：药品 ${medicineId} 当前库存为 ${stock}`);
+    }));
+
+    // 更新入库/出库以提交更多字段
+    const stockInPrice = document.getElementById('stockInPrice');
+    const stockInProd = document.getElementById('stockInProd');
+    const stockInExp = document.getElementById('stockInExp');
+
+    btnStockIn.addEventListener('click', withButtonLock(btnStockIn, async () => {
+      const shopId = tenantEl.value;
+      const medId = stockInMed.value.trim();
+      const qty = Number(stockInQty.value);
+      const batchNo = stockInBatch.value.trim();
+      const unitPrice = stockInPrice.value ? Number(stockInPrice.value) : undefined;
+      const productionDate = stockInProd.value || undefined;
+      const expiryDate = stockInExp.value || undefined;
+      if(!medId || !Number.isFinite(qty) || qty<=0){ showAlert('error','请输入有效的入库药品ID与数量'); return; }
+      await postJson('/api/inventory/stock-in', shopId, { medicineId: medId, quantity: qty, batchNo, unitPrice, productionDate, expiryDate });
+      const stock = await fetchCurrentStock(shopId, medId);
+      appendRow(shopId, medId, stock);
+      showAlert('success', `入库成功：${medId} +${qty}，当前库存 ${stock}`);
+    }));
+
+    btnStockOut.addEventListener('click', withButtonLock(btnStockOut, async () => {
+      const shopId = tenantEl.value;
+      const medId = stockOutMed.value.trim();
+      const qty = Number(stockOutQty.value);
+      if(!medId || !Number.isFinite(qty) || qty<=0){ showAlert('error','请输入有效的出库药品ID与数量'); return; }
+      await postJson('/api/inventory/stock-out', shopId, { medicineId: medId, quantity: qty });
+      const stock = await fetchCurrentStock(shopId, medId);
+      appendRow(shopId, medId, stock);
+      showAlert('success', `出库成功：${medId} -${qty}，当前库存 ${stock}`);
+    }));
+  })();
+  </script>
 </body>
 </html>

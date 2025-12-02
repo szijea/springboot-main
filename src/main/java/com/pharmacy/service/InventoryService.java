@@ -2,6 +2,9 @@ package com.pharmacy.service;
 
 import com.pharmacy.entity.Inventory;
 import com.pharmacy.dto.InventoryDTO;
+import com.pharmacy.dto.CurrentStockDTO;
+import org.springframework.data.domain.Page;
+
 import java.util.List;
 
 public interface InventoryService {
@@ -44,6 +47,12 @@ public interface InventoryService {
      * @return 库存数量
      */
     Integer getCurrentStock(String medicineId);
+
+    /** 新增：批量获取多个药品ID的当前库存 */
+    List<CurrentStockDTO> getCurrentStocks(List<String> medicineIds);
+
+    /** 新增：分页获取所有激活药品的当前库存列表 */
+    Page<CurrentStockDTO> pageCurrentStocks(int page, int size);
 
     /**
      * 获取即将过期的药品

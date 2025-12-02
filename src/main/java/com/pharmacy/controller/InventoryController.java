@@ -2,8 +2,10 @@ package com.pharmacy.controller;
 
 import com.pharmacy.entity.Inventory;
 import com.pharmacy.dto.InventoryDTO;
+import com.pharmacy.dto.CurrentStockDTO;
 import com.pharmacy.service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -179,6 +181,104 @@ public class InventoryController {
             return ResponseEntity.ok(resp);
         } catch (Exception e){
             return ResponseEntity.internalServerError().body(Map.of("code",500,"message","按批号查询失败: "+e.getMessage(),"data", java.util.List.of()));
+        }
+    }
+
+    @GetMapping("/current-stock")
+    public ResponseEntity<?> getCurrentStock(@RequestParam String medicineId){
+        if(medicineId==null || medicineId.isBlank()){
+            return ResponseEntity.badRequest().body(Map.of("code",400,"message","缺少 medicineId"));
+        }
+        try {
+            Integer stock = inventoryService.getCurrentStock(medicineId.trim());
+            return ResponseEntity.ok(Map.of("code",200,"message","success","medicineId", medicineId.trim(), "currentStock", stock));
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","查询当前库存失败: "+e.getMessage()));
+        }
+    }
+
+    @GetMapping("/current-stocks")
+    public ResponseEntity<?> getCurrentStocks(@RequestParam String ids){
+        if(ids==null || ids.isBlank()){
+            return ResponseEntity.badRequest().body(Map.of("code",400,"message","缺少 ids"));
+        }
+        try {
+            List<String> list = java.util.Arrays.stream(ids.split(",")).map(String::trim).filter(s->!s.isEmpty()).distinct().toList();
+            List<CurrentStockDTO> dtos = inventoryService.getCurrentStocks(list);
+            return ResponseEntity.ok(Map.of("code",200,"message","success","results", dtos, "total", dtos.size()));
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","批量查询库存失败: "+e.getMessage(),"results", java.util.List.of()));
+        }
+    }
+
+    @GetMapping("/page-current-stocks")
+    public ResponseEntity<?> pageCurrentStocks(@RequestParam(defaultValue="0") int page, @RequestParam(defaultValue="10") int size){
+        try {
+            Page<CurrentStockDTO> p = inventoryService.pageCurrentStocks(page, size);
+            Map<String,Object> resp = new HashMap<>();
+            resp.put("code",200);
+            resp.put("message","success");
+            resp.put("page", page);
+            resp.put("size", size);
+            resp.put("totalElements", p.getTotalElements());
+            resp.put("totalPages", p.getTotalPages());
+            resp.put("content", p.getContent());
+            return ResponseEntity.ok(resp);
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","分页查询库存失败: "+e.getMessage()));
+        }
+    }
+
+    @PostMapping("/stock-in")
+    public ResponseEntity<?> stockIn(@RequestBody Map<String,Object> body){
+        try {
+            String medicineId = body.get("medicineId")!=null?String.valueOf(body.get("medicineId")).trim():null;
+            Integer quantity = body.get("quantity")!=null?Integer.valueOf(String.valueOf(body.get("quantity"))):null;
+            String batchNo = body.get("batchNo")!=null?String.valueOf(body.get("batchNo")).trim():null;
+            java.math.BigDecimal unitPrice = null;
+            if(body.get("unitPrice")!=null){
+                try{ unitPrice = new java.math.BigDecimal(String.valueOf(body.get("unitPrice"))); }catch(Exception ignore){}
+            }
+            java.time.LocalDate productionDate = null;
+            if(body.get("productionDate")!=null){
+                try{ productionDate = java.time.LocalDate.parse(String.valueOf(body.get("productionDate"))); }catch(Exception ignore){}
+            }
+            java.time.LocalDate expiryDate = null;
+            if(body.get("expiryDate")!=null){
+                try{ expiryDate = java.time.LocalDate.parse(String.valueOf(body.get("expiryDate"))); }catch(Exception ignore){}
+            }
+            if(medicineId==null || medicineId.isBlank() || quantity==null || quantity<=0){
+                return ResponseEntity.badRequest().body(Map.of("code",400,"message","参数不合法: 需要 medicineId 与 正整数 quantity"));
+            }
+            Inventory inv = inventoryService.replenish(medicineId, quantity, batchNo);
+            if(inv!=null){
+                if(unitPrice!=null) inv.setPurchasePrice(unitPrice);
+                if(expiryDate!=null) inv.setExpiryDate(expiryDate);
+                inventoryService.save(inv);
+            }
+            Integer currentStock = inventoryService.getCurrentStock(medicineId);
+            return ResponseEntity.ok(Map.of("code",200,"message","入库成功","medicineId",medicineId,"added",quantity,"currentStock",currentStock));
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","入库失败: "+e.getMessage()));
+        }
+    }
+
+    @PostMapping("/stock-out")
+    public ResponseEntity<?> stockOut(@RequestBody Map<String,Object> body){
+        try {
+            String medicineId = body.get("medicineId")!=null?String.valueOf(body.get("medicineId")).trim():null;
+            Integer quantity = body.get("quantity")!=null?Integer.valueOf(String.valueOf(body.get("quantity"))):null;
+            if(medicineId==null || medicineId.isBlank() || quantity==null || quantity<=0){
+                return ResponseEntity.badRequest().body(Map.of("code",400,"message","参数不合法: 需要 medicineId 与 正整数 quantity"));
+            }
+            boolean ok = inventoryService.updateStockForOrder(medicineId, quantity, "MANUAL_STOCK_OUT");
+            Integer currentStock = inventoryService.getCurrentStock(medicineId);
+            if(!ok){
+                return ResponseEntity.status(409).body(Map.of("code",409,"message","库存不足","medicineId",medicineId,"attemptDeduct",quantity,"currentStock",currentStock));
+            }
+            return ResponseEntity.ok(Map.of("code",200,"message","出库成功","medicineId",medicineId,"deduct",quantity,"currentStock",currentStock));
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","出库失败: "+e.getMessage()));
         }
     }
 }
