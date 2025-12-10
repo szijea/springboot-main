@@ -13,7 +13,7 @@ public class Inventory {
     @Column(name = "inventory_id")
     private Long id;
 
-    @Column(name = "medicine_id", nullable = false, length = 32)
+    @Column(name = "medicine_id", nullable = false, length = 64)
     private String medicineId;
 
     @Column(name = "batch_no", nullable = false, length = 50)
@@ -112,7 +112,7 @@ public class Inventory {
 
     // 业务方法 - 修复：使用 stockQuantity
     public boolean isLowStock() {
-        return minStock != null && stockQuantity <= minStock;
+        return minStock != null && stockQuantity != null && stockQuantity <= minStock;
     }
 
     public boolean isExpiringSoon() {

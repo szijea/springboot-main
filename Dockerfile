@@ -17,6 +17,6 @@ RUN useradd -u 10001 -m appuser
 USER root
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 USER appuser
-COPY --from=build /workspace/target/pharmacy-system-1.0.0.jar app.jar
+COPY --from=build /workspace/target/pharmacy-system-*.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]

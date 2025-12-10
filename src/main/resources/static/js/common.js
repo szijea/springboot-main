@@ -6,7 +6,7 @@ const BASE_URL = (function(){
     if (window.API_BASE) return window.API_BASE.replace(/\/$/, '');
     if (window.location && window.location.origin) return window.location.origin + '/api';
   }
-  return 'http://localhost:8081/api'; // 最后回退
+  return '/api'; // 最后回退为相对路径，避免硬编码端口
 })();
 
 // 通用API调用函数
@@ -15,60 +15,42 @@ async function apiCall(endpoint, options = {}) {
         const url = `${BASE_URL}${endpoint}`;
         const tenant = (typeof localStorage !== 'undefined') ? localStorage.getItem('selectedTenant') : null;
         if(!options.headers) options.headers = {};
-        if(tenant){
-            options.headers['X-Shop-Id'] = tenant;
-        } else {
-            console.warn('[apiCall] 未找到 selectedTenant, 请求将使用 default 数据源:', url);
-        }
-        console.log(`调用 API: ${options.method || 'GET'} ${url} 租户=${tenant || 'default'}`);
-
-        // 自动序列化 body（如果是普通对象/数组且非 FormData / Blob / string）
+        if(tenant){ options.headers['X-Shop-Id'] = tenant; } else { console.warn('[apiCall] 未找到 selectedTenant, 使用 default:', url); }
+        const method = (options.method || 'GET').toUpperCase();
+        // 自动序列化 body
         if (options.body && typeof options.body === 'object' && !(options.body instanceof FormData) && !(options.body instanceof Blob)) {
             options.body = JSON.stringify(options.body);
         }
-        if (options.body) {
-            console.log('发送的请求数据:', options.body);
+        if (options.body) { console.log(`[apiCall] 准备发送 ${method} ${url} Body长度=${options.body.length}`); }
+        let headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...options.headers
+        };
+        const response = await fetch(url, { headers, ...options });
+        // 415 兜底重试：增加 charset
+        if(response.status === 415) {
+            console.warn('[apiCall] 收到 415，尝试使用 charset 重试:', url);
+            headers['Content-Type'] = 'application/json; charset=UTF-8';
+            const retry = await fetch(url, { headers, ...options });
+            if(!retry.ok){
+                let detail='';
+                try{ detail = await retry.text(); }catch(e){ }
+                throw new Error(`HTTP 415 重试仍失败: ${detail}`);
+            } else {
+                const ct = retry.headers.get('content-type');
+                return ct && ct.includes('application/json') ? await retry.json() : await retry.text();
+            }
         }
-
-        const response = await fetch(url, {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        });
-
         if (!response.ok) {
             let errorDetail = '';
-            try {
-                const errorResponse = await response.json();
-                errorDetail = errorResponse.message || JSON.stringify(errorResponse);
-                console.error('错误响应详情:', errorResponse);
-            } catch (e) {
-                errorDetail = await response.text();
-                console.error('错误响应文本:', errorDetail);
-            }
-
-            const errorMessage = `HTTP error! status: ${response.status}, 详情: ${errorDetail}`;
-            console.error('API 调用失败:', errorMessage);
-            throw new Error(errorMessage);
+            try { const errorResponse = await response.json(); errorDetail = errorResponse.message || JSON.stringify(errorResponse); console.error('错误响应详情:', errorResponse); } catch (e) { errorDetail = await response.text(); console.error('错误响应文本:', errorDetail); }
+            throw new Error(`HTTP error! status: ${response.status}, 详情: ${errorDetail}`);
         }
-
-        // 尝试根据 Content-Type 解析响应
         const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            const result = await response.json();
-            console.log('API 调用成功 (JSON):', result);
-            return result;
-        } else {
-            const text = await response.text();
-            console.warn('API 返回非 JSON 响应，返回文本:', text);
-            return text;
-        }
-    } catch (error) {
-        console.error('API 调用异常:', error);
-        throw error;
-    }
+        if (contentType && contentType.includes('application/json')) { const result = await response.json(); console.log('API 调用成功 (JSON):', result); return result; }
+        const text = await response.text(); console.warn('API 返回非 JSON 响应，返回文本:', text); return text;
+    } catch (error) { console.error('API 调用异常:', error); throw error; }
 }
 
 // 药品相关API
@@ -77,75 +59,48 @@ const medicineAPI = {
     getById: (id) => apiCall(`/medicines/${id}`),
     search: (keyword, category = '', page = 1, size = 100) => {
         let url = `/medicines/search?page=${page}&size=${size}`;
-        if (keyword) {
-            url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
-        if (category) {
-            url += `&category=${encodeURIComponent(category)}`;
-        }
+        if (keyword) { url += `&keyword=${encodeURIComponent(keyword)}`; }
+        if (category) { url += `&category=${encodeURIComponent(category)}`; }
         return apiCall(url);
     },
     searchWithStock: function(keyword, category = '', page = 1, size = 100) {
         let url = `/medicines/search-with-stock?page=${page}&size=${size}`;
-        if (keyword) {
-            url += `&keyword=${encodeURIComponent(keyword)}`;
-        }
-        if (category) {
-            url += `&category=${encodeURIComponent(category)}`;
-        }
+        if (keyword) { url += `&keyword=${encodeURIComponent(keyword)}`; }
+        if (category) { url += `&category=${encodeURIComponent(category)}`; }
         console.log('调用 searchWithStock, URL:', url);
         return apiCall(url);
     },
-    create: (medicine) => apiCall('/medicines', {
-        method: 'POST',
-        body: JSON.stringify(medicine)
-    }),
-    update: (id, medicine) => apiCall(`/medicines/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(medicine)
-    }),
+    create: (medicine) => apiCall('/medicines', { method: 'POST', body: medicine }),
+    // 专用更新：直接使用 fetch，内部处理 415 并返回最终结果，避免先抛错后再回退造成控制台报错
+    update: async (id, medicine) => {
+        const tenant = (typeof localStorage !== 'undefined') ? localStorage.getItem('selectedTenant') : null;
+        const url = `${BASE_URL}/medicines/${id}`;
+        const headers = { 'Content-Type':'application/json', 'Accept':'application/json' };
+        if(tenant) headers['X-Shop-Id'] = tenant;
+        const body = JSON.stringify(medicine);
+        let resp = await fetch(url, { method:'PUT', headers, body });
+        if (resp.status === 415) {
+            console.warn('[medicineAPI.update] 收到 415，尝试 charset 重试');
+            const headers2 = { ...headers, 'Content-Type':'application/json; charset=UTF-8' };
+            resp = await fetch(url, { method:'PUT', headers: headers2, body });
+        }
+        const ct = resp.headers.get('content-type');
+        const data = ct && ct.includes('application/json') ? await resp.json() : await resp.text();
+        if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status} ${typeof data==='string'?data:JSON.stringify(data)}`);
+        }
+        return data;
+    },
     delete: (id) => apiCall(`/medicines/${id}`, { method: 'DELETE' })
 };
 
-// 订单相关API
+// 订单相关API统一自动序列化
 const orderAPI = {
-    create: (orderData) => apiCall('/orders', {
-        method: 'POST',
-        body: JSON.stringify(orderData)
-    }),
-    getOrders: (filters = {}, page = 1, size = 10) => {
-        let url = `/orders?page=${page}&size=${size}`;
-        if (filters.date) {
-            url += `&date=${encodeURIComponent(filters.date)}`;
-        }
-        if (filters.status) {
-            url += `&status=${encodeURIComponent(filters.status)}`;
-        }
-        if (filters.paymentType) {
-            url += `&paymentType=${encodeURIComponent(filters.paymentType)}`;
-        }
-        if (filters.member) {
-            url += `&member=${encodeURIComponent(filters.member)}`;
-        }
-        return apiCall(url);
-    },
+    create: (orderData) => apiCall('/orders', { method: 'POST', body: orderData }),
+    getOrders: (filters = {}, page = 1, size = 10) => { let url = `/orders?page=${page}&size=${size}`; if (filters.date) url += `&date=${encodeURIComponent(filters.date)}`; if (filters.status) url += `&status=${encodeURIComponent(filters.status)}`; if (filters.paymentType) url += `&paymentType=${encodeURIComponent(filters.paymentType)}`; if (filters.member) url += `&member=${encodeURIComponent(filters.member)}`; return apiCall(url); },
     getOrderDetail: (orderId) => apiCall(`/orders/${orderId}`),
-    refund: (orderId) => apiCall(`/orders/${orderId}/refund`, {
-        method: 'POST'
-    }),
-    exportOrders: (filters = {}) => {
-        let url = '/orders/export';
-        const params = new URLSearchParams();
-        if (filters.date) params.append('date', filters.date);
-        if (filters.status) params.append('status', filters.status);
-        if (filters.paymentType) params.append('paymentType', filters.paymentType);
-        if (filters.member) params.append('member', filters.member);
-        const queryString = params.toString();
-        if (queryString) {
-            url += `?${queryString}`;
-        }
-        return apiCall(url);
-    }
+    refund: (orderId) => apiCall(`/orders/${orderId}/refund`, { method: 'POST' }),
+    exportOrders: (filters = {}) => { let url = '/orders/export'; const params = new URLSearchParams(); if (filters.date) params.append('date', filters.date); if (filters.status) params.append('status', filters.status); if (filters.paymentType) params.append('paymentType', filters.paymentType); if (filters.member) params.append('member', filters.member); const qs = params.toString(); if(qs) url += `?${qs}`; return apiCall(url); }
 };
 
 // 分类相关API
@@ -154,21 +109,10 @@ const categoryAPI = {
     getById: (id) => apiCall(`/categories/${id}`)
 };
 
-// 会员相关API
+// 会员相关API统一
 const memberAPI = {
-    getAll: () => apiCall('/members'),
-    getById: (id) => apiCall(`/members/${id}`),
-    search: (keyword) => apiCall(`/members/search?keyword=${encodeURIComponent(keyword)}`),
-    create: (member) => apiCall('/members', {
-        method: 'POST',
-        body: JSON.stringify(member)
-    }),
-    update: (id, member) => apiCall(`/members/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(member)
-    }),
-    delete: (id) => apiCall(`/members/${id}`, { method: 'DELETE' }),
-    quickSearch: (keyword) => apiCall(`/members/quick-search?keyword=${encodeURIComponent(keyword)}`)
+    getAll: () => apiCall('/members'), getById: (id) => apiCall(`/members/${id}`), search: (k) => apiCall(`/members/search?keyword=${encodeURIComponent(k)}`),
+    create: (member) => apiCall('/members', { method:'POST', body: member }), update: (id, member) => apiCall(`/members/${id}`, { method:'PUT', body: member }), delete: (id) => apiCall(`/members/${id}`, { method:'DELETE' }), quickSearch: (k) => apiCall(`/members/quick-search?keyword=${encodeURIComponent(k)}`)
 };
 
 // 入库相关API（需要定义这些API）
@@ -181,19 +125,8 @@ const stockInAPI = {
     getOrderDetail: (orderId) => apiCall(`/stock-in/orders/${orderId}`)
 };
 
-// 供应商相关API（需要定义这些API）
-const supplierAPI = {
-    getAll: () => apiCall('/suppliers'),
-    getById: (id) => apiCall(`/suppliers/${id}`),
-    create: (supplier) => apiCall('/suppliers', {
-        method: 'POST',
-        body: JSON.stringify(supplier)
-    }),
-    update: (id, supplier) => apiCall(`/suppliers/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(supplier)
-    })
-};
+// 供应商相关API
+const supplierAPI = { getAll: () => apiCall('/suppliers'), getById: (id) => apiCall(`/suppliers/${id}`), create: (supplier) => apiCall('/suppliers',{method:'POST', body: supplier}), update: (id, supplier) => apiCall(`/suppliers/${id}`,{method:'PUT', body: supplier}) };
 
 // 批次药品相关API（需要定义这些API）
 const batchMedicineAPI = {
@@ -221,21 +154,7 @@ const inventoryAPI = {
 };
 
 // 新增：员工相关API
-const employeesAPI = {
-    getAll: () => apiCall('/employees'),
-    getById: (id) => apiCall(`/employees/${id}`),
-    create: (employee) => apiCall('/employees',{method:'POST',body:JSON.stringify(employee)}),
-    update: (id, employee) => apiCall(`/employees/${id}`,{method:'PUT',body:JSON.stringify(employee)}),
-    delete: (id) => apiCall(`/employees/${id}`,{method:'DELETE'}),
-    getByRole: (roleId) => apiCall(`/employees/role/${roleId}`),
-    toggleStatus: async (id, newStatus) => {
-        // 获取原记录后仅更新 status 字段
-        const emp = await employeesAPI.getById(id);
-        if(!emp || !emp.employeeId) throw new Error('员工不���在');
-        emp.status = newStatus ? 1 : 0;
-        return employeesAPI.update(id, emp);
-    }
-};
+const employeesAPI = { getAll: () => apiCall('/employees'), getById: (id) => apiCall(`/employees/${id}`), create: (e) => apiCall('/employees',{method:'POST', body: e}), update: (id,e) => apiCall(`/employees/${id}`,{method:'PUT', body: e}), delete: (id) => apiCall(`/employees/${id}`,{method:'DELETE'}), getByRole: (roleId) => apiCall(`/employees/role/${roleId}`), toggleStatus: async (id,newStatus) => { const emp=await employeesAPI.getById(id); if(!emp||!emp.employeeId) throw new Error('员工不存在'); emp.status=newStatus?1:0; return employeesAPI.update(id,emp); } };
 
 // 新增：系统设置 API
 const settingAPI = {
@@ -311,7 +230,7 @@ function showMessage(message, type = 'success') {
 if (typeof window.refreshDashboardWidgets !== 'function') {
   window.refreshDashboardWidgets = async function(){
     try {
-      const base = window.api?.BASE_URL || 'http://localhost:8081/api';
+      const base = window.api?.BASE_URL || '/api';
       const [alertsResp, hotResp] = await Promise.all([
         fetch(base + '/dashboard/stock-alerts').then(r=>r.json()).catch(()=>null),
         fetch(base + '/dashboard/hot-products').then(r=>r.json()).catch(()=>null)

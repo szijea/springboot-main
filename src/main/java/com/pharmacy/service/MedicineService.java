@@ -13,9 +13,9 @@ public interface MedicineService {
 
     // 基本 CRUD 方法
     Page<Medicine> findAll(Pageable pageable);
-    Optional<Medicine> findById(String medicineId);
+    Optional<Medicine> findById(String id);
     Medicine save(Medicine medicine);
-    void deleteById(String medicineId);
+    void deleteById(String id);
 
     // 搜索方法
     List<Medicine> searchMedicines(String keyword);

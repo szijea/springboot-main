@@ -44,8 +44,9 @@ public class MedicineServiceImpl implements MedicineService {
     }
 
     @Override
-    public void deleteById(String medicineId) {
-        medicineRepository.deleteById(medicineId);
+    public void deleteById(String id) {
+        // delegate to repository (repository deleteById expects String)
+        medicineRepository.deleteById(id);
     }
 
     // 搜索方法
@@ -132,12 +133,12 @@ public class MedicineServiceImpl implements MedicineService {
         List<MedicineWithStockDTO> dtos = medicinePage.getContent().stream()
                 .map(medicine -> {
                     MedicineWithStockDTO dto = new MedicineWithStockDTO();
+                    // medicineId is String in entity and DTO
                     dto.setMedicineId(medicine.getMedicineId());
                     dto.setGenericName(medicine.getGenericName());
                     dto.setTradeName(medicine.getTradeName());
                     dto.setSpec(medicine.getSpec());
                     dto.setManufacturer(medicine.getManufacturer());
-                    // 新增字段填充
                     dto.setApprovalNo(medicine.getApprovalNo());
                     dto.setBarcode(medicine.getBarcode());
                     dto.setProductionDate(medicine.getProductionDate());
@@ -197,7 +198,6 @@ public class MedicineServiceImpl implements MedicineService {
                     dto.setTradeName(medicine.getTradeName());
                     dto.setSpec(medicine.getSpec());
                     dto.setManufacturer(medicine.getManufacturer());
-                    // 新增字段填充
                     dto.setApprovalNo(medicine.getApprovalNo());
                     dto.setBarcode(medicine.getBarcode());
                     dto.setProductionDate(medicine.getProductionDate());

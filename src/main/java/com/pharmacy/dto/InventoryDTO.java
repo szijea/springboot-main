@@ -10,7 +10,7 @@ public class InventoryDTO {
     private LocalDateTime createTime;
     private LocalDate expiryDate;
     private Integer maxStock;
-    private String medicineId;
+    private String medicineId; // changed to String
     private Integer minStock;
     private BigDecimal purchasePrice;
     private Integer stockQuantity;

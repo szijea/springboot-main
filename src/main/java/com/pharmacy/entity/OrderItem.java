@@ -13,7 +13,8 @@ public class OrderItem {
     @Column(name = "order_id", length = 32, nullable = false)
     private String orderId;
 
-    @Column(name = "medicine_id", length = 32, nullable = false)
+    // 将 medicineId 改为 String，与 Medicine.medicineId 对齐
+    @Column(name = "medicine_id", nullable = false, length = 64)
     private String medicineId;
 
     @Column(name = "quantity", nullable = false)

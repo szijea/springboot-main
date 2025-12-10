@@ -1,11 +1,13 @@
 package com.pharmacy.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.math.BigDecimal;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OrderItemRequest {
+    @JsonAlias({"medicineId"})
     private String productId;
     private String productName;
     private Integer quantity;

@@ -32,9 +32,6 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
             nativeQuery = true)
     List<Medicine> searchByKeywordNative(@Param("keyword") String keyword);
 
-    // 根据分类ID搜索（删除不存在的 findByCategoryName 方法）
-    // List<Medicine> findByCategoryName(String categoryName); // 删除这行
-
     // 根据是否处方药搜索
     List<Medicine> findByIsRx(Boolean isRx);
 
@@ -70,4 +67,8 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
 
     @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND (m.genericName LIKE CONCAT('%', :keyword, '%') OR m.tradeName LIKE CONCAT('%', :keyword, '%') OR m.description LIKE CONCAT('%', :keyword, '%') OR m.manufacturer LIKE CONCAT('%', :keyword, '%') OR m.spec LIKE CONCAT('%', :keyword, '%'))")
     List<Medicine> searchActiveByKeyword(@Param("keyword") String keyword);
+
+    // 分类占比：按 category_id 分组计数（兼容无 Category 表的情况）
+    @Query(value = "SELECT category_id AS cat, COUNT(1) AS cnt FROM medicine GROUP BY category_id", nativeQuery = true)
+    List<Object[]> countGroupByCategory();
 }

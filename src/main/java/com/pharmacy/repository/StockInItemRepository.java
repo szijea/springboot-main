@@ -14,11 +14,11 @@ public interface StockInItemRepository extends JpaRepository<StockInItem, Long> 
     // 根据入库单ID查找所有项
     List<StockInItem> findByStockInStockInId(Long stockInId);
 
-    // 根据药品ID查找入库记录
-    List<StockInItem> findByMedicineMedicineId(String medicineId);
+    // 根据药品ID查找入库记录（直接使用 medicineId 字段）
+    List<StockInItem> findByMedicineId(String medicineId);
 
-    // 统计某个药品的总入库数量
-    @Query("SELECT SUM(s.quantity) FROM StockInItem s WHERE s.medicine.medicineId = :medicineId")
+    // 统计某个药品的总入库数量（使用 medicineId 字段，避免关联路径解析问题）
+    @Query("SELECT SUM(s.quantity) FROM StockInItem s WHERE s.medicineId = :medicineId")
     Integer sumQuantityByMedicineId(@Param("medicineId") String medicineId);
 
     // 根据批号查找

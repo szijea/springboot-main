@@ -4,6 +4,7 @@ package com.pharmacy.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Pattern;
 
 @Entity
 @Table(name = "stock_in_item")
@@ -18,9 +19,13 @@ public class StockInItem {
     @JsonBackReference
     private StockIn stockIn;
 
+    // FK column stored as String to match Medicine.medicineId
+    @Column(name = "medicine_id", length = 64, nullable = false)
+    private String medicineId;
+
+    // ManyToOne mapping to Medicine is kept but not insertable/updatable
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "medicine_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "supplier"})
+    @JoinColumn(name = "medicine_id", referencedColumnName = "medicine_id", insertable = false, updatable = false)
     private Medicine medicine;
 
     @Column(name = "quantity", nullable = false)
@@ -29,7 +34,7 @@ public class StockInItem {
     @Column(name = "unit_price", nullable = false)
     private Double unitPrice;
 
-    @Column(name = "batch_number", length = 50) // 修复：改为 batch_number
+    @Column(name = "batch_number", length = 50)
     private String batchNumber;
 
     @Column(name = "production_date")
@@ -43,8 +48,13 @@ public class StockInItem {
     public void setItemId(Long itemId) { this.itemId = itemId; }
     public StockIn getStockIn() { return stockIn; }
     public void setStockIn(StockIn stockIn) { this.stockIn = stockIn; }
+
+    public String getMedicineId() { return medicineId; }
+    public void setMedicineId(String medicineId) { this.medicineId = medicineId; }
+
     public Medicine getMedicine() { return medicine; }
-    public void setMedicine(Medicine medicine) { this.medicine = medicine; }
+    public void setMedicine(Medicine medicine) { this.medicine = medicine; if (medicine!=null) this.medicineId = medicine.getMedicineId(); }
+
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public Double getUnitPrice() { return unitPrice; }
@@ -58,6 +68,6 @@ public class StockInItem {
 
     // 计算小计
     public Double getSubtotal() {
-        return quantity * unitPrice;
+        return (quantity==null?0:quantity) * (unitPrice==null?0.0:unitPrice);
     }
 }

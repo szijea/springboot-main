@@ -1,8 +1,8 @@
 // api.js
 class PharmacyAPI {
     constructor() {
-        // 支持通过 window.API_BASE 或全局常量覆盖，默认改为 8081 走 Nginx 代理
-        this.baseURL = (window.API_BASE || window.__API_BASE__ || 'http://localhost:8081/api').replace(/\/$/, '');
+        // 支持通过 window.API_BASE 或全局常量覆盖，默认改为使用相对路径 /api，避免硬编码端口
+        this.baseURL = (window.API_BASE || window.__API_BASE__ || '/api').replace(/\/$/, '');
         this.tenantHeaderKey = 'X-Shop-Id';
     }
 

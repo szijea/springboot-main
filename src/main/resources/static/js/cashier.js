@@ -208,8 +208,8 @@
       paymentMethod: $('payment-method').value,
       originalAmount: cart.reduce((s,i)=> s + i.price * i.quantity, 0),
       discountAmount: Number($('discount-amount').value || 0),
-      totalAmount: cart.reduce((s,i)=> s + i.price * i.quantity, 0), // 后端可再次校验
-      items: cart.map(i => ({ medicineId: i.medicineId, quantity: i.quantity, unitPrice: i.price }))
+      totalAmount: cart.reduce((s,i)=> s + i.price * i.quantity, 0),
+      items: cart.map(i => ({ productId: i.medicineId, quantity: i.quantity, unitPrice: Number(i.price.toFixed? i.price.toFixed(2): i.price) }))
     };
     feedback('<i class="fa fa-spinner fa-spin"></i> 正在提交订单...', 'info');
     try {
@@ -308,4 +308,3 @@
     renderCart();
   });
 })();
-

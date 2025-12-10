@@ -1,5 +1,6 @@
 package com.pharmacy.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy.dto.OrderRequest;
 import com.pharmacy.dto.OrderResponse;
 import com.pharmacy.entity.Order;
@@ -8,6 +9,12 @@ import com.pharmacy.repository.OrderItemRepository;
 import com.pharmacy.repository.MedicineRepository;
 import com.pharmacy.entity.OrderItem;
 import com.pharmacy.entity.Medicine;
+import com.pharmacy.dto.OrderItemRequest;
+import com.pharmacy.repository.MemberRepository;
+import com.pharmacy.entity.Member;
+import jakarta.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,34 +40,80 @@ public class OrderController {
     @Autowired
     private MedicineRepository medicineRepository;
 
-    // 修复: 直接使用 Jackson 反序列化 OrderRequest，避免 415 Unsupported Media Type
-    @PostMapping(consumes = {"application/json","application/json;charset=UTF-8"}, produces = "application/json;charset=UTF-8")
-    public ResponseEntity<?> createOrder(@RequestBody OrderRequest orderRequest) {
+    @Autowired private MemberRepository memberRepository;
+
+    @PostMapping(consumes = "*/*") // 接受任意 Content-Type，控制器内手动解析
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<?> createOrder(HttpServletRequest request,
+                                         @RequestHeader(value="Content-Type", required=false) String contentType,
+                                         @RequestHeader Map<String,String> allHeaders) {
+        System.out.println("[OrderController] 收到创建订单请求 Content-Type=" + contentType + " headers=" + allHeaders);
         try {
-            if (orderRequest == null) {
+            String bodyStr;
+            try (var is = request.getInputStream()){
+                bodyStr = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            }
+            if(bodyStr==null || bodyStr.isBlank()){
                 return ResponseEntity.badRequest().body(Map.of("code",400,"message","请求体为空"));
             }
-            if (orderRequest.getItems() == null) {
-                orderRequest.setItems(new java.util.ArrayList<>());
+            Map<String,Object> body = new ObjectMapper().readValue(bodyStr, Map.class);
+            // 构造 OrderRequest（与先前逻辑一致）
+            OrderRequest orderRequest = new OrderRequest();
+            Object customerName = body.get("customerName");
+            orderRequest.setCustomerName(customerName==null? "匿名客户"+System.currentTimeMillis(): String.valueOf(customerName));
+            Object memberId = body.get("memberId");
+            if(memberId!=null && !String.valueOf(memberId).isBlank()) orderRequest.setMemberId(String.valueOf(memberId));
+            orderRequest.setPaymentMethod(String.valueOf(body.getOrDefault("paymentMethod","WECHAT")));
+            orderRequest.setOriginalAmount(toBigDecimal(body.get("originalAmount")));
+            orderRequest.setDiscountAmount(toBigDecimal(body.get("discountAmount")));
+            orderRequest.setTotalAmount(toBigDecimal(body.get("totalAmount")));
+            // items 解析
+            java.util.List<OrderItemRequest> items = new java.util.ArrayList<>();
+            Object rawItems = body.get("items");
+            if(rawItems instanceof java.util.List<?> list){
+                for(Object o: list){
+                    Map<String,Object> map = (o instanceof Map<?,?>) ? (Map<String,Object>)o : new ObjectMapper().convertValue(o, Map.class);
+                    //String/Long 兼容性：把 productId 解析为 String（兼容旧字段 medicineId）
+                    Object rawPid = map.get("productId");
+                    if (rawPid == null) rawPid = map.get("medicineId");
+                    String productId = rawPid == null ? null : String.valueOf(rawPid);
+                    Integer quantity = toInt(map.get("quantity"));
+                    BigDecimal unitPrice = toBigDecimal(map.get("unitPrice"));
+                    if(productId==null){
+                        System.out.println("[OrderController] 跳过无 productId/medicineId 项:"+map);
+                        continue;
+                    }
+                    if(quantity==null || quantity<=0) quantity = 1;
+                    if(unitPrice==null) unitPrice = BigDecimal.ZERO;
+                    OrderItemRequest itemReq = new OrderItemRequest();
+                    itemReq.setProductId(productId);
+                    itemReq.setQuantity(quantity);
+                    itemReq.setUnitPrice(unitPrice);
+                    items.add(itemReq);
+                }
             }
-            if (orderRequest.getCustomerName() == null || orderRequest.getCustomerName().trim().isEmpty()) {
-                orderRequest.setCustomerName("匿名客户" + System.currentTimeMillis());
-            }
-            // 空购物明细校验
-            if (orderRequest.getItems().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("code",400,"message","订单项为空，无法创建订单"));
-            }
+            orderRequest.setItems(items);
+            if(items.isEmpty()) return ResponseEntity.badRequest().body(Map.of("code",400,"message","订单项为空或未识别"));
             OrderResponse resp = orderService.createOrder(orderRequest);
-            String orderId = resp.getOrderNumber();
-            return ResponseEntity.ok(Map.of(
-                    "code",200,
-                    "message","订单创建成功",
-                    "orderId", orderId,
-                    "data",resp
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","订单创建失败: "+ e.getMessage()));
+            return ResponseEntity.ok(Map.of("code",200,"message","订单创建成功","orderId",resp.getOrderNumber(),"data",resp));
+        } catch(Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("code",500,"message","订单创建失败: "+e.getMessage()));
         }
+    }
+    private BigDecimal toBigDecimal(Object v){
+        if(v==null) return null;
+        if(v instanceof BigDecimal b) return b;
+        if(v instanceof Number n) return BigDecimal.valueOf(n.doubleValue());
+        try { return new BigDecimal(String.valueOf(v)); } catch(Exception e){ return null; }
+    }
+    private Integer toInt(Object v){ if(v==null) return null; if(v instanceof Number n) return n.intValue(); try { return Integer.parseInt(String.valueOf(v)); } catch(Exception e){ return null; } }
+    private Long toLong(Object v){ if(v==null) return null; if(v instanceof Number n) return n.longValue(); try { return Long.parseLong(String.valueOf(v)); } catch(Exception e){ return null; } }
+    private String val(java.util.Map<?,?> m, String k){ Object v=m.get(k); return v==null? null: String.valueOf(v); }
+
+    @GetMapping("/debug-headers")
+    public ResponseEntity<?> debugHeaders(@RequestHeader Map<String,String> headers){
+        return ResponseEntity.ok(Map.of("code",200,"headers",headers));
     }
 
     @GetMapping("/ping")
@@ -112,6 +165,9 @@ public class OrderController {
                 orderMap.put("usedPoints", order.getUsedPoints());
                 orderMap.put("createdPoints", order.getCreatedPoints());
                 orderMap.put("items", items);
+                if(order.getMemberId()!=null){
+                    try { Member m = memberRepository.findById(order.getMemberId()).orElse(null); if(m!=null){ orderMap.put("memberName", m.getName()); } } catch(Exception ignored){}
+                }
                 return ResponseEntity.ok(Map.of("code",200,"message","success","data",orderMap));
             } else {
                 return ResponseEntity.status(404).body(Map.of("code",404,"message","订单不存在"));

@@ -86,13 +86,25 @@ public class StockInController {
             }
             // Items 校验与默认值
             for (StockInItem item : stockIn.getItems()) {
-                if (item.getMedicine()==null || item.getMedicine().getMedicineId()==null) {
+                // 支持两种前端传参：1) 嵌套 medicine 对象；2) 直接传 medicineId 字符串到 stockInItem.medicineId
+                String medId = null;
+                if (item.getMedicine() != null && item.getMedicine().getMedicineId() != null) {
+                    medId = item.getMedicine().getMedicineId();
+                } else if (item.getMedicineId() != null) {
+                    medId = item.getMedicineId();
+                }
+                if (medId == null || medId.isBlank()) {
                     return ResponseEntity.badRequest().body("药品信息不完整");
                 }
-                String medId = item.getMedicine().getMedicineId();
-                if (!medicineRepository.existsById(medId)) {
+                var medOpt = medicineRepository.findById(medId);
+                if (medOpt.isEmpty()) {
                     return ResponseEntity.badRequest().body("药品不存在: " + medId);
                 }
+                var med = medOpt.get();
+                // set medicine reference and ensure medicineId column is populated
+                item.setMedicine(med);
+                item.setMedicineId(med.getMedicineId());
+
                 if (item.getBatchNumber()==null || item.getBatchNumber().isBlank()) {
                     item.setBatchNumber("DEFAULT_BATCH");
                 }
@@ -100,15 +112,11 @@ public class StockInController {
                     item.setQuantity(0);
                 }
                 if (item.getUnitPrice()==null) { // 前端可能传 cost 字段映射为 unitPrice
-                    // 尝试从已存在库存或零售价格推断
-                    try {
-                        var medOpt = medicineRepository.findById(medId);
-                        if (medOpt.isPresent() && medOpt.get().getRetailPrice()!=null) {
-                            item.setUnitPrice(medOpt.get().getRetailPrice().doubleValue());
-                        } else {
-                            item.setUnitPrice(0.0);
-                        }
-                    } catch (Exception ignore) { item.setUnitPrice(0.0); }
+                    if (med.getRetailPrice()!=null) {
+                        item.setUnitPrice(med.getRetailPrice().doubleValue());
+                    } else {
+                        item.setUnitPrice(0.0);
+                    }
                 }
                 // 关联反向引用
                 item.setStockIn(stockIn);
@@ -123,11 +131,12 @@ public class StockInController {
             // 更新库存
             for (StockInItem item : stockIn.getItems()) {
                 try {
-                    String medId = item.getMedicine().getMedicineId();
+                    // 使用前面已设置到 item 的药品，避免再次查库和 Optional.get()
+                    var med = item.getMedicine();
                     String batch = item.getBatchNumber();
                     Integer qty = item.getQuantity();
                     java.time.LocalDate expiry = item.getExpiryDate();
-                    var invs = inventoryRepository.findByMedicineId(medId);
+                    var invs = inventoryRepository.findByMedicineId(med.getMedicineId());
                     com.pharmacy.entity.Inventory matched = null;
                     for (com.pharmacy.entity.Inventory inv : invs) {
                         if (batch.equals(inv.getBatchNo())) { matched = inv; break; }
@@ -136,7 +145,7 @@ public class StockInController {
                         matched.setStockQuantity(matched.getStockQuantity() + qty);
                         inventoryRepository.save(matched);
                     } else {
-                        com.pharmacy.entity.Inventory newInv = new com.pharmacy.entity.Inventory(medId, batch, qty, expiry);
+                        com.pharmacy.entity.Inventory newInv = new com.pharmacy.entity.Inventory(med.getMedicineId(), batch, qty, expiry);
                         newInv.setPurchasePrice(item.getUnitPrice()!=null? java.math.BigDecimal.valueOf(item.getUnitPrice()) : null);
                         inventoryRepository.save(newInv);
                     }

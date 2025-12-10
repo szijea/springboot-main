@@ -32,7 +32,7 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar"><div><h2 class="page-title font-bold page-title-decor">智能入库</h2><p class="text-gray-500">药品批次与入库记录管理</p></div><div class="flex gap-3"><button class="btn btn-outline" id="import-data-top"><i class="fa fa-upload"></i> 批量导入</button><button class="btn btn-primary" id="new-stock"><i class="fa fa-plus"></i> 新建入库单</button></div></div>
       <div class="layout-two-column">
         <aside class="layout-sidebar space-y-4">
-          <div class="card p-4 card-interactive smart-suggestion"><div class="flex items-center gap-2 mb-2"><i class="fa fa-lightbulb-o text-blue-500"></i><h3 class="font-medium text-sm">操作提示</h3></div><ul class="space-y-2 text-xs text-gray-600"><li>确保药品信息准确，尤其批准文号与有效期</li><li>批号格式：B+年月日+三位随机，如 B241215001</li><li>入库前仔细核对药品与实物是否一致</li></ul></div>
+          <div class="card p-4 card-interactive smart-suggestion"><div class="flex items-center gap-2 mb-2"><i class="fa fa-lightbulb-o text-blue-500"></i><h3 class="font-medium text-sm">操作提示</h3></div><ul class="space-y-2 text-xs text-gray-600"><li>确保药品信息准确，尤其批准文号与有效期</li><li>批号���式：B+年月日+三位随机，如 B241215001</li><li>入库前仔细核对药品与实物是否一致</li></ul></div>
           <div class="card p-4 card-interactive"><h3 class="font-bold text-sm mb-3">入库流程</h3><ol class="space-y-2 text-xs text-gray-600"><li>1. 创建入库单</li><li>2. 添加药品</li><li>3. 确认信息</li><li>4. 完成入库</li></ol></div>
           <div class="card p-6 card-interactive"><h3 class="font-bold mb-4 text-sm">入库单信息</h3><div class="space-y-3 text-xs"><label class="block" for="org-name">机构名称</label><input type="text" class="input text-sm mb-2" id="org-name" value="淮安仁智堂大药房有限公司" placeholder="请输入机构名称"><label class="block" for="stock-date">入库日期</label><input type="date" class="input text-sm mb-2" id="stock-date"><label class="block" for="location-input">货位</label><input type="text" class="input text-sm mb-2" id="location-input" placeholder="可输入或选择货位"><label class="block" for="remark-input">备注</label><input type="text" class="input text-sm mb-2" id="remark-input" placeholder="请输入备注信息"><div class="flex justify-end gap-2 pt-2"><button class="btn btn-outline text-xs">重置</button><button class="btn btn-primary text-xs"><i class="fa fa-save"></i> 保存</button></div></div></div>
         </aside>
@@ -44,7 +44,453 @@
         </div>
       </div>
     </div></div></div>
+    <!-- 背景遮罩 -->
+    <div id="drawer-backdrop" style="position:fixed;inset:0;background:rgba(15,23,42,.35);backdrop-filter:blur(2px);display:none;z-index:49"></div>
+    <!-- 右侧抽屉：新增药品 -->
+    <div id="add-med-drawer" style="position:fixed;top:0;right:0;height:100%;width:420px;max-width:90vw;background:#fff;border-left:1px solid #e5e7eb;box-shadow:0 12px 32px rgba(0,0,0,.18);transform:translateX(100%);transition:transform .3s ease-in-out;z-index:50;display:flex;flex-direction:column;">
+      <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+        <h3 class="font-bold">新增药品</h3>
+        <button id="close-med-drawer" class="text-gray-500 hover:text-accent"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="p-4 space-y-3 text-sm" style="flex:1 1 auto;overflow-y:auto;">
+        <label class="block">通用名<input id="fm-genericName" class="input mt-1" placeholder="如：对乙酰氨基酚" /></label>
+        <label class="block">商品名<input id="fm-tradeName" class="input mt-1" placeholder="可选" /></label>
+        <label class="block">规格<input id="fm-spec" class="input mt-1" placeholder="如：500mg*10片" /></label>
+        <label class="block">生产厂家<input id="fm-manufacturer" class="input mt-1" placeholder="如：XX药业" /></label>
+        <label class="block">单位<input id="fm-unit" class="input mt-1" value="盒" /></label>
+        <label class="block">是否处方药<select id="fm-isRx" class="input mt-1"><option value="false">否</option><option value="true">是</option></select></label>
+        <label class="block">批准文号<span class="text-red-500">*</span><input id="fm-approvalNo" class="input mt-1" placeholder="必填" /></label>
+        <label class="block">零售价<input id="fm-retailPrice" type="number" step="0.01" class="input mt-1" value="0" /></label>
+        <label class="block">分类ID<input id="fm-categoryId" type="number" class="input mt-1" value="1" /></label>
+        <div class="divider-fine"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">批号<input id="fm-batch" class="input mt-1" value="" /></label>
+          <label class="block">生产日期<input id="fm-production" type="date" class="input mt-1" /></label>
+          <label class="block">到期日期<input id="fm-expiry" type="date" class="input mt-1" /></label>
+          <label class="block">数量<input id="fm-qty" type="number" class="input mt-1" value="10" /></label>
+          <label class="block">进货价<input id="fm-unitPrice" type="number" step="0.01" class="input mt-1" value="0" /></label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 p-4 border-t border-gray-100" style="flex:0 0 auto;">
+        <button id="fm-cancel" class="btn btn-outline">取消</button>
+        <button id="fm-submit" class="btn btn-primary"><i class="fa fa-save"></i> 保存并加入入库</button>
+      </div>
+    </div>
   </main>
 <script src="js/ui-global.js" defer></script>
+<script>
+;(function(){
+  const BASE = (window.api && window.api.BASE_URL) || (window.location.origin + '/api');
+  const tenant = localStorage.getItem('selectedTenant') || '';
+  const state = { items: [], submitting: false };
+  function toCurrency(n){ n = Number(n||0); return '¥' + n.toFixed(2); }
+  function qs(id){ return document.getElementById(id); }
+  function showToast(msg){ console.log('[stock-in]', msg); }
+  function calcKpis(){
+    const itemCount = state.items.length;
+    const totalCost = state.items.reduce((s,i)=> s + (Number(i.unitPrice||0) * Number(i.quantity||0)), 0);
+    const totalPrice = state.items.reduce((s,i)=> s + (Number(i.retailPrice||0) * Number(i.quantity||0)), 0);
+    const totalProfit = totalPrice - totalCost;
+    qs('kpi-item-count').textContent = itemCount;
+    qs('kpi-total-cost').textContent = toCurrency(totalCost);
+    qs('kpi-total-price').textContent = toCurrency(totalPrice);
+    qs('kpi-total-profit').textContent = toCurrency(totalProfit);
+  }
+  function renderTable(){
+    const tbody = qs('medicine-table-body');
+    if(!tbody) return;
+    if(state.items.length === 0){
+      tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-gray-500"><i class="fa fa-inbox text-3xl mb-2"></i><p>暂无入库药品数据</p></td></tr>';
+      qs('item-count').textContent = 0;
+      qs('total-quantity').textContent = 0;
+      qs('total-cost').textContent = '¥0.00';
+      qs('total-price').textContent = '¥0.00';
+      qs('total-profit').textContent = '¥0.00';
+      calcKpis();
+      return;
+    }
+    let rows = '';
+    let seq = 1, totalQty=0, totalCost=0, totalPrice=0;
+    state.items.forEach(i=>{
+      const profit = Number(i.retailPrice||0) - Number(i.unitPrice||0);
+      totalQty += Number(i.quantity||0);
+      totalCost += Number(i.unitPrice||0) * Number(i.quantity||0);
+      totalPrice += Number(i.retailPrice||0) * Number(i.quantity||0);
+      // use internalId as remove key when available (stable numeric id), fallback to medicineId
+      const removeKey = (i.internalId!=null? String(i.internalId) : String(i.medicineId||''));
+      rows += '<tr>'+
+        '<td class="px-6 py-3">'+(seq++)+'</td>'+
+        '<td class="px-6 py-3">'+(i.medicineName||i.medicineId)+'</td>'+
+        '<td class="px-6 py-3">'+(i.spec||'-')+'</td>'+
+        '<td class="px-6 py-3">'+(i.manufacturer||'-')+'</td>'+
+        '<td class="px-6 py-3">'+(i.batchNumber||'-')+'</td>'+
+        '<td class="px-6 py-3">'+(i.expiryDate||'-')+'</td>'+
+        '<td class="px-6 py-3">'+(i.quantity||0)+'</td>'+
+        '<td class="px-6 py-3">'+toCurrency(i.unitPrice||0)+'</td>'+
+        '<td class="px-6 py-3">'+toCurrency(i.retailPrice||0)+'</td>'+
+        '<td class="px-6 py-3">'+toCurrency(profit*(i.quantity||0))+'</td>'+
+        '<td class="px-6 py-3"><button class="btn btn-outline btn-sm" data-remove="'+removeKey+'">移除</button></td>'+
+      '</tr>';
+    });
+    tbody.innerHTML = rows;
+    qs('item-count').textContent = String(state.items.length);
+    qs('total-quantity').textContent = String(totalQty);
+    qs('total-cost').textContent = toCurrency(totalCost);
+    qs('total-price').textContent = toCurrency(totalPrice);
+    qs('total-profit').textContent = toCurrency(totalPrice-totalCost);
+    calcKpis();
+    tbody.querySelectorAll('button[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', function(){ const id=this.getAttribute('data-remove'); state.items = state.items.filter(x=> String(x.internalId||x.medicineId||'') !== String(id)); renderTable(); });
+    });
+  }
+  async function searchMedicine(keyword){
+    // backend search API – try page=1 then fallback to page=0 if server error
+    const trySearch = async (page)=>{
+      const url = BASE + '/medicines/search?keyword=' + encodeURIComponent(keyword) + '&page=' + page + '&size=10';
+      const r = await fetch(url,{ headers:{ 'X-Shop-Id': tenant } });
+      if(!r.ok) return { ok:false, status:r.status };
+      const d = await r.json().catch(()=>({data:[] }));
+      const list = Array.isArray(d.data)? d.data: (Array.isArray(d)? d: []);
+      return { ok:true, data:list };
+    };
+    let res = await trySearch(1);
+    if(!res.ok){
+      console.warn('[searchMedicine] page=1 failed status=', res.status, 'retrying page=0');
+      res = await trySearch(0);
+    }
+    if(!res.ok) {
+      console.error('[searchMedicine] search failed status=', res.status);
+      return [];
+    }
+    return res.data || [];
+  }
+  async function createMedicine(payload){
+    const r = await fetch(BASE + '/medicines', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Accept':'application/json', 'X-Shop-Id': tenant },
+      body: JSON.stringify(payload)
+    });
+    const txt = await r.text();
+    let data;
+    try{ data = JSON.parse(txt); }catch(e){ data = txt; }
+    if(!r.ok){
+      // try to extract message
+      const msg = (typeof data === 'object' && (data.message || data.error))? (data.message||data.error) : txt;
+      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+    // normalize wrapper {data:...}
+    if(data && data.data) return data.data;
+    return data;
+  }
+  async function openAddMedicine(){
+    const genericName = prompt('通用名'); if(!genericName) return;
+    const tradeName = prompt('商品名(可选)', '');
+    const spec = prompt('规格');
+    const manufacturer = prompt('生产厂家');
+    const unit = prompt('单位(盒/瓶/粒等)', '盒');
+    const isRxStr = prompt('是否处方药(是/否)', '否');
+    const isRx = /^是|yes|true$/i.test(isRxStr||'');
+    const approvalNo = prompt('批准文号(必填)', '');
+    if(!approvalNo || !approvalNo.trim()){ alert('批准文号不能为空'); return; }
+    const retailPriceStr = prompt('零售价(数字)', '0');
+    const retailPrice = Number(retailPriceStr||0);
+    const categoryIdStr = prompt('分类ID(数字，可选)', '1');
+    const categoryId = Number(categoryIdStr||1);
+    try{
+      const med = await createMedicine({
+        genericName, tradeName, spec, manufacturer, unit,
+        isRx, approvalNo, retailPrice, categoryId,
+        status:'ACTIVE', deleted:false
+      });
+      // normalize med
+      const normalized = (med && med.data)? med.data : med;
+      const medId = normalized.medicineId || String(normalized.id || ('M'+Date.now()));
+      const internalId = (normalized.medicineId!=null? normalized.medicineId : (normalized.id!=null? String(normalized.id) : null));
+      const batch = prompt('批号(如 B20251203001)', 'B'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'001');
+      const productionDate = prompt('生产日期(YYYY-MM-DD)', '');
+      const expiry = prompt('到期日期(YYYY-MM-DD)', '');
+      const qty = Number(prompt('入库数量', '10')||0);
+      const unitPrice = Number(prompt('进货价(单价)', String(retailPrice||0))||0);
+      state.items.push({
+        internalId: internalId,
+        medicineId: medId,
+        medicineName: normalized.genericName||genericName,
+        spec: normalized.spec||spec,
+        manufacturer: normalized.manufacturer||manufacturer,
+        unit: normalized.unit||unit,
+        approvalNo: normalized.approvalNo||approvalNo,
+        batchNumber: batch,
+        productionDate: productionDate,
+        expiryDate: expiry,
+        quantity: qty,
+        unitPrice: unitPrice,
+        retailPrice: Number(normalized.retailPrice||retailPrice||0)
+      });
+      renderTable();
+      showToast('药品已创建并加入入库明细: '+(medId));
+    }catch(err){ alert('新建药品失败: '+err.message); }
+  }
+  function openQuickAdd(){
+    const name = prompt('输入药品关键词（名称/厂家/规格）');
+    if(!name) return;
+    searchMedicine(name).then(list=>{
+      if(!list.length){ showToast('未找到药品'); return; }
+      const med = list[0];
+      const qty = Number(prompt('入库数量', '10')||0);
+      const unitPrice = Number(prompt('进货价(单价)', String(med.memberPrice||med.retailPrice||0))||0);
+      const batch = prompt('批号(如 B20251203001)', 'B'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'001');
+      const expiry = prompt('有效期(YYYY-MM-DD)', (med.expiryDate||'').toString().slice(0,10));
+      state.items.push({
+        internalId: med.id,
+        medicineId: med.medicineId || String(med.id||''),
+        medicineName: med.genericName||med.tradeName||med.medicineId,
+        spec: med.spec,
+        manufacturer: med.manufacturer,
+        batchNumber: batch,
+        expiryDate: expiry,
+        quantity: qty,
+        unitPrice: unitPrice,
+        retailPrice: Number(med.retailPrice||0)
+      });
+      renderTable();
+    });
+  }
+  function parseCsv(text){
+    // 期望列：medicineId,quantity,unitPrice,batchNumber,expiryDate(YYYY-MM-DD)
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const items = [];
+    lines.forEach(line=>{
+      const parts = line.split(',').map(s=>s.trim());
+      if(parts.length<3) return; // 至少要有 id,qty,unitPrice
+      const [id, qtyStr, priceStr, batch, expiry] = parts;
+      items.push({ medicineId:id, quantity:Number(qtyStr||0), unitPrice:Number(priceStr||0), batchNumber:batch||('B'+new Date().toISOString().slice(0,10).replace(/-/g,'')), expiryDate:expiry||null });
+    });
+    return items;
+  }
+  async function openBulkImport(){
+    const tpl = '示例模板:\nMED001,10,2.50,B20251203001,2026-12-31\nMED015,5,198,B20250320,2026-03-28\n\n请粘贴CSV文本: "medicineId,quantity,unitPrice,batchNumber,expiryDate"';
+    const text = prompt(tpl, '');
+    if(!text) return;
+    const items = parseCsv(text);
+    if(!items.length){ alert('未解析到有效数据'); return; }
+    // 补充药品详情（规格、厂家、零售价）
+    for(const it of items){
+      try{
+        const r = await fetch(BASE + '/medicines/'+encodeURIComponent(it.medicineId), { headers:{ 'X-Shop-Id': tenant } });
+        const med = await r.json().catch(()=>({}));
+        state.items.push({
+          internalId: med.id,
+          medicineId: it.medicineId,
+          medicineName: med.genericName||med.tradeName||it.medicineId,
+          spec: med.spec,
+          manufacturer: med.manufacturer,
+          batchNumber: it.batchNumber,
+          expiryDate: it.expiryDate,
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+          retailPrice: Number(med.retailPrice||0)
+        });
+      }catch(e){
+        state.items.push({ internalId: null, medicineId: it.medicineId, medicineName: it.medicineId, batchNumber: it.batchNumber, expiryDate: it.expiryDate, quantity: it.quantity, unitPrice: it.unitPrice, retailPrice: 0 });
+      }
+    }
+    renderTable();
+  }
+  async function ensureInternalIds(){
+    for(const i of state.items){
+      if(!i.internalId || String(i.internalId).trim()===''){
+        try{
+          const key = encodeURIComponent(i.medicineId || i.medicineName || '');
+          const r = await fetch(BASE + '/medicines/'+ key, { headers:{ 'X-Shop-Id': tenant } });
+          if(!r.ok) continue;
+          let med = await r.json().catch(()=>null);
+          if(!med) continue;
+          // normalize wrapper
+          if(med && med.data) med = med.data;
+          if(med && (med.medicineId!=null)){
+            // medicine primary key is a string like 'M123...'
+            i.internalId = med.medicineId;
+          }
+          i.medicineName = i.medicineName || med.genericName || med.tradeName || i.medicineId;
+          i.spec = i.spec || med.spec;
+          i.manufacturer = i.manufacturer || med.manufacturer;
+          i.unit = i.unit || med.unit || '盒';
+          i.approvalNo = i.approvalNo || med.approvalNo || '';
+          i.retailPrice = (typeof i.retailPrice==='number'? i.retailPrice : Number(med.retailPrice||0));
+        }catch(e){ /* 保持原值 */ }
+      }
+    }
+  }
+  function todayStr(){ const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+  function plusOneYearStr(){ const d=new Date(); d.setFullYear(d.getFullYear()+1); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; }
+  function sanitizeItems(){
+    state.items = state.items.map(i=>{
+      const j = { ...i };
+      if(!j.productionDate){ j.productionDate = todayStr(); }
+      if(!j.expiryDate){ j.expiryDate = plusOneYearStr(); }
+      if(!j.unit){ j.unit = '盒'; }
+      if(!j.approvalNo){ j.approvalNo = ''; }
+      if(!j.spec){ j.spec = j.spec || ''; }
+      if(!j.manufacturer){ j.manufacturer = j.manufacturer || ''; }
+      if(!j.quantity || Number(j.quantity)<=0){ j.quantity = 1; }
+      if(j.unitPrice==null){ j.unitPrice = 0; }
+      if(j.retailPrice==null){ j.retailPrice = 0; }
+      return j;
+    });
+  }
+  function toLocalDateTimeString(d){ if(!d) return null; if(d.length===10) return d + 'T00:00:00'; return d; }
+  async function submitStockIn(){
+    if(state.submitting) return;
+    if(!state.items.length){ showToast('请先添加药品'); return; }
+    state.submitting = true;
+    const btn = qs('complete-stock'); if(btn){ btn.classList.add('opacity-60'); btn.disabled = true; }
+    const dateOnly = (qs('stock-date') && qs('stock-date').value) || new Date().toISOString().slice(0,10);
+    const stockInDateTime = toLocalDateTimeString(dateOnly);
+    const baseHeaders = { 'Content-Type':'application/json', 'Accept':'application/json', 'X-Shop-Id': tenant };
+
+    await ensureInternalIds();
+    sanitizeItems();
+
+    const itemsForServer = state.items.map(i=>{
+      // medicineId is string primary key in backend; send it as string
+      const rawId = (i.internalId != null ? i.internalId : (i.id!=null? i.id : i.medicineId));
+      const medIdStr = String(rawId || '').trim();
+      if(!medIdStr){
+        console.error('[submitStockIn] Invalid medicineId for item:', i);
+        throw new Error(`药品ID无效: ${i.medicineName || i.medicineId}`);
+      }
+      // send production/expiry as date-only strings (YYYY-MM-DD) so backend LocalDate binds correctly
+      const prod = (i.productionDate||'').slice(0,10) || null;
+      const exp = (i.expiryDate||'').slice(0,10) || null;
+      return {
+        medicineId: medIdStr,
+        batchNumber: i.batchNumber || ('B'+new Date().toISOString().slice(0,10).replace(/-/g,'')),
+        productionDate: prod,
+        expiryDate: exp,
+        quantity: Number(i.quantity||1),
+        unitPrice: Number(i.unitPrice||0)
+      };
+    });
+
+    const payload = {
+      stockInNo: 'SI'+Date.now(),
+      stockInDate: stockInDateTime,
+      remark: (qs('remark-input') && qs('remark-input').value) || '',
+      supplierId: 1,
+      items: itemsForServer
+    };
+
+    console.log('[submitStockIn] Payload:', JSON.stringify(payload, null, 2));
+
+    try{
+      const r = await fetch(BASE + '/stock-ins', { method:'POST', headers: baseHeaders, body: JSON.stringify(payload) });
+      const responseText = await r.text();
+      console.log('[submitStockIn] Response status:', r.status);
+      console.log('[submitStockIn] Response body:', responseText);
+
+      if(!r.ok){
+        let errorData;
+        try{ errorData = JSON.parse(responseText); } catch(e){ errorData = { message: responseText || r.statusText }; }
+        throw new Error(`提交失败 (${r.status}): ${errorData.message || JSON.stringify(errorData)}`);
+      }
+
+      const data = responseText ? JSON.parse(responseText) : {};
+      showToast('入库成功: ID='+ (data.stockInId||data.id||'') );
+      state.items = [];
+      renderTable();
+    }catch(err){
+      console.error('[submitStockIn] Error:', err);
+      alert('入库失败: '+ err.message);
+    } finally {
+      state.submitting = false;
+      if(btn){ btn.classList.remove('opacity-60'); btn.disabled = false; }
+    }
+  }
+  function openMedDrawer(){
+    const d = document.getElementById('add-med-drawer');
+    const b = document.getElementById('drawer-backdrop');
+    if(d){ d.style.transform = 'translateX(0)'; }
+    if(b){ b.style.display = 'block'; }
+    document.body.style.overflow = 'hidden';
+  }
+  function closeMedDrawer(){
+    const d = document.getElementById('add-med-drawer');
+    const b = document.getElementById('drawer-backdrop');
+    if(d){ d.style.transform = 'translateX(100%)'; }
+    if(b){ b.style.display = 'none'; }
+    document.body.style.overflow = '';
+  }
+  // 背景遮罩点击关闭
+  document.addEventListener('DOMContentLoaded', function(){
+    const b = document.getElementById('drawer-backdrop');
+    if(b){ b.addEventListener('click', closeMedDrawer); }
+  });
+  async function submitMedForm(){
+    const g = document.getElementById('fm-genericName').value.trim();
+    const t = document.getElementById('fm-tradeName').value.trim();
+    const s = document.getElementById('fm-spec').value.trim();
+    const m = document.getElementById('fm-manufacturer').value.trim();
+    const u = document.getElementById('fm-unit').value.trim() || '盒';
+    const isRx = document.getElementById('fm-isRx').value === 'true';
+    const appr = document.getElementById('fm-approvalNo').value.trim();
+    const rp = Number(document.getElementById('fm-retailPrice').value||0);
+    const cat = Number(document.getElementById('fm-categoryId').value||1);
+    const batch = document.getElementById('fm-batch').value.trim()||('B'+new Date().toISOString().slice(0,10).replace(/-/g,''));
+    let productionDate = document.getElementById('fm-production').value || '';
+    let expiry = document.getElementById('fm-expiry').value || '';
+    const qty = Number(document.getElementById('fm-qty').value||0);
+    const unitPrice = Number(document.getElementById('fm-unitPrice').value||0);
+    if(!appr){ alert('批准文号不能为空'); return; }
+    // defaults
+    const today = new Date();
+    const yyyy = today.getFullYear(); const mm = String(today.getMonth()+1).padStart(2,'0'); const dd = String(today.getDate()).padStart(2,'0');
+    if(!productionDate){ productionDate = `${yyyy}-${mm}-${dd}`; }
+    if(!expiry){ const next = new Date(today.getTime()); next.setFullYear(today.getFullYear()+1); const ny=next.getFullYear(); const nm=String(next.getMonth()+1).padStart(2,'0'); const nd=String(next.getDate()).padStart(2,'0'); expiry = `${ny}-${nm}-${nd}`; }
+    try{
+      const med = await createMedicine({ genericName:g, tradeName:t, spec:s, manufacturer:m, unit:u, isRx, approvalNo:appr, retailPrice:rp, categoryId:cat, status:'ACTIVE', deleted:false });
+      const normalized = med && med.data? med.data : med;
+      const medId = normalized.medicineId || String(normalized.id || ('M'+Date.now()));
+      const internalId = (normalized.medicineId!=null? normalized.medicineId : (normalized.id!=null? String(normalized.id) : null));
+      state.items.push({
+        internalId: internalId,
+        medicineId: medId,
+        medicineName: normalized.genericName||g,
+        spec: normalized.spec||s,
+        manufacturer: normalized.manufacturer||m,
+        unit: normalized.unit||u,
+        approvalNo: normalized.approvalNo||appr,
+        batchNumber: batch,
+        productionDate: productionDate,
+        expiryDate: expiry,
+        quantity: qty,
+        unitPrice,
+        retailPrice: Number(normalized.retailPrice||rp||0)
+      });
+      renderTable();
+      closeMedDrawer();
+      showToast('药品已创建并加入入库明细: '+medId);
+    }catch(err){ alert('新建药品失败: '+err.message); }
+  }
+  function newStock() {
+    const dateEl = qs('stock-date'); if(dateEl){ dateEl.value = ''; }
+    const locEl = qs('location-input'); if(locEl){ locEl.value=''; }
+    const remarkEl = qs('remark-input'); if(remarkEl){ remarkEl.value=''; }
+    state.items = [];
+    renderTable();
+    showToast('已新建空白入库单');
+  }
+  function bind(){
+    const btnQuick = qs('quick-add'); if(btnQuick) btnQuick.addEventListener('click', openQuickAdd);
+    const btnComplete = qs('complete-stock'); if(btnComplete) btnComplete.addEventListener('click', submitStockIn);
+    const btnAdd = qs('add-medicine'); if(btnAdd) btnAdd.addEventListener('click', openMedDrawer);
+    const btnImport1 = qs('import-data-top'); if(btnImport1) btnImport1.addEventListener('click', openBulkImport);
+    const btnImport2 = qs('import-data-bulk'); if(btnImport2) btnImport2.addEventListener('click', openBulkImport);
+    const btnNew = qs('new-stock'); if(btnNew) btnNew.addEventListener('click', newStock);
+    const btnSubmit = qs('fm-submit'); if(btnSubmit) btnSubmit.addEventListener('click', submitMedForm);
+    const btnCancel = qs('fm-cancel'); if(btnCancel) btnCancel.addEventListener('click', closeMedDrawer);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ bind(); renderTable(); });
+})();
+</script>
 </body>
 </html>

@@ -21,8 +21,23 @@
     .main-content{flex:1;padding:1.5rem;} .badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-size:.75rem} .btn{display:inline-flex;align-items:center;gap:.25rem}
     .spinner{border:2px solid #eee;border-top-color:#3b82f6;border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* 修复分页区重叠与拥挤 */
+    .pagination-controls { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+    .pagination-controls .input-modern { min-width: 88px; }
+    .inventory-card { margin-bottom: 1rem; }
+    .table-wrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+    /* 修复编辑面板被覆盖：提高层级 */
+    #inventory-edit-modal, #inventory-move-modal, .inventory-modal-backdrop { z-index: 9999 !important; }
+    body.modal-open { overflow: hidden; }
+
+    /* 顶部编辑卡片增强：粘性、滚动、层级更高 */
+    #edit-inline-panel { position: sticky; top: 64px; z-index: 1000; max-height: 50vh; overflow-y: auto; }
+    #edit-inline-panel .input-modern { min-height: 40px; }
   </style>
   <script src="js/common-nav.js" defer></script>
+  <script src="js/common.js"></script>
 </head>
 <body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
   <div id="common-nav" data-active="inventory"></div>
@@ -30,134 +45,265 @@
     <div class="main-content" id="main-content">
       <div class="container-fluid">
         <h2 class="page-title font-bold page-title-decor mb-4">库存管理</h2>
-        <p class="text-gray-500 mb-6">查询药品当前库存，按租户环境隔离</p>
+        <p class="text-gray-500 mb-3">分页查看所有药品的当前库存</p>
 
-        <!-- 租户选择与取消 -->
-        <div class="card-modern p-4 mb-4 fade-enter">
-          <div class="action-row-modern">
-            <div>
-              <label for="tenant" class="text-dim text-xs mb-1 block">租户 (可取消)</label>
-              <div class="flex items-center gap-2">
-                <select id="tenant" class="input-modern w-40">
-                  <option value="">(未选择)</option>
-                  <option value="bht">bht</option>
-                  <option value="wx">wx</option>
-                  <option value="rzt">rzt</option>
-                </select>
-                <button id="btnResetTenant" type="button" class="btn-modern" style="background:#64748b" title="取消租户并使用默认">取消租户</button>
-              </div>
-              <small class="inline-hint">若取消租户，将使用默认数据源。</small>
+        <!-- 顶部内联编辑卡片（默认隐藏） -->
+        <div id="edit-inline-panel" class="card-modern p-4 mb-4 hidden">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="section-title-modern">编辑药品信息（顶部）</h3>
+            <div class="flex gap-2 items-center">
+              <span id="inline-loading" class="text-xs text-gray-400 hidden"><i class="fa fa-spinner fa-spin mr-1"></i>加载中...</span>
+              <button class="btn btn-outline btn-xs" id="inline-close"><i class="fa fa-times"></i> 收起</button>
             </div>
-            <div class="flex-1 min-w-[220px]">
-              <label for="medicineId" class="text-dim text-xs mb-1 block">药品ID</label>
-              <input id="medicineId" class="input-modern" placeholder="例如 MED001" />
-            </div>
-            <button id="btnQuery" class="btn-modern mt-6 h-[42px]">查询当前库存</button>
           </div>
-          <div class="search-section-modern mt-4">
-            <label for="keyword" class="text-dim text-xs">按名称搜索药品</label>
-            <div class="flex gap-2">
-              <input id="keyword" class="input-modern flex-1" placeholder="输入通用名/商品名关键词" />
-              <button id="btnSearchName" class="btn-modern" style="background:#475569">搜索</button>
-            </div>
-            <div id="searchResults" class="card-modern p-2 hidden"></div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs mb-3">
+            <div class="flex flex-col"><span class="text-gray-500">药品ID</span><input id="inline-id" class="input-modern w-full" disabled></div>
+            <div class="flex flex-col"><span class="text-gray-500">批准文号</span><input id="inline-approvalNo" class="input-modern w-full" placeholder="例如 国药准字H0000"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">条形码</span><input id="inline-barcode" class="input-modern w-full" placeholder="扫描或输入条码"/></div>
           </div>
-          <div class="mt-4">
-            <label for="batchIds" class="text-dim text-xs mb-1 block">批量查询药品ID (逗号分隔)</label>
-            <div class="flex gap-2">
-              <input id="batchIds" class="input-modern flex-1" placeholder="MED001,MED002,M1763466568444" />
-              <button id="btnBatchQuery" class="btn-modern" style="background:#2563eb">批量查询</button>
-            </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs mb-3">
+            <div class="flex flex-col"><span class="text-gray-500">通用名</span><input id="inline-gn" class="input-modern w-full" placeholder="例如 阿司匹林"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">商品名</span><input id="inline-tn" class="input-modern w-full" placeholder="例如 某品牌"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">规格</span><input id="inline-spec" class="input-modern w-full" placeholder="例如 100mg*100片"/></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
+            <div class="flex flex-col"><span class="text-gray-500">零售价(¥)</span><input id="inline-retailPrice" type="number" step="0.01" class="input-modern w-full" placeholder="19.90"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">会员价(¥)</span><input id="inline-memberPrice" type="number" step="0.01" class="input-modern w-full" placeholder="18.00"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">折扣%</span><input id="inline-discountPercent" type="number" step="0.01" class="input-modern w-full" placeholder="自动"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">分类ID</span><input id="inline-categoryId" type="number" class="input-modern w-full" placeholder="数字"/></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
+            <div class="flex flex-col"><span class="text-gray-500">生产日期</span><input id="inline-productionDate" type="date" class="input-modern w-full"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">到期日期</span><input id="inline-expiryDate" type="date" class="input-modern w-full"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">单位</span><input id="inline-unit" class="input-modern w-full" placeholder="盒 / 瓶"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">厂家</span><input id="inline-manufacturer" class="input-modern w-full" placeholder="生产厂家"/></div>
+          </div>
+          <!-- 新增：库存数量设置（用户可在编辑药品时直接补库存） -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
+            <div class="flex flex-col"><span class="text-gray-500">当前库存</span><input id="inline-currentStock" class="input-modern w-full" disabled></div>
+            <div class="flex flex-col"><span class="text-gray-500">库存数量设置（补货）</span><input id="inline-stockQuantity" type="number" min="0" step="1" class="input-modern w-full" placeholder="输入补货���量，保存后将入库"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">安全库存（可选）</span><input id="inline-minStock" type="number" min="0" step="1" class="input-modern w-full" placeholder="可选：触发预警阈值"/></div>
+            <div class="flex items-center text-xs text-gray-500">提示：如果输入补货数量，则在保存药品信息后会自动执行入库。</div>
+          </div>
+          <div class="flex justify-end gap-2 mt-2">
+            <button class="btn-modern" id="inline-cancel">取消</button>
+            <button class="btn-modern" id="inline-save" style="background:#2563eb;color:#fff">保存</button>
           </div>
         </div>
 
-        <!-- 结果展示 -->
-        <div class="card-modern p-4 fade-enter">
-          <div id="alert" class="hidden mb-3 p-3 rounded text-sm"></div>
-          <h3 class="section-title-modern mb-3">单次查询结果</h3>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left table-modern-compact">
-              <thead>
-                <tr>
-                  <th>租户</th>
-                  <th>药品ID</th>
-                  <th>当前库存</th>
-                  <th>查询时间</th>
-                </tr>
-              </thead>
-              <tbody id="resultBody">
-                <!-- 动态填充 -->
-              </tbody>
-            </table>
-          </div>
-          <h3 class="section-title-modern mt-8 mb-3">所有药品当前库存 (分页)</h3>
-          <div class="flex items-center gap-2 mb-2 text-sm">
-            <label>页码 <input id="pageNo" type="number" min="0" value="0" class="input-modern w-20 ml-1" /></label>
-            <label>每页 <input id="pageSize" type="number" min="1" value="10" class="input-modern w-20 ml-1" /></label>
-            <button id="btnLoadPage" class="btn-modern" style="background:#0d9488">加载</button>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left table-modern-compact">
-              <thead>
-                <tr>
-                  <th>租户</th>
-                  <th>药品ID</th>
-                  <th>通用名</th>
-                  <th>商品名</th>
-                  <th>当前库存</th>
-                </tr>
-              </thead>
-              <tbody id="pageBody"></tbody>
-            </table>
+        <!-- 平齐布局：仅库存分页列表（移除右侧编辑提示卡片） -->
+        <div class="grid grid-cols-1 gap-4 items-start">
+          <div class="card-modern p-4 fade-enter inventory-card">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="section-title-modern">所有药品当前库存（分页）</h3>
+              <div class="text-xs text-gray-500">租户：<span id="current-tenant-label">默认/本地</span></div>
+            </div>
+            <div class="pagination-controls mb-3 text-sm">
+              <label class="flex items-center gap-2">页码 <input id="pageNo" type="number" min="0" value="0" class="input-modern w-24" /></label>
+              <label class="flex items-center gap-2">每页 <input id="pageSize" type="number" min="1" value="10" class="input-modern w-24" /></label>
+              <button id="btnLoadPage" class="btn-modern" style="background:#2563eb">加载</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="min-w-full text-left table-modern-compact">
+                <thead>
+                  <tr>
+                    <th>租户</th>
+                    <th>药品ID</th>
+                    <th>通用名</th>
+                    <th>商品名</th>
+                    <th>当前库存</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="pageBody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- 页面右下角租户ID显示区域（用于检测） -->
-    <div id="tenantBadge" class="fixed bottom-3 right-3 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow">租户：<span id="tenantIdDisplay">bht</span></div>
   </main>
 
-  <!-- 全局加载器 -->
-  <div id="globalLoading" class="global-loader"><div class="box"><div class="spinner-modern"></div><p>处理中...</p></div></div>
+  <!-- 移除：租户选择、单次查询、名称搜索、批量查询、单次结果表格 -->
 
+  <!-- 编辑药品信息右侧抽屉 -->
+  <div id="edit-medicine-modal" class="fixed inset-0 bg-black bg-opacity-40 hidden z-50">
+    <div class="absolute inset-0" aria-hidden="true"></div>
+    <aside class="absolute right-0 top-0 h-full w-full sm:w-[520px] bg-white shadow-xl border-l rounded-l-xl flex flex-col" role="dialog" aria-modal="true">
+      <div class="p-4 border-b flex items-center justify-between">
+        <h3 class="font-bold text-lg">编辑药品信息</h3>
+        <button id="em-close" class="text-gray-500 hover:text-gray-700" aria-label="关闭">✕</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div>
+          <label class="text-xs text-gray-500">药品ID</label>
+          <input id="em-medicineId" class="input-modern w-full" disabled>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">通用名</label>
+          <input id="em-genericName" class="input-modern w-full" placeholder="例如 阿司匹林">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">商品名</label>
+          <input id="em-tradeName" class="input-modern w-full" placeholder="例如 某品牌">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">规格</label>
+          <input id="em-spec" class="input-modern w-full" placeholder="例如 100mg*100片">
+        </div>
+        <div>
+          <label class="text-xs text-gray-500">零售价(¥)</label>
+          <input id="em-retailPrice" type="number" step="0.01" class="input-modern w-full" placeholder="例如 19.90">
+        </div>
+      </div>
+      <div class="p-4 border-t flex justify-end gap-2">
+        <button id="em-cancel" class="btn-modern">取消</button>
+        <button id="em-save" class="btn-modern" style="background:#2563eb;color:#fff">保存</button>
+      </div>
+    </aside>
+  </div>
+  <script>
+  // 兜底 showMessage (如果 common.js 尚未加载或失败)
+  if (typeof window.showMessage !== 'function') {
+    window.showMessage = function(msg, type='info') {
+      const box=document.createElement('div');
+      box.className='fixed top-4 right-4 z-50 px-4 py-2 rounded shadow text-sm '+(type==='error'?'bg-red-500 text-white': type==='success'?'bg-green-500 text-white':'bg-blue-500 text-white');
+      box.textContent=msg; document.body.appendChild(box); setTimeout(()=>box.remove(),2500);
+    };
+  }
+  </script>
+  <!-- 修复脚本：loadPage 与 openInlineEdit 引用字段一致 -->
   <script>
   (function(){
-    const $ = id => document.getElementById(id);
-    const tenantEl=$('tenant');const medEl=$('medicineId');const btn=$('btnQuery');const alertEl=$('alert');const tbody=$('resultBody');
-    const globalLoading=$('globalLoading');
-    function setLoading(v){ if(v) globalLoading.classList.add('active'); else globalLoading.classList.remove('active'); }
-    function showAlert(type,msg){ alertEl.className='mb-3 p-3 rounded text-sm '+(type==='error'?'bg-red-50 text-red-600 border border-red-200':'bg-green-50 text-green-600 border border-green-200'); alertEl.textContent=msg; alertEl.classList.remove('hidden'); setTimeout(()=>alertEl.classList.add('hidden'),3500); }
-    function currentTenant(){ return tenantEl.value || ''; }
-    $('btnResetTenant').addEventListener('click',()=>{ tenantEl.value=''; showAlert('success','已取消租户选择，使用默认数据源'); });
-
-    async function fetchCurrentStock(shopId, medicineId){
-      const url=`/api/inventory/current-stock?medicineId=${encodeURIComponent(medicineId)}`;
-      const headers={ 'Accept':'application/json' }; if(shopId) headers['X-Shop-Id']=shopId;
-      const res=await fetch(url,{ headers }); if(!res.ok){ throw new Error('HTTP '+res.status); }
-      const data=await res.json().catch(()=>({})); return data.currentStock ?? data.stock ?? 0;
+    if (typeof window.withLock !== 'function') {
+      window.withLock = function(btn, fn){ return async ()=>{ if(btn?.disabled) return; btn && (btn.disabled=true); try{ await fn(); } finally { btn && (btn.disabled=false); } }; };
     }
-    function appendRow(shopId, medicineId, stock){ const tr=document.createElement('tr'); tr.innerHTML=`<td><span class='badge-soft'>${shopId||'default'}</span></td><td class='font-mono text-xs'>${medicineId}</td><td>${stock}</td><td class='text-dim text-xs'>${new Date().toLocaleString()}</td>`; tbody.prepend(tr); }
-    async function fetchJson(url, shopId){ const headers={ 'Accept':'application/json'}; if(shopId) headers['X-Shop-Id']=shopId; const r=await fetch(url,{ headers }); if(!r.ok) throw new Error('HTTP '+r.status); return r.json().catch(()=>({})); }
+    const $=id=>document.getElementById(id);
+    const pageBody=$('pageBody'); const btnLoad=$('btnLoadPage'); const pageNo=$('pageNo'); const pageSize=$('pageSize');
+    function showLoading(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="6" class="px-6 py-6 text-center text-gray-500 text-sm"><i class="fa fa-spinner fa-spin mr-2"></i>加载中...</td></tr>'; }
+    function showEmpty(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i class="fa fa-database text-4xl mb-2 text-gray-300"></i><div>暂无药品数据</div></td></tr>'; }
+    async function fetchPage(page,size){ const tenant=localStorage.getItem('selectedTenant')||''; const url=`/api/inventory/page-current-stocks?page=${page}&size=${size}`; console.log('[inventory] 请求分页库存:', url,'tenant=',tenant); const r=await fetch(url,{headers:{'Accept':'application/json','X-Shop-Id':tenant}}); if(!r.ok){ throw new Error('HTTP '+r.status+': '+await r.text()); } const data=await r.json(); console.log('[inventory] 分页响应原始数据:', data); return data; }
+    function renderPage(resp){ const list = Array.isArray(resp)? resp : (resp.content||resp.data||resp.results||[]); console.log('[inventory] 解析后的列表长度:', list.length); if(!list.length){ showEmpty(); return; } pageBody.innerHTML=list.map(item=>{ const id=item.medicineId||''; const stock=item.currentStock??item.stock??0; const gn=item.genericName||''; const tn=item.tradeName||''; const spec=item.spec||''; const price=item.retailPrice??''; const payload=encodeURIComponent(JSON.stringify({medicineId:id,genericName:gn,tradeName:tn,spec:spec,retailPrice:price})); return `<tr>
+    <td><span class='badge-soft'>${item.shopId||'default'}</span></td>
+    <td class='font-mono text-xs'>${id}</td>
+    <td class='text-xs'>${gn}</td>
+    <td class='text-xs'>${tn}</td>
+    <td>${stock}</td>
+    <td><button class='btn btn-outline btn-xs' data-edit='${payload}'>编辑</button></td>
+  </tr>`; }).join('');
+    pageBody.querySelectorAll('button[data-edit]').forEach(btn=> btn.onclick=()=>{ const m=JSON.parse(decodeURIComponent(btn.getAttribute('data-edit'))); openInlineEdit(m); });
+  }
+  window.loadPage = async function(page,size){ try{ page=Number(page)||0; size=Number(size)||10; if(page<0) page=0; if(size<=0) size=10; showLoading(); const resp=await fetchPage(page,size); renderPage(resp);}catch(e){ console.error(e); showEmpty(); showMessage('加载失败: '+e.message,'error'); }};
+  btnLoad?.addEventListener('click', window.withLock(btnLoad, async()=>{ await loadPage(pageNo.value, pageSize.value); }));
+  document.addEventListener('DOMContentLoaded', ()=> btnLoad?.click());
+})();
+  </script>
+  <script>
+  // 扩展编辑表单字段引用与函数修复
+  (function(){
+    const f=id=>document.getElementById(id);
+    const panel=f('edit-inline-panel');
+    const loading=f('inline-loading');
+    // 增加库存相关字段引用
+    const fld={ id:f('inline-id'), approvalNo:f('inline-approvalNo'), barcode:f('inline-barcode'), gn:f('inline-gn'), tn:f('inline-tn'), spec:f('inline-spec'), retailPrice:f('inline-retailPrice'), memberPrice:f('inline-memberPrice'), discountPercent:f('inline-discountPercent'), categoryId:f('inline-categoryId'), productionDate:f('inline-productionDate'), expiryDate:f('inline-expiryDate'), unit:f('inline-unit'), manufacturer:f('inline-manufacturer'), /*以下字段为可选，页面可能没有定义*/ isRx:f('inline-isRx')||null, status:f('inline-status')||null, description:f('inline-description')||null, currentStock:f('inline-currentStock'), stockQuantity:f('inline-stockQuantity'), minStock:f('inline-minStock') };
+    let full=null;
+    function calcDiscount(){ const rp=parseFloat(fld.retailPrice?.value||'0'); const mp=parseFloat(fld.memberPrice?.value||'0'); if(rp>0 && mp>0){ if(fld.discountPercent) fld.discountPercent.value=((1-mp/rp)*100).toFixed(2); } }
+    function calcMember(){ const rp=parseFloat(fld.retailPrice?.value||'0'); const pct=parseFloat(fld.discountPercent?.value||'0'); if(rp>0 && pct>=0 && pct<100){ if(fld.memberPrice) fld.memberPrice.value=(rp*(1-pct/100)).toFixed(2); } }
+    fld.memberPrice?.addEventListener('input', calcDiscount); fld.retailPrice?.addEventListener('input',()=>{ calcDiscount(); calcMember(); }); fld.discountPercent?.addEventListener('input', calcMember);
+    async function fetchDetail(id){ if(!id) return null; try{ loading?.classList.remove('hidden'); const resp= await window.api?.medicineAPI?.getById(id); loading?.classList.add('hidden'); return resp?.data||resp; }catch(e){ loading?.classList.add('hidden'); console.warn('详情加载失败',e); return null; } }
+    window.openInlineEdit = async function(m){
+      if(!panel) return;
+      panel.classList.remove('hidden');
 
-    function withLock(button, fn){ return async function(){ if(button.disabled) return; button.disabled=true; setLoading(true); try{ await fn(); } catch(e){ showAlert('error', e.message); } finally { button.disabled=false; setLoading(false); } }; }
+      // helper to safely set input/checkbox values
+      const safeSetValue = (el, val) => { try{ if(!el) return; if('checked' in el && typeof val === 'boolean'){ el.checked = val; } else { el.value = (val==null? '': val); } }catch(e){ console.warn('safeSetValue failed', e); } };
 
-    btn.addEventListener('click', withLock(btn, async()=>{ const shopId=currentTenant(); const medicineId=medEl.value.trim(); if(!medicineId) { showAlert('error','请输入药品ID'); return; } const stock=await fetchCurrentStock(shopId, medicineId); appendRow(shopId, medicineId, stock); showAlert('success', `查询成功：${medicineId} 库存 ${stock}`); }));
+      // safe set values only when elements exist
+      safeSetValue(fld.id, m.medicineId || '');
+      safeSetValue(fld.gn, m.genericName || '');
+      safeSetValue(fld.tn, m.tradeName || '');
+      safeSetValue(fld.spec, m.spec || '');
+      if(fld.retailPrice && m.retailPrice!=null) safeSetValue(fld.retailPrice, m.retailPrice);
 
-    // 名称搜索
-    const keywordEl=$('keyword'); const btnSearchName=$('btnSearchName'); const searchResults=$('searchResults');
-    async function searchMedicineByName(shopId, keyword){ const url=`/api/medicine/search?keyword=${encodeURIComponent(keyword)}`; return fetchJson(url, shopId); }
-    function renderSearchResults(items){ if(!items || items.length===0){ searchResults.classList.remove('hidden'); searchResults.innerHTML="<div class='empty-state-modern'><i class='fa fa-search'></i><p>未找到匹配药品</p></div>"; return; } const html=items.map(it=>`<div class='flex justify-between items-center p-2 border-b'> <div><div class='font-mono text-xs'>${it.medicineId||''}</div><div class='text-xs text-dim'>${it.genericName||''} ${it.tradeName?'/ '+it.tradeName:''}</div></div><button class='btn-modern select-med' data-med='${it.medicineId||''}' style='background:#2563eb'>选择</button></div>`).join(''); searchResults.classList.remove('hidden'); searchResults.innerHTML=html; searchResults.querySelectorAll('.select-med').forEach(b=> b.addEventListener('click', async(e)=>{ const id=e.currentTarget.dataset.med; medEl.value=id; const shopId=currentTenant(); try{ const stock=await fetchCurrentStock(shopId,id); appendRow(shopId,id,stock); showAlert('success',`查询成功：${id} 库存 ${stock}`); }catch(err){ showAlert('error',err.message); } })); }
-    btnSearchName.addEventListener('click', withLock(btnSearchName, async()=>{ const kw=keywordEl.value.trim(); if(!kw){ showAlert('error','请输入关键词'); return; } const items=await searchMedicineByName(currentTenant(), kw); renderSearchResults(items); }));
-
-    // 批量查询
-    const batchIdsEl=$('batchIds'); const btnBatchQuery=$('btnBatchQuery');
-    btnBatchQuery.addEventListener('click', withLock(btnBatchQuery, async()=>{ const raw=batchIdsEl.value.trim(); if(!raw){ showAlert('error','请输入多个药品ID'); return; } const ids=[...new Set(raw.split(',').map(s=>s.trim()).filter(Boolean))]; if(!ids.length){ showAlert('error','未解析到有效ID'); return; } const data=await fetchJson(`/api/inventory/current-stocks?ids=${encodeURIComponent(ids.join(','))}`, currentTenant()); const list=Array.isArray(data)?data:(data.results||[]); list.forEach(item=>{ const mid=item.medicineId||item.id; const stock=item.currentStock??item.stock??0; appendRow(currentTenant(), mid, stock); }); showAlert('success', `批量查询完成：${ids.length} 个ID`); }));
-
-    // 分页加载
-    const pageNoEl=$('pageNo'); const pageSizeEl=$('pageSize'); const btnLoadPage=$('btnLoadPage'); const pageBody=$('pageBody');
-    async function loadPage(shopId, pageNo, pageSize){ const data=await fetchJson(`/api/inventory/page-current-stocks?page=${pageNo}&size=${pageSize}`, shopId); const list=Array.isArray(data)?data:(data.content||[]); pageBody.innerHTML=list.map(item=>`<tr><td><span class='badge-soft'>${shopId||'default'}</span></td><td class='font-mono text-xs'>${item.medicineId||''}</td><td class='text-xs'>${item.genericName||''}</td><td class='text-xs'>${item.tradeName||''}</td><td>${item.currentStock??item.stock??0}</td></tr>`).join(''); }
-    btnLoadPage.addEventListener('click', withLock(btnLoadPage, async()=>{ const pn=Number(pageNoEl.value)||0; const ps=Number(pageSizeEl.value)||10; await loadPage(currentTenant(), pn, ps); showAlert('success','分页列表加载完成'); }));
-  })();
+      // load medicine detail
+      const detail = await fetchDetail(m.medicineId);
+      loading?.classList.add('hidden'); full = detail;
+      if(detail){
+        safeSetValue(fld.approvalNo, detail.approvalNo || '');
+        safeSetValue(fld.barcode, detail.barcode || '');
+        safeSetValue(fld.manufacturer, detail.manufacturer || '');
+        safeSetValue(fld.unit, detail.unit || '');
+        safeSetValue(fld.memberPrice, detail.memberPrice!=null?detail.memberPrice:'');
+        safeSetValue(fld.categoryId, detail.categoryId!=null?detail.categoryId:'');
+        safeSetValue(fld.productionDate, detail.productionDate || '');
+        safeSetValue(fld.expiryDate, detail.expiryDate || '');
+        safeSetValue(fld.status, detail.status || 'ACTIVE');
+        try{ if(fld.isRx) safeSetValue(fld.isRx, !!detail.isRx); }catch(e){}
+        safeSetValue(fld.description, detail.description || '');
+        if(fld.retailPrice && fld.memberPrice && fld.retailPrice.value && fld.memberPrice.value) calcDiscount();
+      }
+      // 尝试单独查询当前库存（后端 inventory API），优先显示更准确的库存
+      try{
+        const tenant = localStorage.getItem('selectedTenant')||'';
+        const mid = fld.id ? (fld.id.value || (m.medicineId||'')) : (m.medicineId||'');
+        const resp = await fetch('/api/inventory/current-stock?medicineId='+encodeURIComponent(mid), { headers: {'Accept':'application/json','X-Shop-Id': tenant} });
+        if(resp.ok){ const j = await resp.json(); const cs = (j && (j.currentStock!=null ? j.currentStock : (j.data && j.data.currentStock!=null ? j.data.currentStock : null))); if(cs!=null){ safeSetValue(fld.currentStock, String(cs)); } }
+      }catch(e){ console.warn('[inventory] 获取当前库存失败', e); }
+    };
+  const saveBtn=f('inline-save');
+  saveBtn?.addEventListener('click', window.withLock(saveBtn, async()=>{
+    const id=(fld.id && fld.id.value? fld.id.value.trim(): ''); if(!id){ showMessage('缺少ID','error'); return; }
+    // 构造原始 payload
+    let payload={ genericName: (fld.gn?.value||'').trim(), tradeName: (fld.tn?.value||'').trim(), spec: (fld.spec?.value||'').trim(), approvalNo: (fld.approvalNo?.value||'').trim(), barcode: (fld.barcode?.value||'').trim(), manufacturer: (fld.manufacturer?.value||'').trim(), unit: (fld.unit?.value||'').trim(), retailPrice: fld.retailPrice? parseFloat(fld.retailPrice.value||'0') : undefined, memberPrice: fld.memberPrice && fld.memberPrice.value? parseFloat(fld.memberPrice.value): undefined, isRx: fld.isRx? fld.isRx.checked : undefined, description: fld.description? (fld.description.value||'').trim() : undefined, productionDate: fld.productionDate? fld.productionDate.value||undefined: undefined, expiryDate: fld.expiryDate? fld.expiryDate.value||undefined: undefined, status: fld.status? (fld.status.value||undefined): undefined, deleted:false, categoryId: (fld.categoryId && fld.categoryId.value? parseInt(fld.categoryId.value): (full?.categoryId??0)) };
+    // 清洗：移除空字符串/undefined字段；避免发送空日期 / 空会员价
+    Object.keys(payload).forEach(k=>{ const v=payload[k]; if(v==='' || v===undefined || (Number.isNaN(v) && typeof v==='number')) delete payload[k]; });
+    // retailPrice 必须为数字
+    if(typeof payload.retailPrice!=='number' || Number.isNaN(payload.retailPrice)){ showMessage('零售价格式不正确','error'); return; }
+    // 必填校验
+    if(!payload.genericName || !payload.approvalNo || !payload.categoryId){ showMessage('通用名/批准文号/分类ID 必填','error'); return; }
+    console.log('[inventory] 准备更新药品 payload=', payload);
+    try{
+      const resp = await window.api.medicineAPI.update(id, payload);
+      console.log('[inventory] update 响应=', resp);
+      if(resp && (resp.code===200 || resp.success || resp.medicineId || resp.data)){
+        // 保存成功后再进行补货（若用户填写了补货数量）——异步背景执行，不影响主流程
+        const stockToAdd = fld.stockQuantity && fld.stockQuantity.value? parseInt(fld.stockQuantity.value, 10) : 0;
+        if(!isNaN(stockToAdd) && stockToAdd>0){
+          (async function(){
+            try{
+              const tenant = localStorage.getItem('selectedTenant')||'';
+              const body = { medicineId: id, quantity: stockToAdd };
+              const min = fld.minStock && fld.minStock.value ? parseInt(fld.minStock.value, 10) : null;
+              if(!isNaN(min) && min !== null){ body.minStock = min; }
+              const r = await fetch('/api/inventory/stock-in', { method:'POST', headers: {'Content-Type':'application/json','Accept':'application/json','X-Shop-Id': tenant}, body: JSON.stringify(body) });
+              if(r.ok){ const j = await r.json(); console.log('[inventory] 补货响应:', j); showMessage('已补货：'+stockToAdd+' 件','success'); }
+              else { const txt = await r.text(); console.warn('[inventory] 补货失败', r.status, txt); showMessage('补货失败: '+r.status,'error'); }
+            }catch(e){ console.warn('[inventory] 补货异常', e); showMessage('补货异常: '+e.message,'error'); }
+          })();
+        }
+        showMessage('保存成功','success'); panel.classList.add('hidden'); window.loadPage && window.loadPage(pageNo.value, pageSize.value); return;
+      }
+       showMessage('保存失败','error');
+     } catch(e){
+       console.warn('[inventory] update 异常', e);
+       if(String(e.message).includes('415')){
+        console.warn('[inventory] 触发 415 回退，使用原生 fetch 再试');
+        try {
+          const tenant = localStorage.getItem('selectedTenant')||'';
+          const r = await fetch(`/api/medicines/${id}`, { method:'PUT', headers:{'Content-Type':'application/json','Accept':'application/json','X-Shop-Id':tenant}, body: JSON.stringify(payload)});
+          const txt = await r.text();
+          console.log('[inventory] 回退响应文本=', txt);
+          if(r.ok){ showMessage('保存成功(回退)','success'); panel.classList.add('hidden'); window.loadPage && window.loadPage(pageNo.value, pageSize.value); return; }
+          showMessage('回退仍失败: '+r.status,'error');
+        } catch(e2){ console.error('[inventory] 回退失败', e2); showMessage('回退失败:'+e2.message,'error'); }
+      } else {
+        showMessage('保存异常:'+e.message,'error');
+      }
+    }
+  }));
+  document.getElementById('inline-cancel')?.addEventListener('click', ()=> panel.classList.add('hidden'));
+  document.getElementById('inline-close')?.addEventListener('click', ()=> panel.classList.add('hidden'));
+})();
   </script>
 </body>
 </html>

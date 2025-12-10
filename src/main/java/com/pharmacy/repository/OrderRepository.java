@@ -91,4 +91,11 @@ public interface OrderRepository extends JpaRepository<Order, String> { // ID �
             "GROUP BY m.medicine_id, m.generic_name, m.trade_name, m.spec, m.retail_price " +
             "ORDER BY total_sold DESC LIMIT 10", nativeQuery = true)
     List<Object[]> getHotProductsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.paymentStatus = :status AND o.orderTime >= :start AND o.orderTime < :end")
+    Long countByPaymentStatusAndOrderTimeBetween(@Param("status") int status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    // 新增退款金额统计方法：在时间范围内，已退款订单的实付金额汇总，用于将今日销售额扣除退款。
+    @Query("SELECT COALESCE(SUM(o.actualPayment), 0) FROM Order o WHERE o.paymentStatus = 2 AND o.refundTime >= :start AND o.refundTime < :end")
+    Double getRefundedAmountBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

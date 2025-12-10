@@ -11,7 +11,7 @@ public class StockAlert {
     @Column(name = "alert_id")
     private Long alertId;
 
-    @Column(name = "medicine_id", length = 32, nullable = false)
+    @Column(name = "medicine_id", length = 64, nullable = false)
     private String medicineId;
 
     @Column(name = "alert_type", nullable = false)

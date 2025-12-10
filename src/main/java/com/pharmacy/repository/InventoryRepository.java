@@ -40,7 +40,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     @Query(value = "SELECT COUNT(*) FROM inventory WHERE stock_quantity <= min_stock", nativeQuery = true)
     Integer getLowStockCount();
 
-    // 修复：使用正确的库存列 stock_quantity
+    // 修复：使用正确的库存列 stock_quantity，medicine_id 为 String
     @Query(value = "SELECT COALESCE(SUM(stock_quantity), 0) FROM inventory WHERE medicine_id = :medicineId", nativeQuery = true)
     Integer getTotalStockByMedicineId(@Param("medicineId") String medicineId);
 
@@ -71,7 +71,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
            "from Inventory i join i.medicine m where i.medicineId = :medicineId")
     List<InventoryDTO> findDTOByMedicineId(@Param("medicineId") String medicineId);
 
-    // 新增：获取各药品最早未过期的有效期日期（仅取 >= 当前日期）
+    // 新增：使用原生查询获取每个药品最早未过期的有效期日期（仅取 >= 当前日期）
     @Query(value = "SELECT medicine_id, MIN(expiry_date) FROM inventory WHERE expiry_date >= CURRENT_DATE GROUP BY medicine_id", nativeQuery = true)
     List<Object[]> getEarliestNonExpiredExpiryByMedicine();
 

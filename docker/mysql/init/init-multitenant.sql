@@ -150,7 +150,7 @@ BEGIN
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
   CREATE TABLE IF NOT EXISTS stock_in_item (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    item_id INT PRIMARY KEY AUTO_INCREMENT,
     stock_in_id INT NOT NULL,
     medicine_id VARCHAR(32) NOT NULL,
     batch_number VARCHAR(50),

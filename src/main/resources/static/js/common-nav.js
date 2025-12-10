@@ -2,16 +2,45 @@
 // 在页面中通过 <div id="common-nav" data-active="inventory"></div> 注入统一的侧边栏和顶部导航。
 (function(){
     function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    function getCurrentUsername(){
-        return localStorage.getItem('loginUsername') || localStorage.getItem('currentUser') || '未登录';
+    function parseJsonSafe(str){ try{ return JSON.parse(str); }catch(e){ return null; } }
+    function getCurrentUserInfo(){
+        // 优先读取登录返回的 authUser 数据
+        var authUserRaw = localStorage.getItem('authUser');
+        var authUser = authUserRaw && parseJsonSafe(authUserRaw);
+        if(authUser && (authUser.username || authUser.name)){
+            return {
+                username: authUser.username || '未登录',
+                displayName: authUser.name || authUser.username || '未登录',
+                id: authUser.id,
+                roleId: authUser.roleId
+            };
+        }
+
+        // 备用：读取旧的 currentUser 或 loginUsername
+        var raw = localStorage.getItem('currentUser');
+        var obj = raw && parseJsonSafe(raw);
+        var loginUsername = localStorage.getItem('loginUsername');
+        if(obj && (obj.username || obj.displayName)){
+            return { username: obj.username || loginUsername || '未登录', displayName: obj.displayName || obj.username || loginUsername || '未登录' };
+        }
+        if(loginUsername){ return { username: loginUsername, displayName: loginUsername }; }
+        if(raw){ return { username: raw, displayName: raw }; }
+        return { username: '未登录', displayName: '未登录' };
     }
     function getCurrentRoleText(){
-        const roleId = localStorage.getItem('userRoleId');
+        // 优先从 authUser 中读取 roleId
+        var authUserRaw = localStorage.getItem('authUser');
+        var authUser = authUserRaw && parseJsonSafe(authUserRaw);
+        var roleId = authUser && authUser.roleId ? String(authUser.roleId) : localStorage.getItem('userRoleId');
+
         switch(roleId){
             case '1': return '管理员';
             case '2': return '店长';
             case '3': return '店员';
-            default: return '访客';
+            default:
+                // 若存在 currentUser 对象但无角色，默认显示"店员"而非访客
+                var info = getCurrentUserInfo();
+                return info.username === '未登录' ? '访客' : '店员';
         }
     }
     function buildNav(active){
@@ -22,8 +51,7 @@
             {href: 'stock-in.html', icon: 'fa-box', text: '药品入库', key: 'stock-in'},
             {href: 'inventory.html', icon: 'fa-warehouse', text: '库存管理', key: 'inventory'},
             {href: 'order-history.html', icon: 'fa-history', text: '历史订单', key: 'order-history'},
-            {href: 'members.html', icon: 'fa-users', text: '会员管理', key: 'members'},
-            {href: 'sales.html', icon: 'fa-line-chart', text: '销售统计', key: 'sales'}
+            {href: 'members.html', icon: 'fa-users', text: '会员管理', key: 'members'}
         ];
         // 仅管理员可见的链接
         var adminLinks = [
@@ -32,10 +60,10 @@
             {href: 'settings.html', icon: 'fa-cog', text: '系统设置', key: 'settings'}
         ];
         var activeKey = (active||'').toLowerCase();
-        var usernameDisplay = escapeHtml(getCurrentUsername());
+        var info = getCurrentUserInfo();
         var roleId = localStorage.getItem('userRoleId');
         var roleDisplay = escapeHtml(getCurrentRoleText());
-        var primaryDisplay = escapeHtml(localStorage.getItem('currentUser') || usernameDisplay);
+        var primaryDisplay = escapeHtml(info.displayName);
         var secondaryDisplay = roleDisplay;
         var aside = '' +
         '<aside role="navigation" aria-label="侧边主导航" class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen transition-all duration-300 ease-in-out z-10">' +
@@ -151,8 +179,8 @@
             });
         }
         // 未登录提示
-        var uname = getCurrentUsername();
-        if(uname === '未登录'){
+        var info = getCurrentUserInfo();
+        if(info.username === '未登录'){
             console.warn('[common-nav] 未检测到登录用户, 显示访客模式');
         }
         refreshUserLabels();
@@ -160,9 +188,10 @@
 
     // 注入后动态刷新用户名/角色，避免缓存旧的“张药师”
     function refreshUserLabels(){
+        var info = getCurrentUserInfo();
         var uEl = document.getElementById('nav-username');
         var rEl = document.getElementById('nav-role');
-        if(uEl) uEl.textContent = localStorage.getItem('currentUser') || getCurrentUsername();
+        if(uEl) uEl.textContent = info.displayName;
         if(rEl) rEl.textContent = getCurrentRoleText();
     }
 

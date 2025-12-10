@@ -15,7 +15,7 @@ public interface StockInItemRepository extends JpaRepository<StockInItem, Long> 
     List<StockInItem> findByStockInStockInId(Long stockInId);
 
     // 根据药品ID查找入库记录
-    List<StockInItem> findByMedicineMedicineId(String medicineId);
+    List<StockInItem> findByMedicineId(String medicineId);
 
     // 统计某个药品的总入库数量
     @Query("SELECT SUM(s.quantity) FROM StockInItem s WHERE s.medicine.medicineId = :medicineId")

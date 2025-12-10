@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Medicine {
     @Id
-    @Column(name = "medicine_id", length = 32)
+    @Column(name = "medicine_id", length = 64)
     private String medicineId;
 
     @Column(name = "generic_name", nullable = false, length = 100)
@@ -73,7 +73,6 @@ public class Medicine {
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 
-    // 构造方法、Getter和Setter保持不变
     public Medicine() {}
 
     public String getMedicineId() { return medicineId; }
@@ -145,7 +144,7 @@ public class Medicine {
     public void prePersist() {
         this.createTime = LocalDateTime.now();
         this.updateTime = LocalDateTime.now();
-        if (this.status == null || this.status.isBlank()) {
+        if (this.status == null || (this.status instanceof String && ((String)this.status).isBlank())) {
             this.status = "ACTIVE";
         }
         if (this.deleted == null) {
@@ -156,7 +155,7 @@ public class Medicine {
     @PreUpdate
     public void preUpdate() {
         this.updateTime = LocalDateTime.now();
-        if (this.status == null || this.status.isBlank()) {
+        if (this.status == null || (this.status instanceof String && ((String)this.status).isBlank())) {
             this.status = "ACTIVE";
         }
     }

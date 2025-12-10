@@ -29,6 +29,16 @@ public class InventoryServiceImpl implements InventoryService {
     private MedicineRepository medicineRepository;
 
     @Override
+    public Inventory findById(Long id) {
+        try {
+            return inventoryRepository.findById(id).orElse(null);
+        } catch (Exception e) {
+            System.err.println("查询库存失败 findById: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
     @Transactional
     public boolean updateStockForOrder(String medicineId, Integer quantity, String orderId) {
         System.out.println("=== 开始更新库存 ===");
@@ -46,7 +56,7 @@ public class InventoryServiceImpl implements InventoryService {
 
             // 2. 按先进先出原则排序：先按过期日期（近的优先），再按创建时间
             List<Inventory> sortedInventories = inventories.stream()
-                    .filter(inv -> inv.getStockQuantity() > 0) // 使用 getStockQuantity()
+                    .filter(inv -> inv.getStockQuantity() != null && inv.getStockQuantity() > 0)
                     .sorted(Comparator
                             .comparing(Inventory::getExpiryDate, Comparator.nullsFirst(Comparator.naturalOrder()))
                             .thenComparing(Inventory::getCreateTime))
@@ -58,7 +68,7 @@ public class InventoryServiceImpl implements InventoryService {
             for (Inventory inventory : sortedInventories) {
                 if (remainingToDeduct <= 0) break;
 
-                int availableInBatch = inventory.getStockQuantity(); // 使用 getStockQuantity()
+                int availableInBatch = inventory.getStockQuantity();
                 int deductAmount = Math.min(remainingToDeduct, availableInBatch);
 
                 System.out.println("批次 " + inventory.getBatchNo() +
@@ -66,12 +76,12 @@ public class InventoryServiceImpl implements InventoryService {
                         ", 扣减: " + deductAmount);
 
                 // 扣减库存
-                inventory.setStockQuantity(availableInBatch - deductAmount); // 使用 setStockQuantity()
+                inventory.setStockQuantity(availableInBatch - deductAmount);
                 inventoryRepository.save(inventory);
 
                 remainingToDeduct -= deductAmount;
 
-                System.out.println("扣减后库存: " + inventory.getStockQuantity() + // 使用 getStockQuantity()
+                System.out.println("扣减后库存: " + inventory.getStockQuantity() +
                         ", 剩余需扣减: " + remainingToDeduct);
             }
 
@@ -116,13 +126,13 @@ public class InventoryServiceImpl implements InventoryService {
             // 方法2: 备用查询 - 直接使用findByMedicineId手动计算
             List<Inventory> inventories = inventoryRepository.findByMedicineId(medicineId);
             int manualSum = inventories.stream()
-                    .mapToInt(Inventory::getStockQuantity)  // 使用 getStockQuantity()
+                    .mapToInt(inv -> inv.getStockQuantity() == null ? 0 : inv.getStockQuantity())
                     .sum();
             System.out.println("手动计算库存: " + manualSum);
             System.out.println("找到的库存记录数: " + inventories.size());
 
             inventories.forEach(inv -> {
-                System.out.println("批次: " + inv.getBatchNo() + ", 数量: " + inv.getStockQuantity()); // 使用 getStockQuantity()
+                System.out.println("批次: " + inv.getBatchNo() + ", 数量: " + inv.getStockQuantity());
             });
 
             // 优先使用Repository结果，如果为null则使用手动计算
@@ -190,7 +200,7 @@ public class InventoryServiceImpl implements InventoryService {
                 if (remainingToRestore <= 0) break;
 
                 // 恢复库存到当前批次
-                int currentStock = inventory.getStockQuantity();
+                int currentStock = inventory.getStockQuantity() == null ? 0 : inventory.getStockQuantity();
                 inventory.setStockQuantity(currentStock + remainingToRestore);
                 inventoryRepository.save(inventory);
 
@@ -216,8 +226,8 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
-    public Inventory findById(Long id) {
-        return inventoryRepository.findById(id).orElse(null);
+    public List<InventoryDTO> findDTOByMedicineId(String medicineId) {
+        return inventoryRepository.findDTOByMedicineId(medicineId);
     }
 
     @Override
@@ -269,30 +279,6 @@ public class InventoryServiceImpl implements InventoryService {
             System.err.println("查询 InventoryDTO 详情失败: " + e.getMessage());
             e.printStackTrace();
             return null;
-        }
-    }
-
-    @Override
-    public List<InventoryDTO> findDTOByMedicineId(String medicineId) {
-        try {
-            List<InventoryDTO> list = inventoryRepository.findDTOByMedicineId(medicineId);
-            LocalDate earliest = null;
-            for (InventoryDTO dto : list) {
-                String stockStatus = StockStatusUtil.calcStockStatus(dto.getStockQuantity(), dto.getMinStock());
-                String expiryStatus = StockStatusUtil.calcExpiryStatus(dto.getExpiryDate());
-                dto.setStockStatus(stockStatus);
-                dto.setExpiryStatus(expiryStatus);
-                dto.setSafetyStock(dto.getMinStock());
-                earliest = StockStatusUtil.mergeEarliest(earliest, dto.getExpiryDate());
-            }
-            for (InventoryDTO dto : list) {
-                dto.setEarliestExpiryDate(earliest);
-            }
-            return list;
-        } catch (Exception e) {
-            System.err.println("查询某药品 InventoryDTO 列表失败(精简版): " + e.getMessage());
-            e.printStackTrace();
-            return java.util.Collections.emptyList();
         }
     }
 
@@ -359,7 +345,6 @@ public class InventoryServiceImpl implements InventoryService {
         }
         if (target == null) {
             String newBatch = preferredBatchNo != null && !preferredBatchNo.isBlank() ? preferredBatchNo : ("AUTO" + System.currentTimeMillis());
-            // 0 数量仍可建批次用于设定 minStock
             return createBatch(medicineId, newBatch, addQuantity != null ? addQuantity : 0, minStock, null, null, null, null);
         }
         if (addQuantity != null && addQuantity > 0) {
@@ -371,7 +356,6 @@ public class InventoryServiceImpl implements InventoryService {
         return inventoryRepository.save(target);
     }
 
-    // 原有三个参数补货改为委托新实现
     @Override
     @Transactional
     public Inventory replenish(String medicineId, Integer addQuantity, String preferredBatchNo) {
@@ -391,14 +375,14 @@ public class InventoryServiceImpl implements InventoryService {
                 stockMap.put(mid, qty);
             }
         }
-        List<com.pharmacy.entity.Medicine> meds = medicineRepository.findActiveByMedicineIdIn(medicineIds);
+        List<com.pharmacy.entity.Medicine> meds = medicineRepository.findAllById(medicineIds);
         java.util.Map<String, com.pharmacy.entity.Medicine> medMap = new java.util.HashMap<>();
-        for(com.pharmacy.entity.Medicine m : meds){ medMap.put(m.getMedicineId(), m); }
+        for(com.pharmacy.entity.Medicine m : meds){ medMap.put(String.valueOf(m.getMedicineId()), m); }
         List<CurrentStockDTO> result = new java.util.ArrayList<>();
         for(String id : medicineIds){
-            com.pharmacy.entity.Medicine m = medMap.get(id);
-            Integer qty = stockMap.getOrDefault(id,0);
-            CurrentStockDTO dto = new CurrentStockDTO(id, m!=null?m.getGenericName():null, m!=null?m.getTradeName():null, qty);
+            com.pharmacy.entity.Medicine m = medMap.get(String.valueOf(id));
+            Integer qty = stockMap.getOrDefault(String.valueOf(id),0);
+            CurrentStockDTO dto = new CurrentStockDTO(String.valueOf(id), m!=null?m.getGenericName():null, m!=null?m.getTradeName():null, qty);
             result.add(dto);
         }
         return result;
@@ -420,8 +404,8 @@ public class InventoryServiceImpl implements InventoryService {
             }
         }
         List<CurrentStockDTO> content = medPage.getContent().stream().map(m -> {
-            Integer qty = stockMap.getOrDefault(m.getMedicineId(),0);
-            return new CurrentStockDTO(m.getMedicineId(), m.getGenericName(), m.getTradeName(), qty);
+            Integer qty = stockMap.getOrDefault(String.valueOf(m.getMedicineId()),0);
+            return new CurrentStockDTO(String.valueOf(m.getMedicineId()), m.getGenericName(), m.getTradeName(), qty);
         }).toList();
         return new PageImpl<>(content, pageable, medPage.getTotalElements());
     }

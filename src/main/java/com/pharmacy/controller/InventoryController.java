@@ -203,6 +203,7 @@ public class InventoryController {
             return ResponseEntity.badRequest().body(Map.of("code",400,"message","缺少 ids"));
         }
         try {
+            // medicine IDs are strings (medicine.medicineId). Keep them as String list.
             List<String> list = java.util.Arrays.stream(ids.split(",")).map(String::trim).filter(s->!s.isEmpty()).distinct().toList();
             List<CurrentStockDTO> dtos = inventoryService.getCurrentStocks(list);
             return ResponseEntity.ok(Map.of("code",200,"message","success","results", dtos, "total", dtos.size()));
@@ -232,6 +233,7 @@ public class InventoryController {
     @PostMapping("/stock-in")
     public ResponseEntity<?> stockIn(@RequestBody Map<String,Object> body){
         try {
+            // medicineId is a String (medicine.medicineId is String in entity)
             String medicineId = body.get("medicineId")!=null?String.valueOf(body.get("medicineId")).trim():null;
             Integer quantity = body.get("quantity")!=null?Integer.valueOf(String.valueOf(body.get("quantity"))):null;
             String batchNo = body.get("batchNo")!=null?String.valueOf(body.get("batchNo")).trim():null;
@@ -268,7 +270,7 @@ public class InventoryController {
         try {
             String medicineId = body.get("medicineId")!=null?String.valueOf(body.get("medicineId")).trim():null;
             Integer quantity = body.get("quantity")!=null?Integer.valueOf(String.valueOf(body.get("quantity"))):null;
-            if(medicineId==null || medicineId.isBlank() || quantity==null || quantity<=0){
+            if(medicineId==null || quantity==null || quantity<=0){
                 return ResponseEntity.badRequest().body(Map.of("code",400,"message","参数不合法: 需要 medicineId 与 正整数 quantity"));
             }
             boolean ok = inventoryService.updateStockForOrder(medicineId, quantity, "MANUAL_STOCK_OUT");

@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class MedicineWithStockDTO {
+    // changed to String to match Medicine.medicineId
     private String medicineId;
     private String genericName;
     private String tradeName;

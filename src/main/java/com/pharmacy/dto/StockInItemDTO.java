@@ -4,7 +4,7 @@ package com.pharmacy.dto;
 import java.time.LocalDate;
 
 public class StockInItemDTO {
-    private String medicineId;
+    private Long medicineId;
     private Integer quantity;
     private Double unitPrice;
     private String batchNumber;
@@ -14,8 +14,8 @@ public class StockInItemDTO {
     // 构造器、getter、setter
     public StockInItemDTO() {}
 
-    public String getMedicineId() { return medicineId; }
-    public void setMedicineId(String medicineId) { this.medicineId = medicineId; }
+    public Long getMedicineId() { return medicineId; }
+    public void setMedicineId(Long medicineId) { this.medicineId = medicineId; }
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public Double getUnitPrice() { return unitPrice; }

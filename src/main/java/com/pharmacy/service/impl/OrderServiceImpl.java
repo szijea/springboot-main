@@ -66,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
                 if (!stockAvailable) {
                     String medicineName = medicineRepository.findById(item.getProductId())
                             .map(Medicine::getGenericName)
-                            .orElse(item.getProductId());
+                            .orElse(String.valueOf(item.getProductId()));
                     throw new RuntimeException("药品 " + medicineName + " 库存不足，需求: " + item.getQuantity());
                 }
             }
@@ -139,25 +139,27 @@ public class OrderServiceImpl implements OrderService {
             for (OrderItemRequest itemRequest : orderRequest.getItems()) {
                 OrderItem orderItem = new OrderItem();
                 orderItem.setOrderId(savedOrder.getOrderId());
-                orderItem.setMedicineId(itemRequest.getProductId());
+                // 确保商品ID为 String
+                String productId = String.valueOf(itemRequest.getProductId());
+                orderItem.setMedicineId(productId);
                 orderItem.setQuantity(itemRequest.getQuantity());
                 orderItem.setUnitPrice(itemRequest.getUnitPrice().doubleValue());
                 orderItem.setSubtotal(itemRequest.getUnitPrice().doubleValue() * itemRequest.getQuantity());
 
                 orderItemRepository.save(orderItem);
-                System.out.println("订单项保存成功: " + itemRequest.getProductId() + " x " + itemRequest.getQuantity());
+                System.out.println("订单项保存成功: " + productId + " x " + itemRequest.getQuantity());
 
-                // 更新库存
+                // 更新库存（使用 String 类型 medicineId）
                 boolean stockUpdated = inventoryService.updateStockForOrder(
-                        itemRequest.getProductId(),
+                        productId,
                         itemRequest.getQuantity(),
                         savedOrder.getOrderId()
                 );
 
                 if (!stockUpdated) {
-                    String medicineName = medicineRepository.findById(itemRequest.getProductId())
+                    String medicineName = medicineRepository.findById(productId)
                             .map(Medicine::getGenericName)
-                            .orElse(itemRequest.getProductId());
+                            .orElse(productId);
                     throw new RuntimeException("库存更新失败: " + medicineName);
                 }
             }
@@ -190,7 +192,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Optional<Order> getOrderById(String id) { // 改为 String
+    public Optional<Order> getOrderById(String id) { // 保持 String
         return orderRepository.findById(id);
     }
 
@@ -200,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Optional<Order> getOrderByOrderId(String orderId) {
+    public Optional<Order> getOrderByOrderId(String orderId) { // 改为 String
         return orderRepository.findByOrderId(orderId);
     }
 

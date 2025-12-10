@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -199,7 +200,7 @@ public class MedicineController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("code", 500);
-            response.put("message", "药品搜索失败: " + e.getMessage());
+            response.put("message", "药���搜索失败: " + e.getMessage());
             response.put("data", List.of());
 
             return ResponseEntity.internalServerError().body(response);
@@ -207,11 +208,11 @@ public class MedicineController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateMedicine(@PathVariable String id, @RequestBody Medicine medicine) {
+    public ResponseEntity<Map<String, Object>> updateMedicine(@PathVariable String id, @RequestBody Medicine medicine) {
         try {
             Medicine existing = medicineService.getMedicineById(id);
             if (existing == null) {
-                return ResponseEntity.status(404).body(Map.of("code",404,"message","药品不存在: "+id));
+                return ResponseEntity.status(404).body(Map.of("code",404,"message","药品不存在"));
             }
             // 批准文号处理：如果前端传入非空且不同，验证唯一
             String incomingApproval = medicine.getApprovalNo();
@@ -237,72 +238,37 @@ public class MedicineController {
                 medicine.setStatus(existing.getStatus());
             }
             Medicine updated = medicineService.updateMedicine(id, medicine);
-            // 计算动态库存/效期状态
-            java.time.LocalDate expiry = updated.getExpiryDate();
-            Integer currentStock = inventoryService.getCurrentStock(updated.getMedicineId());
-            String computedStatus;
-            if (currentStock == null || currentStock == 0) {
-                computedStatus = "OUT_OF_STOCK";
-            } else if (expiry != null && expiry.isBefore(java.time.LocalDate.now())) {
-                computedStatus = "EXPIRED";
-            } else if (expiry != null && expiry.isBefore(java.time.LocalDate.now().plusDays(60))) {
-                computedStatus = "NEAR_EXPIRY";
-            } else {
-                computedStatus = "ACTIVE";
-            }
-            Map<String,Object> resp = new HashMap<>();
-            resp.put("code",200);
-            resp.put("message","更新成功");
-            resp.put("data", updated);
-            resp.put("medicineStatus", updated.getStatus()); // 持久化销售状态
-            resp.put("computedStatus", computedStatus);      // 动态库存/效期状态
-            resp.put("currentStock", currentStock);
-            resp.put("expiryStatus", StockStatusUtil.calcExpiryStatus(expiry));
-            return ResponseEntity.ok(resp);
+            return ResponseEntity.ok(Map.of("code",200,"data",updated));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("code",500,"message","更新药品失败: "+e.getMessage()));
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMedicine(@PathVariable String id) {
+    public ResponseEntity<Map<String, Object>> deleteMedicine(@PathVariable String id) {
         try {
-            long refs = orderItemRepository.countByMedicineId(id);
-            if (refs > 0) {
-                return ResponseEntity.status(409).body(Map.of(
-                        "code",409,
-                        "message","该药品存在订单引用，无法删除，可考虑设置为停售或软删除后隐藏。引用次数: "+refs
-                ));
+            Medicine med = medicineService.getMedicineById(id);
+            if (med == null) {
+                return ResponseEntity.status(404).body(Map.of("code",404,"message","药品不存在"));
             }
             medicineService.deleteMedicine(id);
-            return ResponseEntity.ok(Map.of("code",200,"message", "删除成功(软删除)"));
+            return ResponseEntity.ok(Map.of("code",200,"message","删除成功"));
         } catch (Exception e) {
-            System.err.println("删除药品失败: " + e.getMessage());
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("code",500,"message", "删除药品失败: " + e.getMessage()));
+            return ResponseEntity.status(500).body(Map.of("code",500,"message","删除药品失败: "+e.getMessage()));
         }
     }
 
     @PostMapping("/{id}/restore")
-    public ResponseEntity<?> restore(@PathVariable String id){
-        Medicine med = medicineService.getMedicineById(id);
-        if(med==null){
-            return ResponseEntity.status(404).body(Map.of("code",404,"message","药品不存在: "+id));
-        }
-        if(Boolean.TRUE.equals(med.getDeleted())){
-            medicineService.restoreMedicine(id);
+    public ResponseEntity<Map<String, Object>> restoreMedicine(@PathVariable String id) {
+        try {
             Medicine restored = medicineService.getMedicineById(id);
-            return ResponseEntity.ok(Map.of(
-                    "code",200,
-                    "message","恢复成功",
-                    "data", restored
-            ));
-        } else {
-            return ResponseEntity.ok(Map.of(
-                    "code",200,
-                    "message","记录未被软删除, 无需恢复",
-                    "data", med
-            ));
+            if (restored == null) {
+                return ResponseEntity.status(404).body(Map.of("code",404,"message","药品不存在"));
+            }
+            medicineService.restoreMedicine(id);
+            return ResponseEntity.ok(Map.of("code",200,"message","恢复成功"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("code",500,"message","恢复药品失败: "+e.getMessage()));
         }
     }
 
@@ -353,9 +319,6 @@ public class MedicineController {
                 medicine.setExpiryDate(dateField(body.get("expiryDate")));
                 medicine.setStatus(stringField(body.get("status")));
             }
-            if (medicine.getMedicineId()==null || medicine.getMedicineId().isBlank()) {
-                medicine.setMedicineId("M"+System.currentTimeMillis());
-            }
             if (medicine.getStatus()==null || medicine.getStatus().isBlank()) medicine.setStatus("ACTIVE");
             // 去重校验批准文号
             if (medicine.getApprovalNo()!=null && !medicine.getApprovalNo().isBlank()) {
@@ -388,6 +351,7 @@ public class MedicineController {
     }
 
     private String stringField(Object v){ return v==null?null:String.valueOf(v).trim(); }
+    private Long longField(Object v){ try { return v==null?null:Long.valueOf(String.valueOf(v)); } catch(Exception e){ return null; } }
     private Integer intField(Object v, Integer def){ try { return v==null?def:Integer.valueOf(String.valueOf(v)); } catch(Exception e){ return def; } }
     private java.math.BigDecimal bigDecimalField(Object v, String def){ try { return v==null?(def==null?null:new java.math.BigDecimal(def)):new java.math.BigDecimal(String.valueOf(v)); } catch(Exception e){ return def==null?null:new java.math.BigDecimal(def); } }
     private Boolean boolField(Object v, Boolean def){ if (v==null) return def; if (v instanceof Boolean b) return b; return "true".equalsIgnoreCase(String.valueOf(v)); }
