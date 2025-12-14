@@ -283,4 +283,32 @@ public class InventoryController {
             return ResponseEntity.internalServerError().body(Map.of("code",500,"message","出库失败: "+e.getMessage()));
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchInventory(@RequestParam(required=false) String keyword) {
+        try {
+            String kw = keyword == null ? "" : keyword.trim();
+            List<InventoryDTO> all = inventoryService.findAllWithMedicineDTO();
+            if (kw.isEmpty()) {
+                return ResponseEntity.ok(Map.of("code",200,"message","success","data", all, "total", all.size()));
+            }
+            String low = kw.toLowerCase();
+            List<InventoryDTO> filtered = all.stream().filter(dto -> {
+                String bno = dto.getBatchNo();
+                String gn = dto.getMedicineGenericName();
+                String tn = dto.getMedicineTradeName();
+                String spec = dto.getMedicineSpec();
+                String mfr = null; // InventoryDTO 目前没有厂家字段
+                String ap = null;  // InventoryDTO 目前没有批准文号字段
+                String bc = null;  // InventoryDTO 目前没有条码字段
+                return (bno!=null && bno.toLowerCase().contains(low))
+                        || (gn!=null && gn.toLowerCase().contains(low))
+                        || (tn!=null && tn.toLowerCase().contains(low))
+                        || (spec!=null && spec.toLowerCase().contains(low));
+            }).toList();
+            return ResponseEntity.ok(Map.of("code",200,"message","success","data", filtered, "total", filtered.size()));
+        } catch(Exception e){
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","库存关键字搜索失败: "+e.getMessage(), "data", java.util.List.of()));
+        }
+    }
 }

@@ -50,10 +50,8 @@
     const original = cart.reduce((sum,i)=> sum + i.price * i.quantity, 0);
     const discountInput = $('discount-amount');
     const discount = Number(discountInput && discountInput.value || 0);
-    const pointsInput = $('use-points');
-    const pointsUsed = Number(pointsInput && pointsInput.value || 0);
-    // 简单规则：1 积分 = 0.01 元
-    const pointsAmount = pointsUsed * 0.01;
+    // 禁用积分抵扣
+    const pointsAmount = 0;
     const payable = Math.max(original - discount - pointsAmount, 0);
     safeInner($('summary-original'), formatMoney(original));
     safeInner($('summary-discount'), formatMoney(discount));
@@ -61,16 +59,35 @@
     safeInner($('summary-payable'), formatMoney(payable));
   }
 
+  function levelMultiplier(member){
+    // 根据会员等级应用倍率；未指定则 1.0
+    if(!member) return 1.0;
+    const lvl = (member.levelName || member.level || '').toString().toLowerCase();
+    // 假设规则：普通=1.0，白银=0.95，黄金=0.90，铂金=0.85
+    if(lvl.includes('白银') || lvl.includes('silver')) return 0.95;
+    if(lvl.includes('黄金') || lvl.includes('gold')) return 0.90;
+    if(lvl.includes('铂金') || lvl.includes('platinum')) return 0.85;
+    return 1.0; // 普通或未知
+  }
+
   function addToCart(med){
     if(!med || !med.medicineId) return;
+    const useMember = !!selectedMember;
+    const baseRetail = Number(med.retailPrice || med.price || med.unitPrice || 0);
+    const baseMember = med.memberPrice!=null ? Number(med.memberPrice) : null;
+    const mult = levelMultiplier(selectedMember);
+    // 优先会员价；无会员价则按等级倍率折算零售价
+    const chosenPrice = useMember ? (baseMember!=null ? baseMember : baseRetail * mult) : baseRetail;
     const existing = cart.find(i=> i.medicineId === med.medicineId);
     if(existing){ existing.quantity += 1; } else {
       cart.push({
         medicineId: med.medicineId,
         name: med.genericName || med.tradeName || med.name,
         spec: med.spec,
-        price: Number(med.retailPrice || med.price || med.unitPrice || 0),
-        quantity: 1
+        price: Number(chosenPrice||0),
+        quantity: 1,
+        _retailPrice: baseRetail,
+        _memberPrice: baseMember
       });
     }
     renderCart();
@@ -120,7 +137,8 @@
     resultBox.classList.remove('hidden');
     safeInner(resultBox, '<div class="p-3 text-center text-gray-400"><i class="fa fa-spinner fa-spin"></i> 搜索中...</div>');
     try {
-      const res = await medicineAPI.search(keyword, category, 1, 30);
+      // 使用包含库存的搜索接口，便于收银页展示库存相关信息
+      const res = await medicineAPI.searchWithStock(keyword, category, 1, 30);
       const list = res && res.data ? res.data : [];
       if(list.length === 0){
         safeInner(resultBox,'<div class="p-3 text-center text-gray-400">未找到匹配药品</div>');
@@ -128,7 +146,7 @@
       }
       safeInner(resultBox, list.map(m => `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm" data-id="${m.medicineId}">
         <div class="flex justify-between"><span>${m.genericName || m.tradeName || m.name}</span><span class="text-gray-500">${formatMoney(m.retailPrice || m.price)}</span></div>
-        <div class="text-xs text-gray-400">${m.spec || ''} ${m.manufacturer || ''}</div>
+        <div class="text-xs text-gray-400">${m.spec || ''} ${m.manufacturer || ''}${typeof m.stockQuantity!== 'undefined' ? ` · 库存:${m.stockQuantity ?? 0}` : ''}</div>
       </div>`).join(''));
     } catch(err){
       safeInner(resultBox, `<div class='p-3 text-center text-red-500 text-xs'>搜索失败: ${err.message}</div>`);
@@ -188,6 +206,13 @@
           }
           const clearBtn = $('clear-member-btn');
           if(clearBtn){ clearBtn.classList.remove('hidden'); }
+          // 选中会员后，按规则重定价购物车：优先 memberPrice，否则零售价*等级倍率
+          const mult = levelMultiplier(selectedMember);
+          cart.forEach(it=>{
+            if(it._memberPrice!=null){ it.price = Number(it._memberPrice); }
+            else { it.price = Number((it._retailPrice||0) * mult); }
+          });
+          renderCart();
         }).catch(()=>{});
       });
     }
@@ -196,6 +221,9 @@
       selectedMember = null;
       hide($('selected-member-info'));
       hide($('clear-member-btn'));
+      // 清除会员后恢复零售价
+      cart.forEach(it=>{ it.price = Number(it._retailPrice||it.price||0); });
+      renderCart();
     });
   }
 
@@ -288,9 +316,9 @@
   }
 
   function initDiscountAndPoints(){
-    ['discount-amount','use-points'].forEach(id => {
-      const el = $(id); if(el){ el.addEventListener('input', updateSummary); }
-    });
+    // 只监听折扣，禁用积分输入
+    const el = $('discount-amount'); if(el){ el.addEventListener('input', updateSummary); }
+    const pts = $('use-points'); if(pts){ pts.value=''; pts.setAttribute('disabled','disabled'); }
   }
 
   function initSubmit(){

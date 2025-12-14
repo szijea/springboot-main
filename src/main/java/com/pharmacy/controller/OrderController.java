@@ -241,4 +241,109 @@ public class OrderController {
             return ResponseEntity.internalServerError().body(Map.of("code",500,"message","退单失败: "+e.getMessage()));
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> searchOrders(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer paymentType,
+            @RequestParam(required = false) String memberKeyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        try {
+            // Load a reasonable upper bound of orders, then filter in-memory
+            Pageable preload = PageRequest.of(0, Math.max(size * 10, 200));
+            Page<Order> prePage = orderService.getAllOrders(preload);
+            List<Order> all = prePage.getContent();
+
+            java.time.LocalDate start = null;
+            java.time.LocalDate end = null;
+            if (startDate != null && !startDate.isBlank()) {
+                start = java.time.LocalDate.parse(startDate);
+            }
+            if (endDate != null && !endDate.isBlank()) {
+                end = java.time.LocalDate.parse(endDate);
+            }
+
+            java.util.Set<String> memberIdsMatched = new java.util.HashSet<>();
+            String mk = memberKeyword != null ? memberKeyword.trim() : "";
+            String mkLower = mk.toLowerCase();
+            if (!mk.isEmpty()) {
+                try {
+                    // naive scan over members to collect matching IDs by name or phone
+                    List<Member> members = memberRepository.findAll();
+                    for (Member m : members) {
+                        String name = m.getName() != null ? m.getName() : "";
+                        String phone = m.getPhone() != null ? m.getPhone() : "";
+                        if (name.contains(mk) || phone.contains(mk)) {
+                            memberIdsMatched.add(m.getMemberId());
+                        }
+                    }
+                } catch(Exception ignored) {}
+            }
+
+            List<Order> filtered = new java.util.ArrayList<>();
+            for (Order o : all) {
+                // date range filter
+                if (start != null || end != null) {
+                    java.time.LocalDate d = null;
+                    if (o.getOrderTime() != null) {
+                        d = o.getOrderTime().toLocalDate();
+                    }
+                    if (d == null) continue;
+                    if (start != null && d.isBefore(start)) continue;
+                    if (end != null && d.isAfter(end)) continue;
+                }
+                // status filter
+                if (status != null) {
+                    if (o.getPaymentStatus() == null || !o.getPaymentStatus().equals(status)) continue;
+                }
+                // payment type filter
+                if (paymentType != null) {
+                    if (o.getPaymentType() == null || !o.getPaymentType().equals(paymentType)) continue;
+                }
+                // member keyword filter (by customerName, memberId, member phone/name set and per-order member lookup)
+                if (!mk.isEmpty()) {
+                    String cname = o.getCustomerName() != null ? o.getCustomerName() : "";
+                    String mid = o.getMemberId() != null ? o.getMemberId() : "";
+                    String cnameLower = cname.toLowerCase();
+                    boolean ok = cnameLower.contains(mkLower) || mid.toLowerCase().contains(mkLower);
+                    if (!ok) {
+                        try {
+                            if (mid != null && !mid.isBlank()) {
+                                Member mem = memberRepository.findById(mid).orElse(null);
+                                if (mem != null) {
+                                    String mn = mem.getName() != null ? mem.getName() : "";
+                                    String mp = mem.getPhone() != null ? mem.getPhone() : "";
+                                    ok = mn.toLowerCase().contains(mkLower) || mp.toLowerCase().contains(mkLower);
+                                }
+                            }
+                        } catch(Exception ignored) {}
+                    }
+                    if (!ok) continue;
+                }
+                filtered.add(o);
+            }
+
+            int total = filtered.size();
+            int from = Math.min(page * size, total);
+            int to = Math.min(from + size, total);
+            List<Order> content = filtered.subList(from, to);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", "success");
+            response.put("content", content);
+            response.put("totalElements", total);
+            response.put("totalPages", (int) Math.ceil(total / (double) size));
+            response.put("page", page);
+            response.put("size", size);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("code",500,"message","订单搜索失败: "+e.getMessage()));
+        }
+    }
 }

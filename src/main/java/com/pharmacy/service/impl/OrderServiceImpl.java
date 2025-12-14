@@ -135,6 +135,33 @@ public class OrderServiceImpl implements OrderService {
             System.out.println("订单保存成功，ID: " + savedOrder.getOrderId());
             System.out.println("订单会员ID: " + savedOrder.getMemberId());
 
+            // 5.1 订单积分计算并累计到会员（按实付金额四舍五入为积分）
+            try {
+                double pay = savedOrder.getActualPayment() != null ? savedOrder.getActualPayment() : 0.0;
+                int createdPoints = (int) Math.round(pay);
+                if (createdPoints < 0) createdPoints = 0;
+                // 回写订单的获得积分
+                try {
+                    savedOrder.setCreatedPoints(createdPoints);
+                    savedOrder = orderRepository.save(savedOrder);
+                } catch (Exception e){ System.err.println("写入订单积分失败:"+e.getMessage()); }
+                // 累加到会员
+                String mid = savedOrder.getMemberId();
+                if (mid != null && !mid.isBlank() && createdPoints > 0) {
+                    try {
+                        Optional<Member> memOpt = memberRepository.findById(mid);
+                        if (memOpt.isPresent()) {
+                            Member mem = memOpt.get();
+                            mem.addPoints(createdPoints);
+                            memberRepository.save(mem);
+                            System.out.println("会员积分累计成功: memberId="+mid+" +"+createdPoints);
+                        } else {
+                            System.err.println("会员不存在，跳过积分累计: memberId="+mid);
+                        }
+                    } catch (Exception e){ System.err.println("会员积分累计失败:"+e.getMessage()); }
+                }
+            } catch (Exception e){ System.err.println("订单积分处理异常:"+e.getMessage()); }
+
             // 6. 创建订单项并更新库存
             for (OrderItemRequest itemRequest : orderRequest.getItems()) {
                 OrderItem orderItem = new OrderItem();
@@ -331,6 +358,18 @@ public class OrderServiceImpl implements OrderService {
         response.setTotalAmount(java.math.BigDecimal.valueOf(order.getTotalAmount()));
         response.setStatus("已完成");
         response.setCreateTime(order.getOrderTime());
+        // 附加显示获得积分（如果实体包含该字段）
+        try {
+            java.lang.reflect.Method getter = order.getClass().getMethod("getCreatedPoints");
+            Object cp = getter.invoke(order);
+            if (cp instanceof Integer) {
+                // 若 OrderResponse 有相应字段，可设置；否则忽略
+                try {
+                    java.lang.reflect.Method setCp = response.getClass().getMethod("setCreatedPoints", Integer.class);
+                    setCp.invoke(response, (Integer) cp);
+                } catch (NoSuchMethodException ignore) {}
+            }
+        } catch (Exception ignore) {}
 
         // 获取订单项
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getOrderId());

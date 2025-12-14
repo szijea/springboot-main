@@ -19,7 +19,9 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
             "m.tradeName LIKE CONCAT('%', :keyword, '%') OR " +
             "m.description LIKE CONCAT('%', :keyword, '%') OR " +
             "m.manufacturer LIKE CONCAT('%', :keyword, '%') OR " +
-            "m.spec LIKE CONCAT('%', :keyword, '%')")
+            "m.spec LIKE CONCAT('%', :keyword, '%') OR " +
+            // 新增：支持按条码搜索
+            "m.barcode LIKE CONCAT('%', :keyword, '%')")
     List<Medicine> searchByKeyword(@Param("keyword") String keyword);
 
     // 原生 SQL 搜索 - 简化版本
@@ -28,7 +30,9 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
             "trade_name LIKE CONCAT('%', :keyword, '%') OR " +
             "description LIKE CONCAT('%', :keyword, '%') OR " +
             "manufacturer LIKE CONCAT('%', :keyword, '%') OR " +
-            "spec LIKE CONCAT('%', :keyword, '%')",
+            "spec LIKE CONCAT('%', :keyword, '%') OR " +
+            // 新增：支持按条码搜索
+            "barcode LIKE CONCAT('%', :keyword, '%')",
             nativeQuery = true)
     List<Medicine> searchByKeywordNative(@Param("keyword") String keyword);
 
@@ -65,7 +69,14 @@ public interface MedicineRepository extends JpaRepository<Medicine, String> {
     @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND m.medicineId IN :ids")
     List<Medicine> findActiveByMedicineIdIn(@Param("ids") List<String> ids);
 
-    @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND (m.genericName LIKE CONCAT('%', :keyword, '%') OR m.tradeName LIKE CONCAT('%', :keyword, '%') OR m.description LIKE CONCAT('%', :keyword, '%') OR m.manufacturer LIKE CONCAT('%', :keyword, '%') OR m.spec LIKE CONCAT('%', :keyword, '%'))")
+    @Query("SELECT m FROM Medicine m WHERE m.deleted = false AND (" +
+            "m.genericName LIKE CONCAT('%', :keyword, '%') OR " +
+            "m.tradeName LIKE CONCAT('%', :keyword, '%') OR " +
+            "m.description LIKE CONCAT('%', :keyword, '%') OR " +
+            "m.manufacturer LIKE CONCAT('%', :keyword, '%') OR " +
+            "m.spec LIKE CONCAT('%', :keyword, '%') OR " +
+            // 新增：支持按条码搜索
+            "m.barcode LIKE CONCAT('%', :keyword, '%'))")
     List<Medicine> searchActiveByKeyword(@Param("keyword") String keyword);
 
     // 分类占比：按 category_id 分组计数（兼容无 Category 表的情况）

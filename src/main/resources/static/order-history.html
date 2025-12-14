@@ -18,6 +18,9 @@
     <style>
         /* 统一主内容区滚动条样式 */
         .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
+        /* 让容器在大屏铺满，避免右侧空白 */
+        .container-fluid{max-width:100%; width:100%;}
+        .app-shell{width:100%;}
         .main-content::-webkit-scrollbar{width:8px}
         .main-content::-webkit-scrollbar-track{background:#f5f5f5;border-radius:4px}
         .main-content::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
@@ -31,18 +34,17 @@
         /* 当模态打开时禁用主内容滚动 */
         body.modal-open { overflow: hidden; }
         /* 增强日期输入的可操作性 */
-        #order-date-filter{ min-width: 180px; }
-        /* 过滤条可用性增强 */
-        #order-filter-bar { padding: 1.25rem; }
-        #order-filter-bar .input { min-height: 42px, font-size: 0.95rem, padding: 0.5rem 0.75rem; }
-        #order-filter-bar label { font-size: 0.8rem; }
-        #order-filter-bar .btn { min-height: 40px; padding: 0.5rem 0.9rem; }
-        /* 桌面端更宽松的布局 */
+        #order-date-filter{ min-width: 150px; }
+        /* 过滤条可用性增强（整体收紧） */
+        #order-filter-bar { padding: 1rem; }
+        #order-filter-bar .input { min-height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+        #order-filter-bar label { font-size: 0.78rem; }
+        #order-filter-bar .btn { min-height: 34px; padding: 0.4rem 0.7rem; }
         @media (min-width: 768px) {
-          #order-filter-bar { padding: 1.5rem; }
-          #order-filter-bar .grid { gap: 1rem; }
-          #order-date-filter { min-width: 220px; }
-          #member-filter { min-width: 260px; }
+          #order-filter-bar { padding: 1.1rem; }
+          #order-filter-bar .grid { gap: 0.75rem; }
+          #order-date-filter { min-width: 170px; }
+          #member-filter { min-width: 200px; }
         }
         /* 金额汇总卡片加大可读性与点击区 */
         #orders-amount-total { line-height: 1.7; font-size: 0.9rem; }
@@ -374,86 +376,153 @@
         initDateTime();
         initSidebar();
         initOrderEvents();
-        // 如 loadOrders 已就绪，直接调用；否则等待事件通知后调用
-        if (typeof window.loadOrders === 'function') {
-            window.loadOrders(0, ordersPageSize);
-        } else {
-            console.warn('loadOrders 尚未可用，登记一次性事件监听');
-            const once = ()=>{ try{ typeof window.loadOrders==='function' && window.loadOrders(0, ordersPageSize); } finally { document.removeEventListener('loadOrdersReady', once); } };
-            document.addEventListener('loadOrdersReady', once, { once: true });
-        }
+        // 首次加载：按当天区间查询
+        applyServerFilters(0, ordersPageSize);
     }
 
     // 检查必要的DOM元素（增加自修复）
     function checkRequiredElements() {
-        const ensureTbody = ()=>{
-            let tbody = document.getElementById('orders-list-body');
-            if (!tbody) {
-                const table = document.querySelector('#orders-list-card table');
-                if (table) {
-                    tbody = table.tBodies && table.tBodies[0] ? table.tBodies[0] : table.querySelector('tbody');
-                    if (tbody) { tbody.id = 'orders-list-body'; console.warn('未找到 #orders-list-body，已自动为 tbody 赋值该ID'); }
-                }
+        // 确保列表 tbody 存在并具有正确 ID
+        let tbody = document.getElementById('orders-list-body');
+        if (!tbody) {
+            const table = document.querySelector('#orders-list-card table');
+            if (table) {
+                tbody = table.tBodies && table.tBodies[0] ? table.tBodies[0] : table.querySelector('tbody');
+                if (tbody) { tbody.id = 'orders-list-body'; }
             }
-            console.log('[ensureTbody] found=', !!document.getElementById('orders-list-body'));
-            return !!document.getElementById('orders-list-body');
-        };
-
-        const requiredElements = [
-            'order-date-filter',
-            'order-status-filter',
-            'payment-type-filter',
-            'member-filter',
-            'orders-list-body',
-            'loading-orders',
-            'empty-orders'
+        }
+        const requiredIds = [
+            'order-date-filter','order-status-filter','payment-type-filter','member-filter',
+            'orders-list-card','orders-count','orders-pagination-info','orders-pagination-controls'
         ];
-
-        // 先尝试修复 tbody
-        ensureTbody();
-
-        for (const id of requiredElements) {
-            if (!document.getElementById(id)) {
-                console.warn(`必要元素 #${id} 未找到`);
-                // 如果缺少 orders-list-body，再尝试一次修复
-                if (id === 'orders-list-body' && ensureTbody()) {
-                    continue;
-                }
-                return false;
-            }
-        }
-
-        return true;
+        const ok = requiredIds.every(id => document.getElementById(id));
+        return !!document.getElementById('orders-list-body') && ok;
     }
 
-    // 日期时间初始化
-    function initDateTime() {
-        const update = () => {
-            const now = new Date();
-            const dateEl = document.getElementById('current-date');
-            const timeEl = document.getElementById('current-time');
-            if (dateEl) dateEl.textContent = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
-            if (timeEl) timeEl.textContent = now.toLocaleTimeString('zh-CN');
+    // 如果 initDateTime / initSidebar 未定义，则提供安全占位，避免报错
+    if (typeof window.initDateTime !== 'function') {
+        window.initDateTime = function(){
+            const dateEl = document.getElementById('order-date-filter');
+            if (dateEl && !dateEl.value) { dateEl.value = new Date().toISOString().slice(0,10); }
         };
-        update();
-        setInterval(update, 1000);
+    }
+    if (typeof window.initSidebar !== 'function') {
+        window.initSidebar = function(){ /* no-op: 保留占位 */ };
     }
 
-    // 侧边栏切换
-    function initSidebar() {
-        const toggleBtn = document.getElementById('sidebar-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const sidebar = document.querySelector('aside');
-                if (sidebar) {
-                    sidebar.classList.toggle('w-64');
-                    sidebar.classList.toggle('w-0');
-                    sidebar.classList.toggle('hidden');
-                }
-            });
+    // 统一服务端查询
+    async function applyServerFilters(page=0, size=10){
+        const dateEl = document.getElementById('order-date-filter');
+        const statusEl = document.getElementById('order-status-filter');
+        const payEl = document.getElementById('payment-type-filter');
+        const memberEl = document.getElementById('member-filter');
+        const tbody = document.getElementById('orders-list-body');
+        const loading = document.getElementById('loading-orders');
+        const empty = document.getElementById('empty-orders');
+        const countEl = document.getElementById('orders-count');
+        const infoEl = document.getElementById('orders-pagination-info');
+        const ctrEl = document.getElementById('orders-pagination-controls');
+        const tenant = localStorage.getItem('selectedTenant') || '';
+        const toYYYYMMDD = (s)=>{ if(!s) return ''; return s.replaceAll('/', '-'); };
+        const day = toYYYYMMDD(dateEl?.value || new Date().toISOString().slice(0,10));
+        const startDate = day; const endDate = day;
+        const status = statusEl?.value || '';
+        const paymentType = payEl?.value || '';
+        const memberKeyword = (memberEl?.value || '').trim();
+        // UI 状态
+        tbody && (tbody.classList.add('hidden'));
+        loading && (loading.classList.remove('hidden'));
+        empty && (empty.classList.add('hidden'));
+        try{
+            // 优先使用 /api/orders/search
+            const params = new URLSearchParams();
+            if(startDate) params.append('startDate', startDate);
+            if(endDate) params.append('endDate', endDate);
+            if(status) params.append('status', status);
+            if(paymentType) params.append('paymentType', paymentType);
+            if(memberKeyword) params.append('memberKeyword', memberKeyword);
+            params.append('page', String(page||0));
+            params.append('size', String(size||10));
+            let resp = await fetch(`/api/orders/search?${params.toString()}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
+            let result;
+            if(!resp.ok){
+                // 回退到 /api/orders 简单分页
+                resp = await fetch(`/api/orders?page=${page}&size=${size}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
+                if(!resp.ok) throw new Error('HTTP '+resp.status);
+            }
+            result = await resp.json();
+            const list = Array.isArray(result.content)? result.content : (Array.isArray(result.data)? result.data : []);
+            serverTotalElements = result.totalElements ?? (result.total ?? list.length ?? 0);
+            serverTotalPages = result.totalPages ?? Math.ceil(serverTotalElements / (size||10));
+            allOrders = list.slice(); filteredOrders = list.slice();
+            // 渲染
+            loading && loading.classList.add('hidden');
+            if(!list.length){
+                empty && empty.classList.remove('hidden');
+                countEl && (countEl.textContent = '共 0 条订单');
+                infoEl && (infoEl.textContent = '显示 0-0 条，共 0 条');
+                ctrEl && (ctrEl.innerHTML = '');
+                return;
+            }
+            empty && empty.classList.add('hidden');
+            tbody && (tbody.classList.remove('hidden'), tbody.style.display='table-row-group');
+            countEl && (countEl.textContent = `共 ${serverTotalElements} 条订单`);
+            const startIdx = (page*(size||10))+1;
+            const endIdx = Math.min(serverTotalElements, startIdx + list.length - 1);
+            infoEl && (infoEl.textContent = `显示 ${startIdx}-${endIdx} 条，共 ${serverTotalElements} 条`);
+            tbody.innerHTML = list.map(o=>{
+              const orderId = o.orderId || o.id || '-';
+              const time = o.orderTime ? new Date(o.orderTime).toLocaleString('zh-CN') : '-';
+              const customer = o.customerName || '非会员';
+              const member = o.memberId || '';
+              const payType = {1:'现金',2:'微信',3:'支付宝',4:'医保'}[o.paymentType] || '未知';
+              const payStatus = {0:'待支付',1:'已支付',2:'已退款'}[o.paymentStatus] || '未知';
+              const total = (o.actualPayment!=null?o.actualPayment:(o.totalAmount||0));
+              return `<tr>
+                <td class='px-6 py-3'><div class='font-mono text-xs'>${orderId}</div><div class='text-xs text-gray-500'>${time}</div></td>
+                <td class='px-6 py-3'><div class='text-xs'>${customer}</div>${member? `<div class='text-xs text-gray-500'>会员ID: ${member}</div>`:''}</td>
+                <td class='px-6 py-3'><div class='text-xs'>${payType}</div><div class='text-xs'>${payStatus}</div></td>
+                <td class='px-6 py-3'><div class='text-xs font-medium'>¥${parseFloat(total||0).toFixed(2)}</div></td>
+                <td class='px-6 py-3'><button class='btn btn-outline btn-xs' onclick='showOrderDetail("${orderId}")'>查看</button></td>
+              </tr>`;
+            }).join('');
+            // 简单分页控件
+            if(ctrEl){ ctrEl.innerHTML='';
+              const mkBtn=(label, p)=>{ const b=document.createElement('button'); b.className='btn btn-outline btn-xs'; b.textContent=label; b.onclick=()=> applyServerFilters(p, size); return b; };
+              ctrEl.appendChild(mkBtn('首页', 0));
+              ctrEl.appendChild(mkBtn('上一页', Math.max(0, page-1)));
+              ctrEl.appendChild(document.createTextNode(` 第 ${page+1} / ${serverTotalPages||1} 页 `));
+              ctrEl.appendChild(mkBtn('下一页', Math.min((serverTotalPages||1)-1, page+1)));
+              ctrEl.appendChild(mkBtn('末页', Math.max(0, (serverTotalPages||1)-1)));
+            }
+        }catch(e){
+            console.warn('[orders] 查询失败', e);
+            loading && loading.classList.add('hidden');
+            empty && empty.classList.remove('hidden');
+            const infoEl = document.getElementById('orders-pagination-info');
+            infoEl && (infoEl.textContent='显示 0-0 条，共 0 条');
         }
     }
 
+    // 绑定筛选事件
+    function initOrderEvents(){
+        const applyBtn = document.getElementById('apply-filters-btn');
+        const resetBtn = document.getElementById('reset-filters-btn');
+        applyBtn && applyBtn.addEventListener('click', ()=> applyServerFilters(0, ordersPageSize));
+        resetBtn && resetBtn.addEventListener('click', ()=>{
+            const df = document.getElementById('order-date-filter'); if(df) df.value='';
+            const sf = document.getElementById('order-status-filter'); if(sf) sf.value='';
+            const pf = document.getElementById('payment-type-filter'); if(pf) pf.value='';
+            const mf = document.getElementById('member-filter'); if(mf) mf.value='';
+            applyServerFilters(0, ordersPageSize);
+        });
+    }
+
+    // 关闭模态时恢复滚动
+    function closeModalById(id){ const m=document.getElementById(id); if(m){ m.classList.add('hidden'); document.body.classList.remove('modal-open'); } }
+    // 替换原关闭绑定
+    document.getElementById('close-order-detail')?.addEventListener('click', ()=> closeModalById('order-detail-modal'));
+    document.getElementById('cancel-refund-btn')?.addEventListener('click', ()=> closeModalById('refund-confirm-modal'));
 
     // 打印功能
     function printOrder() {
@@ -608,7 +677,8 @@
 
         safeBind('member-filter', 'input', function() {
             currentOrdersPage = 1;
-            applyFilters();
+            // 改为服务端过滤，确保会员关键字按后端规则匹配
+            applyServerFilters(0, ordersPageSize);
         });
 
         // 模态框相关事件
@@ -726,9 +796,10 @@
             const f = norm(filters.member);
             if (!f) return true;
             const name = norm(order.customerName);
+            const memberName = norm(order.memberName || '');
             const phone = norm(order.memberPhone || order.phone || '');
             const memberId = norm(order.memberId || '');
-            return name.includes(f) || phone.includes(f) || memberId.includes(f);
+            return name.includes(f) || memberName.includes(f) || phone.includes(f) || memberId.includes(f);
           };
           window.filteredOrders = source.filter(o => matchDate(o) && matchStatus(o) && matchPayType(o) && matchMember(o));
           // 渲染与空态
@@ -769,11 +840,6 @@
         }
     }
 
-    // 关闭模态时恢复滚动
-    function closeModalById(id){ const m=document.getElementById(id); if(m){ m.classList.add('hidden'); document.body.classList.remove('modal-open'); } }
-    // 替换原关闭绑定
-    document.getElementById('close-order-detail')?.addEventListener('click', ()=> closeModalById('order-detail-modal'));
-    document.getElementById('cancel-refund-btn')?.addEventListener('click', ()=> closeModalById('refund-confirm-modal'));
 
     // 显示订单详情内容：支持 memberName 显示
     function displayOrderDetail(order) {

@@ -194,5 +194,51 @@
   document.addEventListener('DOMContentLoaded',()=>{ syncCashierKpis(); setInterval(syncCashierKpis,1500); });
 })();
 </script>
+<script>
+(function(){
+  function parseCurrency(text){ if(!text) return 0; const n = Number(String(text).replace(/[^0-9.\-]/g,'')); return isNaN(n)? 0: n; }
+  function formatCurrency(n){ n=Number(n||0); return '¥'+ n.toFixed(2); }
+  function computeSummary(){
+    const rows = document.querySelectorAll('#cart-body tr');
+    let original = 0;
+    rows.forEach(tr=>{
+      const td = tr.querySelector('td:nth-child(5)'); // 小计列
+      if(td){ original += parseCurrency(td.textContent||'0'); }
+    });
+    const discountInput = document.getElementById('discount-amount');
+    const pointsInput = document.getElementById('use-points');
+    const discount = discountInput && discountInput.value ? Number(discountInput.value) : 0;
+    const points = pointsInput && pointsInput.value ? Number(pointsInput.value) : 0;
+    const pointsDeduction = points; // 简化：1积分抵1元，后续可按规则调整
+    const payable = Math.max(0, original - discount - pointsDeduction);
+    // 更新汇总
+    const so = document.getElementById('summary-original'); if(so) so.textContent = formatCurrency(original);
+    const sd = document.getElementById('summary-discount'); if(sd) sd.textContent = formatCurrency(discount);
+    const sp = document.getElementById('summary-points'); if(sp) sp.textContent = formatCurrency(pointsDeduction);
+    const spay = document.getElementById('summary-payable'); if(spay) spay.textContent = formatCurrency(payable);
+    // KPI 联动
+    const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.textContent=val; };
+    set('kpi-order-items', String(rows.length));
+    set('kpi-order-original', formatCurrency(original));
+    set('kpi-order-discount', formatCurrency(discount)+' / '+formatCurrency(pointsDeduction));
+    set('kpi-order-payable', formatCurrency(payable));
+    set('kpi-order-points', pointsInput && pointsInput.value ? pointsInput.value : '0');
+  }
+  function bind(){
+    ['input','change'].forEach(evt=>{
+      const di=document.getElementById('discount-amount'); if(di) di.addEventListener(evt, computeSummary);
+      const pi=document.getElementById('use-points'); if(pi) pi.addEventListener(evt, computeSummary);
+      const pm=document.getElementById('payment-method'); if(pm) pm.addEventListener('change', computeSummary);
+    });
+    const cartBody = document.getElementById('cart-body');
+    if(cartBody){
+      const observer = new MutationObserver(computeSummary);
+      observer.observe(cartBody, { childList: true, subtree: true });
+    }
+    document.addEventListener('DOMContentLoaded', computeSummary);
+  }
+  bind();
+})();
+</script>
 </body>
 </html>

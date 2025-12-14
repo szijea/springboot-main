@@ -17,14 +17,19 @@
   <style>
     /* 覆盖旧样式为现代布局 */
     .inventory-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
-    .search-section-modern { display:flex; flex-direction:column; gap:.75rem; }
-    .main-content{flex:1;padding:1.5rem;} .badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-size:.75rem} .btn{display:inline-flex;align-items:center;gap:.25rem}
+    .search-section-modern { display:flex; flex-direction:column; gap:.6rem; }
+    .main-content{flex:1;padding:1.25rem;}
+    .badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-size:.75rem} .btn{display:inline-flex;align-items:center;gap:.25rem}
     .spinner{border:2px solid #eee;border-top-color:#3b82f6;border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
+    /* 搜索输入与筛选收紧 */
+    .input-modern{ min-height: 34px; padding: 0.35rem 0.55rem; font-size: 0.9rem; }
+    .btn-modern{ min-height: 34px; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+
     /* 修复分页区重叠与拥挤 */
-    .pagination-controls { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
-    .pagination-controls .input-modern { min-width: 88px; }
+    .pagination-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+    .pagination-controls .input-modern { min-width: 80px; }
     .inventory-card { margin-bottom: 1rem; }
     .table-wrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
@@ -34,7 +39,7 @@
 
     /* 顶部编辑卡片增强：粘性、滚动、层级更高 */
     #edit-inline-panel { position: sticky; top: 64px; z-index: 1000; max-height: 50vh; overflow-y: auto; }
-    #edit-inline-panel .input-modern { min-height: 40px; }
+    #edit-inline-panel .input-modern { min-height: 36px; }
   </style>
   <script src="js/common-nav.js" defer></script>
   <script src="js/common.js"></script>
@@ -46,6 +51,30 @@
       <div class="container-fluid">
         <h2 class="page-title font-bold page-title-decor mb-4">库存管理</h2>
         <p class="text-gray-500 mb-3">分页查看所有药品的当前库存</p>
+
+        <!-- 新增：顶部搜索与筛选 -->
+        <div class="card-modern p-4 mb-4">
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 search-section-modern">
+            <div class="flex flex-col">
+              <label class="text-xs text-gray-500" for="inv-search-keyword">药品关键字/条码</label>
+              <input id="inv-search-keyword" class="input-modern" placeholder="输入名称、规格、厂家或条码" />
+            </div>
+            <div class="flex flex-col">
+              <label class="text-xs text-gray-500" for="inv-filter-stock">库存筛选</label>
+              <select id="inv-filter-stock" class="input-modern">
+                <option value="">全部</option>
+                <option value="gt0">库存>0</option>
+                <option value="eq0">库存=0</option>
+              </select>
+            </div>
+            <div class="flex items-end gap-2">
+              <button id="inv-btn-search" class="btn-modern" style="background:#2563eb;color:#fff"><i class="fa fa-search"></i> 搜索</button>
+              <button id="inv-btn-reset" class="btn-modern"><i class="fa fa-undo"></i> 重置</button>
+            </div>
+            <div class="flex items-end text-xs text-gray-500">提示：搜索走药品库，结果会显示当前库存；入库后可立即通过关键字或条码搜索到。</div>
+          </div>
+          <div id="inv-search-status" class="text-xs text-gray-500 mt-2 hidden"></div>
+        </div>
 
         <!-- 顶部内联编辑卡片（默认隐藏） -->
         <div id="edit-inline-panel" class="card-modern p-4 mb-4 hidden">
@@ -81,7 +110,7 @@
           <!-- 新增：库存数量设置（用户可在编辑药品时直接补库存） -->
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
             <div class="flex flex-col"><span class="text-gray-500">当前库存</span><input id="inline-currentStock" class="input-modern w-full" disabled></div>
-            <div class="flex flex-col"><span class="text-gray-500">库存数量设置（补货）</span><input id="inline-stockQuantity" type="number" min="0" step="1" class="input-modern w-full" placeholder="输入补货���量，保存后将入库"/></div>
+            <div class="flex flex-col"><span class="text-gray-500">库存数量设置（补货）</span><input id="inline-stockQuantity" type="number" min="0" step="1" class="input-modern w-full" placeholder="输入补货数量，保存后将入库"/></div>
             <div class="flex flex-col"><span class="text-gray-500">安全库存（可选）</span><input id="inline-minStock" type="number" min="0" step="1" class="input-modern w-full" placeholder="可选：触发预警阈值"/></div>
             <div class="flex items-center text-xs text-gray-500">提示：如果输入补货数量，则在保存药品信息后会自动执行入库。</div>
           </div>
@@ -91,7 +120,7 @@
           </div>
         </div>
 
-        <!-- 平齐布局：仅库存分页列表（移除右侧编辑提示卡片） -->
+        <!-- 平齐布局：仅库存分页列表 -->
         <div class="grid grid-cols-1 gap-4 items-start">
           <div class="card-modern p-4 fade-enter inventory-card">
             <div class="flex items-center justify-between mb-3">
@@ -111,6 +140,7 @@
                     <th>药品ID</th>
                     <th>通用名</th>
                     <th>商品名</th>
+                    <th>条码</th>
                     <th>当前库存</th>
                     <th>操作</th>
                   </tr>
@@ -180,14 +210,15 @@
     }
     const $=id=>document.getElementById(id);
     const pageBody=$('pageBody'); const btnLoad=$('btnLoadPage'); const pageNo=$('pageNo'); const pageSize=$('pageSize');
-    function showLoading(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="6" class="px-6 py-6 text-center text-gray-500 text-sm"><i class="fa fa-spinner fa-spin mr-2"></i>加载中...</td></tr>'; }
-    function showEmpty(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500"><i class="fa fa-database text-4xl mb-2 text-gray-300"></i><div>暂无药品数据</div></td></tr>'; }
+    function showLoading(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="7" class="px-6 py-6 text-center text-gray-500 text-sm"><i class="fa fa-spinner fa-spin mr-2"></i>加载中...</td></tr>'; }
+    function showEmpty(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fa fa-database text-4xl mb-2 text-gray-300"></i><div>暂无药品数据</div></td></tr>'; }
     async function fetchPage(page,size){ const tenant=localStorage.getItem('selectedTenant')||''; const url=`/api/inventory/page-current-stocks?page=${page}&size=${size}`; console.log('[inventory] 请求分页库存:', url,'tenant=',tenant); const r=await fetch(url,{headers:{'Accept':'application/json','X-Shop-Id':tenant}}); if(!r.ok){ throw new Error('HTTP '+r.status+': '+await r.text()); } const data=await r.json(); console.log('[inventory] 分页响应原始数据:', data); return data; }
-    function renderPage(resp){ const list = Array.isArray(resp)? resp : (resp.content||resp.data||resp.results||[]); console.log('[inventory] 解析后的列表长度:', list.length); if(!list.length){ showEmpty(); return; } pageBody.innerHTML=list.map(item=>{ const id=item.medicineId||''; const stock=item.currentStock??item.stock??0; const gn=item.genericName||''; const tn=item.tradeName||''; const spec=item.spec||''; const price=item.retailPrice??''; const payload=encodeURIComponent(JSON.stringify({medicineId:id,genericName:gn,tradeName:tn,spec:spec,retailPrice:price})); return `<tr>
+    function renderPage(resp){ const list = Array.isArray(resp)? resp : (resp.content||resp.data||resp.results||[]); console.log('[inventory] 解析后的列表长度:', list.length); if(!list.length){ showEmpty(); return; } pageBody.innerHTML=list.map(item=>{ const id=item.medicineId||''; const stock=item.currentStock??item.stock??0; const gn=item.genericName||item.medicineGenericName||''; const tn=item.tradeName||item.medicineTradeName||''; const spec=item.spec||item.medicineSpec||''; const price=item.retailPrice??item.medicineRetailPrice??''; const barcode=item.barcode||''; const payload=encodeURIComponent(JSON.stringify({medicineId:id,genericName:gn,tradeName:tn,spec:spec,retailPrice:price})); return `<tr>
     <td><span class='badge-soft'>${item.shopId||'default'}</span></td>
     <td class='font-mono text-xs'>${id}</td>
     <td class='text-xs'>${gn}</td>
     <td class='text-xs'>${tn}</td>
+    <td class='text-xs'>${barcode||'-'}</td>
     <td>${stock}</td>
     <td><button class='btn btn-outline btn-xs' data-edit='${payload}'>编辑</button></td>
   </tr>`; }).join('');
@@ -304,6 +335,65 @@
   document.getElementById('inline-cancel')?.addEventListener('click', ()=> panel.classList.add('hidden'));
   document.getElementById('inline-close')?.addEventListener('click', ()=> panel.classList.add('hidden'));
 })();
+  </script>
+  <!-- 新增：搜索与筛选逻辑 -->
+  <script>
+  (function(){
+    const $=id=>document.getElementById(id);
+    const pageBody=$('pageBody');
+    const status=$('inv-search-status');
+    const btnSearch=$('inv-btn-search');
+    const btnReset=$('inv-btn-reset');
+    const kw=$('inv-search-keyword');
+    const filterStock=$('inv-filter-stock');
+
+    function showStatus(msg){ if(!status) return; status.classList.remove('hidden'); status.textContent=msg; }
+    function clearStatus(){ if(!status) return; status.classList.add('hidden'); status.textContent=''; }
+    function showEmpty(){ if(pageBody) pageBody.innerHTML='<tr><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fa fa-database text-4xl mb-2 text-gray-300"></i><div>暂无匹配数据</div></td></tr>'; }
+
+    async function searchAndRender(){
+      const keyword=(kw?.value||'').trim();
+      const tenant=localStorage.getItem('selectedTenant')||'';
+      if(!pageBody) return;
+      pageBody.innerHTML='<tr><td colspan="7" class="px-6 py-6 text-center text-gray-500 text-sm"><i class="fa fa-spinner fa-spin mr-2"></i>搜索中...</td></tr>';
+      try {
+        const medResp = await window.api.medicineAPI.searchWithStock(keyword, '', 1, 100);
+        const meds = Array.isArray(medResp?.data) ? medResp.data : [];
+        let content = meds;
+        const ids = meds.map(m=>m.medicineId).filter(Boolean);
+        if(ids.length>0){
+          try{
+            const invResp = await fetch('/api/inventory/current-stocks?ids='+encodeURIComponent(ids.join(',')), { headers:{'Accept':'application/json','X-Shop-Id': tenant} });
+            if(invResp.ok){ const j=await invResp.json(); const map=new Map(); (j.results||j.data||[]).forEach(r=> map.set(r.medicineId, r.currentStock)); content = meds.map(m=> ({...m, stockQuantity: (typeof m.stockQuantity!=='undefined' ? m.stockQuantity : map.get(m.medicineId)) })); }
+          }catch(e){ /* 忽略批量库存错误 */ }
+        }
+        const fs = filterStock?.value || '';
+        if(fs==='gt0'){ content = content.filter(m => (m.stockQuantity ?? 0) > 0); }
+        if(fs==='eq0'){ content = content.filter(m => (m.stockQuantity ?? 0) === 0); }
+
+        if(!content.length){ showEmpty(); showStatus('没有匹配结果'); return; }
+        clearStatus();
+        pageBody.innerHTML = content.map(item => {
+          const id=item.medicineId||''; const stock=item.stockQuantity ?? 0; const gn=item.genericName||''; const tn=item.tradeName||''; const spec=item.spec||''; const barcode=item.barcode||'';
+          const payload=encodeURIComponent(JSON.stringify({medicineId:id,genericName:gn,tradeName:tn,spec:spec,retailPrice:item.retailPrice}));
+          return `<tr>
+            <td><span class='badge-soft'>${item.shopId||'default'}</span></td>
+            <td class='font-mono text-xs'>${id}</td>
+            <td class='text-xs'>${gn}</td>
+            <td class='text-xs'>${tn}</td>
+            <td class='text-xs'>${barcode||'-'}</td>
+            <td>${stock}</td>
+            <td><button class='btn btn-outline btn-xs' data-edit='${payload}'>编辑</button></td>
+          </tr>`;
+        }).join('');
+        pageBody.querySelectorAll('button[data-edit]').forEach(btn=> btn.onclick=()=>{ const m=JSON.parse(decodeURIComponent(btn.getAttribute('data-edit'))); window.openInlineEdit && window.openInlineEdit(m); });
+      } catch(e){ console.warn('[inventory] 搜索异常', e); showEmpty(); showStatus('搜索失败：'+e.message); }
+    }
+
+    btnSearch?.addEventListener('click', searchAndRender);
+    kw?.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); searchAndRender(); }});
+    btnReset?.addEventListener('click', ()=>{ if(kw) kw.value=''; if(filterStock) filterStock.value=''; clearStatus(); window.loadPage && window.loadPage(document.getElementById('pageNo')?.value, document.getElementById('pageSize')?.value); });
+  })();
   </script>
 </body>
 </html>
