@@ -1,0 +1,92 @@
+name: Deploy to Ubuntu
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'szijea/springboot-main' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Remote deploy
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          REPO: ${{ github.repository }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes ${SSH_USER}@${SSH_HOST} << 'EOF'
+          set -e
+          # Pull latest image from GHCR
+          sudo docker pull ghcr.io/${REPO}/springboot-main:latest || true
+          # Navigate to deployment directory
+          DEPLOY_DIR=/opt/springboot-main
+          sudo mkdir -p ${DEPLOY_DIR}
+          cd ${DEPLOY_DIR}
+          # Write/update docker-compose.yml using GHCR image
+          cat > docker-compose.yml << 'YAML'
+          services:
+            mysql:
+              image: mysql:8.0
+              restart: unless-stopped
+              environment:
+                MYSQL_ROOT_PASSWORD: rootpass
+                MYSQL_DATABASE: pharmacy
+              ports:
+                - "3306:3306"
+              volumes:
+                - mysql_data:/var/lib/mysql
+                - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+            app:
+              image: ghcr.io/${REPO}/springboot-main:latest
+              restart: unless-stopped
+              depends_on:
+                - mysql
+              environment:
+                JAVA_OPTS: -Xms256m -Xmx512m
+              ports:
+                - "8080:8080"
+          volumes:
+            mysql_data:
+          YAML
+          # Ensure init SQL exists (optional bind if available)
+          sudo mkdir -p docker/mysql/init
+          # Bring up services
+          sudo docker compose pull
+          sudo docker compose up -d
+          # Install/Configure Nginx for www.szijea.xin
+          if ! command -v nginx >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y nginx
+          fi
+          sudo bash -c 'cat > /etc/nginx/sites-available/szijea.xin' << 'NGINX'
+          server {
+            listen 80;
+            server_name www.szijea.xin szijea.xin;
+            location / {
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_pass http://127.0.0.1:8080;
+            }
+          }
+          NGINX
+          sudo ln -sf /etc/nginx/sites-available/szijea.xin /etc/nginx/sites-enabled/szijea.xin
+          sudo nginx -t && sudo systemctl restart nginx
+          echo "Deploy completed"
+          EOF
+
