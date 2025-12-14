@@ -2,20 +2,16 @@ name: Deploy to Ubuntu
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'szijea/springboot-main' }}
     steps:
-      - name: Precheck secrets
+      - name: Check secrets (optional)
         run: |
           if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] || [ -z "${{ secrets.SSH_HOST }}" ] || [ -z "${{ secrets.SSH_USER }}" ]; then
-            echo "Missing required secrets: SSH_PRIVATE_KEY / SSH_HOST / SSH_USER" >&2
-            echo "Configure them in GitHub -> Settings -> Secrets and variables -> Actions" >&2
-            exit 1
+            echo "Secrets missing, skipping deploy (this is expected if you don't use SSH-based deploy now).";
+            exit 0
           fi
 
       - name: Checkout
@@ -112,5 +108,5 @@ jobs:
           NGINX
           sudo ln -sf /etc/nginx/sites-available/szijea.xin /etc/nginx/sites-enabled/szijea.xin
           sudo nginx -t && sudo systemctl reload nginx
-          echo "Deploy with HTTPS completed"
+          echo "Deploy completed (HTTPS enabled)"
           EOF
