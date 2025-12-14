@@ -10,20 +10,31 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.repository == 'szijea/springboot-main' }}
     steps:
+      - name: Precheck secrets
+        run: |
+          if [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] || [ -z "${{ secrets.SSH_HOST }}" ] || [ -z "${{ secrets.SSH_USER }}" ]; then
+            echo "Missing required secrets: SSH_PRIVATE_KEY / SSH_HOST / SSH_USER" >&2
+            echo "Configure them in GitHub -> Settings -> Secrets and variables -> Actions" >&2
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Prepare SSH key
+        if: ${{ secrets.SSH_PRIVATE_KEY && secrets.SSH_HOST && secrets.SSH_USER }}
         uses: webfactory/ssh-agent@v0.7.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Add known hosts
+        if: ${{ secrets.SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Remote deploy
+        if: ${{ secrets.SSH_PRIVATE_KEY && secrets.SSH_HOST && secrets.SSH_USER }}
         env:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
