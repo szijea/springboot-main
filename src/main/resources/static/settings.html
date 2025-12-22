@@ -148,6 +148,16 @@
                 </div>
                 <div class="error-message" id="threshold-error">请输入有效的阈值</div>
               </div>
+
+              <div class="form-group">
+                <label class="block text-sm font-medium text-gray-700 mb-1">效期预警天数 <span class="text-accent">*</span></label>
+                <div class="flex items-center gap-3">
+                  <input type="number" id="expiry-warning-days" class="input max-w-xs" min="1" placeholder="例如：30" value="30" required>
+                  <span class="text-gray-500">提前多少天提醒药品即将过期</span>
+                </div>
+                <div class="error-message" id="expiry-warning-error">请输入有效的天数（>=1）</div>
+              </div>
+
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1">库存预警通知方式</label>
                 <div class="flex flex-wrap gap-4 mt-2">
@@ -790,6 +800,7 @@
   <label for="backup-cycle">备份周期</label>
   <label for="backup-retention">备份保留数量</label>
   <label for="old-pwd">当前密码</label>
+  <label for="expiry-warning-days">效期预警天数</label>
   <label for="new-pwd">新密码</label>
   <label for="confirm-pwd">确认新密码</label>
   <label for="admin-pwd-confirm">管理员密码确认</label>
@@ -834,6 +845,7 @@ function fillBasicSettings(d){
   setVal('low-stock-threshold', d.lowStockThreshold);
   setVal('points-rule', d.pointsRule);
   setVal('cash-rule', d.cashRule);
+  setVal('expiry-warning-days', d.expiryWarningDays);
   // 微信/支付宝等
   setChecked('enable-wechat', d.enableWechat);
   setChecked('enable-alipay', d.enableAlipay);
@@ -884,6 +896,7 @@ async function saveSettings(){
     receiptCopies: gv('receipt-copies'), prescriptionCopies: gv('prescription-copies'), enableLog: gc('enable-log'),
     logRetention: gv('log-retention'), pwdExpiry: gv('pwd-expiry'), loginAttempts: gv('login-attempts'), enableIpRestrict: gc('enable-ip-restrict'),
     autoBackup: gc('auto-backup'), backupCycle: gv('backup-cycle'), backupRetention: gv('backup-retention')
+    ,expiryWarningDays: parseInt(gv('expiry-warning-days')||'0', 10)
   };
   try {
     const api = window.api?.settingAPI; const resp = api? await api.update(payload) : await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(r=>r.json());
@@ -925,6 +938,127 @@ function showTempMsg(msg,type){ const d=document.createElement('div'); d.classNa
   }
   document.addEventListener('DOMContentLoaded',updateSettingsKpis);
 })();
+</script>
+<!-- 插入完整交互脚本 -->
+<script>
+/* settings page interactions: tab switching, toggles, forms, backup, modals */
+document.addEventListener('DOMContentLoaded', function(){
+  // --- sidebar tab switching ---
+  document.querySelectorAll('.sidebar-item').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('.setting-tab').forEach(t=>{ t.classList.add('hidden'); t.classList.remove('active'); });
+      const target = document.getElementById(tab + '-tab');
+      if(target){ target.classList.remove('hidden'); target.classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+    });
+  });
+
+  // --- notification toggles (email / sms) ---
+  const notifyEmail = document.getElementById('notify-email');
+  const notifySms = document.getElementById('notify-sms');
+  function updateNotifyPanels(){
+    const emailPanel = document.getElementById('email-settings');
+    const smsPanel = document.getElementById('sms-settings');
+    if(emailPanel) emailPanel.classList.toggle('hidden', !(notifyEmail && notifyEmail.checked));
+    if(smsPanel) smsPanel.classList.toggle('hidden', !(notifySms && notifySms.checked));
+  }
+  if(notifyEmail) notifyEmail.addEventListener('change', updateNotifyPanels);
+  if(notifySms) notifySms.addEventListener('change', updateNotifyPanels);
+  updateNotifyPanels();
+
+  // --- print footer toggle ---
+  const printFooter = document.getElementById('print-footer');
+  const footerContainer = document.getElementById('footer-text-container');
+  function updateFooter(){ if(footerContainer) footerContainer.classList.toggle('hidden', !(printFooter && printFooter.checked)); }
+  if(printFooter){ printFooter.addEventListener('change', updateFooter); updateFooter(); }
+
+  // --- attach save handler to all forms so each section can save ---
+  ['basic-settings-form','inventory-settings-form','member-settings-form','payment-settings-form','print-settings-form'].forEach(id=>{
+    const f = document.getElementById(id);
+    if(f){ f.addEventListener('submit', async function(e){ e.preventDefault(); await saveSettings(); }); }
+  });
+
+  // --- change password modal ---
+  const pwdModal = document.getElementById('pwd-modal');
+  const pwdBackdrop = document.getElementById('pwd-modal-backdrop');
+  const openPwdBtn = document.getElementById('change-pwd-btn');
+  const closePwdBtn = document.getElementById('close-pwd-modal');
+  const cancelPwdBtn = document.getElementById('cancel-pwd');
+  function togglePwdModal(show){ if(pwdModal) pwdModal.style.display = show ? 'block' : 'none'; if(pwdBackdrop) pwdBackdrop.style.display = show ? 'block' : 'none'; }
+  if(openPwdBtn) openPwdBtn.addEventListener('click', ()=> togglePwdModal(true));
+  if(closePwdBtn) closePwdBtn.addEventListener('click', ()=> togglePwdModal(false));
+  if(cancelPwdBtn) cancelPwdBtn.addEventListener('click', ()=> togglePwdModal(false));
+
+  const changePwdForm = document.getElementById('change-pwd-form');
+  if(changePwdForm){
+    changePwdForm.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const oldPwd = gv('old-pwd'); const newPwd = gv('new-pwd'); const confirmPwd = gv('confirm-pwd');
+      if(!oldPwd){ showTempMsg('请输入当前密码','error'); return; }
+      if(!newPwd || newPwd.length < 6 || !/[A-Za-z]/.test(newPwd) || !/[0-9]/.test(newPwd)){ showTempMsg('新密码需至少6位并包含字母和数字','error'); return; }
+      if(newPwd !== confirmPwd){ showTempMsg('两次输入的密码不一致','error'); return; }
+      const loader = document.getElementById('pwd-loading'); try{
+        loader && loader.classList.remove('hidden');
+        const url = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/users/change-password';
+        const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({oldPassword: oldPwd, newPassword: newPwd}) });
+        if(!resp.ok){ const txt = await resp.text().catch(()=>null); throw new Error(txt || resp.statusText); }
+        showTempMsg('密码修改成功','success'); togglePwdModal(false);
+      }catch(err){ showTempMsg('修改失败: '+ (err.message||err),'error'); }
+      finally{ loader && loader.classList.add('hidden'); }
+    });
+  }
+
+  // --- view logs ---
+  const viewLogBtn = document.getElementById('view-log-btn');
+  if(viewLogBtn){ viewLogBtn.addEventListener('click', ()=>{
+    const url = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/logs'; window.open(url,'_blank');
+  }); }
+
+  // --- backup history load / actions ---
+  async function loadBackupHistory(){
+    const tbody = document.getElementById('backup-history'); if(!tbody) return;
+    tbody.innerHTML = '<tr class="text-center"><td colspan="4">加载中...</td></tr>';
+    try{
+      const url = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/backup/list';
+      const resp = await fetch(url); if(!resp.ok){ const t=await resp.text().catch(()=>null); throw new Error(t||resp.statusText); }
+      const json = await resp.json(); const list = json.data || json.backups || [];
+      if(!list.length){ tbody.innerHTML = '<tr class="text-center"><td colspan="4" class="px-3 py-6 text-gray-500">暂无备份记录</td></tr>'; return; }
+      tbody.innerHTML = '';
+      list.forEach(item=>{
+        const tr = document.createElement('tr');
+        const date = item.createdAt || item.time || item.date || ''; const type = item.type || item.backupType || '自动'; const size = item.size || item.fileSize || '-'; const fname = item.file || item.name || '';
+        tr.innerHTML = `<td class="px-3 py-3 text-sm">${utils.formatDateTime(date)}</td><td class="px-3 py-3 text-sm">${type}</td><td class="px-3 py-3 text-sm">${size}</td><td class="px-3 py-3 text-right text-sm"><button class="btn btn-outline btn-sm" data-file="${fname}" data-action="download">下载</button> <button class="btn btn-danger btn-sm" data-file="${fname}" data-action="delete">删除</button></td>`;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button[data-action]').forEach(b=>{
+        b.addEventListener('click', async function(){ const action = this.getAttribute('data-action'); const file = this.getAttribute('data-file'); if(!file){ showTempMsg('无效文件标识','error'); return; }
+          if(action==='download'){ const dl = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/backup/download?file=' + encodeURIComponent(file); window.open(dl,'_blank'); }
+          if(action==='delete'){ if(!confirm('确认删除该备份吗？')) return; try{ const url = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/backup/delete?file=' + encodeURIComponent(file); const r = await fetch(url,{method:'POST'}); if(!r.ok) throw new Error(await r.text()); showTempMsg('删除成功','success'); await loadBackupHistory(); }catch(err){ showTempMsg('删除失败:'+ (err.message||err),'error'); } }
+        });
+      });
+    }catch(err){ tbody.innerHTML = '<tr class="text-center"><td colspan="4" class="px-3 py-6 text-gray-500">加载失败</td></tr>'; console.warn(err); }
+  }
+  loadBackupHistory();
+
+  // manual backup
+  const manualBtn = document.getElementById('manual-backup-btn');
+  if(manualBtn){ manualBtn.addEventListener('click', async function(){ const loader = document.getElementById('backup-loading'); try{ loader && loader.classList.remove('hidden'); manualBtn.disabled=true; const url=(window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/backup/manual'; const r = await fetch(url,{method:'POST'}); if(!r.ok) throw new Error(await r.text()); showTempMsg('备份已创建','success'); await loadBackupHistory(); }catch(err){ showTempMsg('备份失败:'+ (err.message||err),'error'); } finally{ loader && loader.classList.add('hidden'); manualBtn.disabled=false; } }); }
+
+  // restore flow
+  const backupFileInput = document.getElementById('backup-file'); const restoreBtn = document.getElementById('restore-btn'); let selectedFile = null;
+  if(backupFileInput){ backupFileInput.addEventListener('change', function(){ selectedFile = backupFileInput.files && backupFileInput.files[0] ? backupFileInput.files[0] : null; if(restoreBtn) restoreBtn.disabled = !selectedFile; }); }
+  if(restoreBtn){ restoreBtn.addEventListener('click', function(){ document.getElementById('confirm-restore-modal').style.display='block'; document.getElementById('confirm-restore-backdrop').style.display='block'; }); }
+  document.getElementById('close-confirm-restore')?.addEventListener('click', function(){ document.getElementById('confirm-restore-modal').style.display='none'; document.getElementById('confirm-restore-backdrop').style.display='none'; });
+  document.getElementById('cancel-restore')?.addEventListener('click', function(){ document.getElementById('confirm-restore-modal').style.display='none'; document.getElementById('confirm-restore-backdrop').style.display='none'; });
+  document.getElementById('confirm-restore-btn')?.addEventListener('click', async function(){ const adminPwd = gv('admin-pwd-confirm'); if(!adminPwd){ showTempMsg('请输入管理员密码','error'); return; } if(!selectedFile){ showTempMsg('请选择备份文件','error'); return; } const loader = document.getElementById('restore-loading'); try{ loader && loader.classList.remove('hidden'); const fd = new FormData(); fd.append('file', selectedFile); fd.append('adminPassword', adminPwd); const url = (window.api && window.api.BASE_URL ? window.api.BASE_URL : '/api') + '/backup/restore'; const r = await fetch(url,{method:'POST', body: fd}); if(!r.ok) throw new Error(await r.text()); showTempMsg('恢复任务已提交','success'); document.getElementById('confirm-restore-modal').style.display='none'; document.getElementById('confirm-restore-backdrop').style.display='none'; }catch(err){ showTempMsg('恢复失败:'+ (err.message||err),'error'); } finally{ loader && loader.classList.add('hidden'); } });
+
+  // allow closing modals by clicking backdrop
+  document.getElementById('pwd-modal-backdrop')?.addEventListener('click', ()=>{ document.getElementById('pwd-modal').style.display='none'; document.getElementById('pwd-modal-backdrop').style.display='none'; });
+  document.getElementById('confirm-restore-backdrop')?.addEventListener('click', ()=>{ document.getElementById('confirm-restore-modal').style.display='none'; document.getElementById('confirm-restore-backdrop').style.display='none'; });
+
+});
 </script>
 </body>
 </html>

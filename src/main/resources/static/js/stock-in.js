@@ -1,6 +1,13 @@
 // stock-in.js - 药品入库功能
 class StockInManager {
     constructor() {
+        // 如果页面没有 stock-in 管理器所需的关键 DOM，则跳过初始化，避免在其它 stock-in.html 变体上重复报错
+        if (!document.getElementById('selected-medicines-list') && !document.getElementById('medicine-results') && !document.getElementById('submit-stock-in')) {
+            console.info('[StockInManager] 页面未包含 stock-in 管理器需要的 DOM 元素，跳过初始化');
+            this.disabled = true;
+            return;
+        }
+
         this.selectedMedicines = new Map();
         this.categories = [];
         this.suppliers = [];
@@ -37,7 +44,11 @@ class StockInManager {
     // 渲染分类下拉框
     renderCategories() {
         const categoryFilter = document.getElementById('category-filter');
-        const detailSupplier = document.getElementById('detail-supplier');
+        // 如果页面没有该元素，则安全降级并跳过渲染
+        if (!categoryFilter) {
+            console.warn('[StockInManager] category-filter 元素未找到，跳过渲染分类');
+            return;
+        }
 
         this.categories.forEach(category => {
             const option = document.createElement('option');
@@ -83,37 +94,39 @@ class StockInManager {
         const supplierSelect = document.getElementById('supplier-select');
         const detailSupplier = document.getElementById('detail-supplier');
 
+        if (!supplierSelect && !detailSupplier) {
+            console.warn('[StockInManager] supplier-select/detail-supplier 元素未找到，跳过渲染供应商');
+            return;
+        }
+
         this.suppliers.forEach(supplier => {
             const option = document.createElement('option');
             option.value = supplier.supplierId;
             option.textContent = supplier.supplierName;
-            supplierSelect.appendChild(option.cloneNode(true));
-            detailSupplier.appendChild(option.cloneNode(true));
+            if (supplierSelect) supplierSelect.appendChild(option.cloneNode(true));
+            if (detailSupplier) detailSupplier.appendChild(option.cloneNode(true));
         });
     }
 
     // 设置事件监听器
     setupEventListeners() {
-        // 提交入库
-        document.getElementById('submit-stock-in').addEventListener('click', () => this.submitStockIn());
+        // 使用安全查找，避免 null.addEventListener 错误
+        const el = id => document.getElementById(id);
 
-        // 刷新记录
-        document.getElementById('refresh-records').addEventListener('click', () => this.loadRecentRecords());
+        const submitBtn = el('submit-stock-in'); if (submitBtn) submitBtn.addEventListener('click', () => this.submitStockIn()); else console.warn('[StockInManager] submit-stock-in 按钮未找到');
 
-        // 分页
-        document.getElementById('prev-page').addEventListener('click', () => this.changePage(-1));
-        document.getElementById('next-page').addEventListener('click', () => this.changePage(1));
+        const refreshBtn = el('refresh-records'); if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadRecentRecords());
 
-        // 模态框关闭
-        document.getElementById('close-detail-modal').addEventListener('click', () => this.closeDetailModal());
-        document.getElementById('cancel-detail').addEventListener('click', () => this.closeDetailModal());
+        const prevBtn = el('prev-page'); if (prevBtn) prevBtn.addEventListener('click', () => this.changePage(-1));
+        const nextBtn = el('next-page'); if (nextBtn) nextBtn.addEventListener('click', () => this.changePage(1));
 
-        // 保存药品详情
-        document.getElementById('save-medicine-detail').addEventListener('click', () => this.saveMedicineDetail());
+        const closeDetail = el('close-detail-modal'); if (closeDetail) closeDetail.addEventListener('click', () => this.closeDetailModal());
+        const cancelDetail = el('cancel-detail'); if (cancelDetail) cancelDetail.addEventListener('click', () => this.closeDetailModal());
 
-        // 数量价格变化计算小计
-        document.getElementById('quantity').addEventListener('input', () => this.calculateSubtotal());
-        document.getElementById('purchase-price').addEventListener('input', () => this.calculateSubtotal());
+        const saveDetail = el('save-medicine-detail'); if (saveDetail) saveDetail.addEventListener('click', () => this.saveMedicineDetail());
+
+        const qtyEl = el('quantity'); if (qtyEl) qtyEl.addEventListener('input', () => this.calculateSubtotal());
+        const purchaseEl = el('purchase-price'); if (purchaseEl) purchaseEl.addEventListener('input', () => this.calculateSubtotal());
     }
 
     // 设置搜索功能
@@ -121,17 +134,24 @@ class StockInManager {
         let searchTimeout;
         const searchInput = document.getElementById('medicine-search-input');
 
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.searchMedicines(e.target.value);
-            }, 300);
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.searchMedicines(e.target.value);
+                }, 300);
+            });
+        } else {
+            console.warn('[StockInManager] medicine-search-input 未找到，搜索功能被禁用');
+        }
 
         // 分类筛选
-        document.getElementById('category-filter').addEventListener('change', () => {
-            this.searchMedicines(searchInput.value);
-        });
+        const categoryFilterEl = document.getElementById('category-filter');
+        if (categoryFilterEl) {
+            categoryFilterEl.addEventListener('change', () => {
+                if (searchInput) this.searchMedicines(searchInput.value);
+            });
+        }
     }
 
     // 搜索药品
@@ -162,6 +182,8 @@ class StockInManager {
     renderSearchResults(medicines) {
         const container = document.getElementById('medicine-results');
         const resultsSection = document.getElementById('search-results');
+
+        if (!container) { console.warn('[StockInManager] medicine-results 容器未找到，无法显示搜索结果'); return; }
 
         if (medicines.length === 0) {
             container.innerHTML = `
@@ -195,7 +217,7 @@ class StockInManager {
             `).join('');
         }
 
-        resultsSection.classList.remove('hidden');
+        if (resultsSection) resultsSection.classList.remove('hidden');
     }
 
     // 添加药品到入库列表
@@ -279,6 +301,8 @@ class StockInManager {
     renderSelectedMedicines() {
         const container = document.getElementById('selected-medicines-list');
 
+        if (!container) { console.warn('[StockInManager] selected-medicines-list 未找到，无法渲染已选药品'); return; }
+
         if (this.selectedMedicines.size === 0) {
             container.innerHTML = `
                 <div class="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
@@ -309,7 +333,7 @@ class StockInManager {
             `).join('');
         }
 
-        document.getElementById('selected-count').textContent = `已选择 ${this.selectedMedicines.size} 个药品`;
+        const selectedCountEl = document.getElementById('selected-count'); if (selectedCountEl) selectedCountEl.textContent = `已选择 ${this.selectedMedicines.size} 个药品`;
     }
 
     // 移除药品
@@ -325,12 +349,12 @@ class StockInManager {
         const totalQuantity = Array.from(this.selectedMedicines.values()).reduce((sum, med) => sum + med.quantity, 0);
         const totalAmount = Array.from(this.selectedMedicines.values()).reduce((sum, med) => sum + med.subtotal, 0);
 
-        document.getElementById('total-types').textContent = totalTypes;
-        document.getElementById('total-quantity').textContent = totalQuantity;
-        document.getElementById('total-amount').textContent = `¥${totalAmount.toFixed(2)}`;
+        const totalTypesEl = document.getElementById('total-types'); if (totalTypesEl) totalTypesEl.textContent = totalTypes;
+        const totalQtyEl = document.getElementById('total-quantity'); if (totalQtyEl) totalQtyEl.textContent = totalQuantity;
+        const totalAmountEl = document.getElementById('total-amount'); if (totalAmountEl) totalAmountEl.textContent = `¥${totalAmount.toFixed(2)}`;
 
         // 启用/禁用提交按钮
-        document.getElementById('submit-stock-in').disabled = totalTypes === 0;
+        const submitBtn = document.getElementById('submit-stock-in'); if (submitBtn) submitBtn.disabled = totalTypes === 0;
     }
 
     // 提交入库
@@ -402,6 +426,12 @@ class StockInManager {
         const container = document.getElementById('recent-records');
         const info = document.getElementById('records-info');
 
+        if (!container) {
+            console.warn('[StockInManager] recent-records 容器未找到，跳过渲染最近记录');
+            // 仍然返回，不抛异常
+            return;
+        }
+
         if (records.length === 0) {
             container.innerHTML = `
                 <tr>
@@ -411,7 +441,7 @@ class StockInManager {
                     </td>
                 </tr>
             `;
-            info.textContent = '共 0 条记录';
+            if (info) info.textContent = '共 0 条记录';
         } else {
             container.innerHTML = records.map(record => `
                 <tr class="hover:bg-gray-50 transition-colors">
@@ -433,7 +463,7 @@ class StockInManager {
                 </tr>
             `).join('');
 
-            info.textContent = `显示 1-${records.length} 条，共 ${records.length} 条`;
+            if (info) info.textContent = `显示 1-${records.length} 条，共 ${records.length} 条`;
         }
     }
 
