@@ -15,7 +15,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -58,7 +57,7 @@ public class DashboardController {
         resp.put("todaySales", round(netTodaySales));
         resp.put("salesChange", percentChange(netTodaySales, Math.max(0.0, paidYesterday - safe(orderRepository.getRefundedAmountBetween(startYesterday, endYesterday)))));
         resp.put("todayOrders", todayOrders);
-        resp.put("ordersChange", percentChange(todayOrders.doubleValue(), yesterdayOrders.doubleValue()));
+        resp.put("ordersChange", percentChange((double) safeLong(todayOrders), (double) safeLong(yesterdayOrders)));
         resp.put("pendingOrders", pendingToday);
         resp.put("refundedOrders", refundedCountToday);
         resp.put("avgOrderValue", avgOrderValue);
@@ -78,65 +77,110 @@ public class DashboardController {
     }
 
     @GetMapping("/hot-products")
-    public ResponseEntity<Map<String,Object>> hotProducts(@RequestParam(defaultValue = "10") int limit){
+    public ResponseEntity<Map<String,Object>> hotProducts(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "day") String period){
         try {
-            LocalDateTime end = LocalDateTime.now();
-            LocalDateTime start = end.minusDays(7); // 最近7天
-            List<Object[]> rows;
-            try {
-                rows = orderItemRepository.findTopProductsByDateRange(start, end);
-            } catch(Exception e){
-                return ResponseEntity.ok(Map.of("data", Collections.emptyList()));
-            }
+            // 参数校验
             if (limit <= 0) limit = 10;
+            if (limit > 100) limit = 100;
+
+            LocalDateTime end = LocalDateTime.now();
+            LocalDateTime start;
+            String p = (period == null ? "day" : period.trim().toLowerCase(Locale.ROOT));
+            switch (p) {
+                case "week":
+                    start = LocalDate.now().with(java.time.DayOfWeek.MONDAY).atStartOfDay();
+                    break;
+                case "month":
+                    start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+                    break;
+                case "year":
+                    start = LocalDate.now().withDayOfYear(1).atStartOfDay();
+                    break;
+                case "day":
+                default:
+                    start = LocalDate.now().atStartOfDay();
+                    break;
+            }
+
+            // 执行查询
+            List<Object[]> rows = orderItemRepository.findTopProductsByDateRange(start, end);
+
             List<Map<String,Object>> list = new ArrayList<>();
-            int c=0;
-            for(Object[] r: rows){
-                if(c>=limit) break;
-                if(r == null || r.length == 0){ c++; continue; }
-                Map<String,Object> m = new HashMap<>();
-                // 兼容不同查询列：常见返回为 [medicineId, SUM(quantity), SUM(subtotal)]
-                Object col0 = (r.length>0? r[0]: null);
-                Object col1 = (r.length>1? r[1]: null);
-                Object col2 = (r.length>2? r[2]: null);
+            // 判空处理，防止 NPE
+            if (rows != null && !rows.isEmpty()) {
+                int c=0;
+                for(Object[] r: rows){
+                    if(c >= limit) break;
+                    // 数据完整性检查
+                    if(r == null || r.length < 3){ continue; }
 
-                String medicineId = col0==null? null: String.valueOf(col0);
-                // 名称优先取查询列（若存在并为 String），否则从 medicineRepository 查找
-                String name = null;
-                if (r.length>3) {
-                    Object maybeName = r[1];
-                    if (maybeName instanceof String) name = (String) maybeName;
-                }
-                if (name == null && medicineId != null) {
+                    Map<String,Object> m = new HashMap<>();
+
+                    // 安全获取数据
+                    Object col0 = r[0]; // medicineId
+                    Object col1 = r[1]; // quantity
+                    Object col2 = r[2]; // subtotal
+
+                    String medicineId = col0 == null ? null : String.valueOf(col0);
+                    m.put("medicineId", medicineId);
+
+                    // 补充药品信息
+                    Medicine med = null;
+                    if (medicineId != null) {
+                        try {
+                            med = medicineRepository.findById(medicineId).orElse(null);
+                        } catch(Exception ignored) {}
+                    }
+
+                    // 填充显示字段
+                    m.put("name", med != null ? med.getGenericName() : (medicineId == null ? "未知药品" : medicineId));
+                    m.put("genericName", med != null ? med.getGenericName() : "");
+                    m.put("tradeName", med != null ? med.getTradeName() : "");
+                    m.put("spec", med != null ? med.getSpec() : "");
+                    m.put("retailPrice", med != null ? med.getRetailPrice() : 0.0);
+
+                    // 数量类型安全转换
+                    long qty = 0;
+                    if (col1 instanceof Number) {
+                        qty = ((Number) col1).longValue();
+                    } else if (col1 != null) {
+                        try { qty = Long.parseLong(String.valueOf(col1)); } catch(Exception e){}
+                    }
+                    m.put("totalQuantity", qty);
+
+                    // 金额类型安全转换
+                    BigDecimal revenue = BigDecimal.ZERO;
+                    if (col2 instanceof BigDecimal) {
+                        revenue = (BigDecimal) col2;
+                    } else if (col2 instanceof Number) {
+                        revenue = BigDecimal.valueOf(((Number) col2).doubleValue());
+                    } else if (col2 != null) {
+                        try { revenue = new BigDecimal(String.valueOf(col2)); } catch(Exception e){}
+                    }
+                    m.put("totalRevenue", revenue);
+
+                    // 当前库存
                     try {
-                        name = medicineRepository.findById(medicineId).map(com.pharmacy.entity.Medicine::getGenericName).orElse(medicineId);
-                    } catch(Exception ignored) { name = medicineId; }
+                        m.put("currentStock", inventoryService.getCurrentStock(medicineId));
+                    } catch(Exception ignored){
+                        m.put("currentStock", 0);
+                    }
+
+                    list.add(m);
+                    c++;
                 }
-                m.put("medicineId", medicineId);
-                m.put("name", name == null ? medicineId : name);
-
-                // 数量转换（col1 通常是 SUM(quantity)）
-                Number qtyNum = null;
-                if(col1 instanceof Number){ qtyNum = (Number) col1; }
-                else { try { qtyNum = Double.valueOf(String.valueOf(col1)); } catch(Exception ignored){} }
-                m.put("totalQuantity", qtyNum==null? 0: (qtyNum instanceof Double || qtyNum instanceof Float? Math.round(qtyNum.doubleValue()) : qtyNum.longValue()));
-
-                // 收入转换为 BigDecimal（col2 通常是 SUM(subtotal)）
-                java.math.BigDecimal revenue;
-                if(col2 instanceof java.math.BigDecimal){ revenue = (java.math.BigDecimal) col2; }
-                else if(col2 instanceof Number){ revenue = java.math.BigDecimal.valueOf(((Number) col2).doubleValue()); }
-                else { try { revenue = new java.math.BigDecimal(String.valueOf(col2)); } catch(Exception ex){ revenue = java.math.BigDecimal.ZERO; } }
-                m.put("totalRevenue", revenue);
-
-                // 当前库存（使用 String medicineId）
-                try { m.put("currentStock", inventoryService.getCurrentStock(medicineId)); } catch(Exception ignored){ m.put("currentStock", 0); }
-                list.add(m); c++;
             }
             return ResponseEntity.ok(Map.of("data", list));
         } catch (Exception ex) {
-            // 临时输出堆栈以便定位生产/开发环境的 500 错误
             ex.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("code",500,"message","hot-products 处理失败","error", ex.toString()));
+            // 返回详细错误以便调试
+            return ResponseEntity.status(500).body(Map.of(
+                "code", 500,
+                "message", "获取热销药品失败: " + ex.getMessage(),
+                "error", ex.getClass().getSimpleName()
+            ));
         }
     }
 
@@ -168,6 +212,8 @@ public class DashboardController {
         }
         return alerts;
     }
+
+    private long safeLong(Long v){ return v == null ? 0L : v; }
 
     private Double safe(Double d){ return d == null? 0.0: d; }
     private BigDecimal round(Double d){ return BigDecimal.valueOf(safe(d)).setScale(2, RoundingMode.HALF_UP); }

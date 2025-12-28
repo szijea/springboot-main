@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
     <link rel="stylesheet" href="css/ui-modern.css" />
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script>if(typeof tailwind==='undefined'){window.tailwind={config:{}};}</script>
     <!-- 保留原 tailwind.config 自定义可在此扩展 -->
@@ -183,9 +182,17 @@
         </div>
         <!-- 今日热销药品 -->
         <div class="card mb-6" id="hot-products-card">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="font-bold">今日热销药品</h3>
-                <a href="products.html" class="text-primary hover:underline text-sm">查看全部</a>
+            <div class="p-6 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-bold" id="hot-products-title">今日热销药品</h3>
+                    <div class="flex gap-2" id="hot-products-period">
+                        <button class="btn btn-primary text-sm px-3 py-1" data-hot-period="day">日</button>
+                        <button class="btn btn-outline text-sm px-3 py-1" data-hot-period="week">周</button>
+                        <button class="btn btn-outline text-sm px-3 py-1" data-hot-period="month">月</button>
+                        <button class="btn btn-outline text-sm px-3 py-1" data-hot-period="year">年</button>
+                    </div>
+                </div>
+                <a href="inventory.html" class="text-primary hover:underline text-sm">查看全部</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="table-modern w-full" id="hot-products-table">
@@ -194,7 +201,7 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">药品名称</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">规格</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">单价</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">今日销量</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">销量</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">销售额</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">库存状态</th>
                     </tr>
@@ -240,7 +247,8 @@
     ;(function(){
         const base = (window.location.origin + '/api');
         function fetchJsonSafe(url){
-            return fetch(url,{headers:{'X-Shop-Id': localStorage.getItem('selectedTenant')||''}})
+            var tenant = localStorage.getItem('selectedTenant') || localStorage.getItem('tenant') || 'wx';
+            return fetch(url,{headers:{'X-Shop-Id': tenant}})
               .then(function(r){ return r.ok ? r.json().catch(function(){ return {}; }) : ({__error: r.status}); })
               .catch(function(){ return {__error: 'network'}; });
         }
@@ -266,7 +274,22 @@
           "<td class='px\x2d6 py\x2d4 text\x2dxs'>"+renderStockBadge(p.currentStock)+"</td>"+
         "</tr>"; }).join(''); };
         window.updateStockAlerts=function(list){};
-        async function loadHotProducts(){ var d = await fetchJsonSafe(base+'/dashboard/hot-products?limit=15'); updateHotProducts(d && !d.__error ? (d.data||[]) : []); }
+        async function loadHotProducts(period){
+            if(!period) period = (window.__hotProductsPeriod || 'day');
+            window.__hotProductsPeriod = period;
+            var d = await fetchJsonSafe(base+'/dashboard/hot-products?limit=15&period=' + encodeURIComponent(period));
+            var list = [];
+            if(d && !d.__error){
+                if(Array.isArray(d.data)) list = d.data;
+                else if(d.data && Array.isArray(d.data.hotProducts)) list = d.data.hotProducts;
+                else if(Array.isArray(d.hotProducts)) list = d.hotProducts;
+            }
+            updateHotProducts(list);
+            // 更新标题
+            var titleMap = { day: '今日热销药品', week: '本周热销药品', month: '本月热销药品', year: '本年热销药品' };
+            var t = document.getElementById('hot-products-title');
+            if(t) t.textContent = titleMap[period] || '热销药品';
+        }
         async function loadStockAlerts(){ var d = await fetchJsonSafe(base+'/dashboard/stock-alerts'); var arr = d && !d.__error ? (d.data||d.alerts||[]) : []; updateStockAlerts(arr); }
         // 提升为全局，避免其它脚本监听时未定义
         window.loadHotProducts = loadHotProducts;
@@ -280,14 +303,33 @@
                 window.__salesChart = inst;
             }
         }
-        var btn = document.getElementById('refresh-data'); if(btn){ btn.addEventListener('click', function(){ Promise.all([loadMetrics(),loadHotProducts(),loadStockAlerts()]).then(function(){ if(window.showMessage){ showMessage('数据已刷新'); } }); }); }
+        var btn = document.getElementById('refresh-data');
+        if(btn){
+          btn.addEventListener('click', function(){
+            var period = window.__hotProductsPeriod || 'day';
+            Promise.all([loadMetrics(), loadHotProducts(period), loadStockAlerts()]).then(function(){
+              if(window.showMessage){ showMessage('数据已刷新'); }
+            });
+          });
+        }
+
         document.addEventListener('DOMContentLoaded', function(){
             initCharts();
-            // 保护调用，避免未定义时抛错
             var p = [];
             if(typeof loadMetrics === 'function') p.push(loadMetrics());
-            if(typeof window.loadHotProducts === 'function') p.push(window.loadHotProducts());
+            if(typeof window.loadHotProducts === 'function') p.push(window.loadHotProducts('day'));
             if(typeof window.loadStockAlerts === 'function') p.push(window.loadStockAlerts());
+
+            // 绑定热销周期切换
+            document.querySelectorAll('[data-hot-period]').forEach(function(btn){
+                btn.addEventListener('click', function(){
+                    var period = btn.getAttribute('data-hot-period') || 'day';
+                    document.querySelectorAll('[data-hot-period]').forEach(function(b){ b.classList.remove('btn-primary'); b.classList.add('btn-outline'); });
+                    btn.classList.remove('btn-outline'); btn.classList.add('btn-primary');
+                    window.loadHotProducts && window.loadHotProducts(period);
+                });
+            });
+
             Promise.all(p);
         });
     })();

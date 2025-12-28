@@ -1,10 +1,17 @@
 ;(function(){
   const BASE = (window.api && window.api.BASE_URL) || (window.location.origin + '/api');
-  const tenant = localStorage.getItem('selectedTenant') || '';
+  // 兼容：如果没选租户，退回到 'wx'（后端默认租户/初始化脚本常用）
+  const tenant = localStorage.getItem('selectedTenant') || localStorage.getItem('tenant') || 'wx';
   const state = { items: [], submitting: false };
   function toCurrency(n){ n = Number(n||0); return '¥' + n.toFixed(2); }
   function qs(id){ return document.getElementById(id); }
-  function showToast(msg){ console.log('[stock-in]', msg); }
+  function showToast(msg){
+    try{
+      if(window.api && typeof window.api.showMessage === 'function') return window.api.showMessage(msg, 'success');
+      if(typeof window.showMessage === 'function') return window.showMessage(msg, 'success');
+    }catch(e){}
+    console.log('[stock-in]', msg);
+  }
   function calcKpis(){
     const itemCount = state.items.length;
     const totalCost = state.items.reduce((s,i)=> s + (Number(i.unitPrice||0) * Number(i.quantity||0)), 0);
@@ -382,4 +389,43 @@
     }
     return result;
     }
+
+    function bindUi(){
+      const on = (id, evt, fn) => {
+        const el = qs(id);
+        if(!el) return;
+        el.addEventListener(evt, fn);
+      };
+
+      // 顶部与中部“批量导入”都触发隐藏 file input
+      const triggerImport = () => { const f = qs('bulk-file'); if(f) { f.value = ''; f.click(); } };
+      on('import-data-top', 'click', triggerImport);
+      on('import-data-bulk', 'click', triggerImport);
+
+      // file 选择后解析
+      on('bulk-file', 'change', handleBulkFileChange);
+
+      // 入库单
+      on('new-stock', 'click', (e)=>{ e.preventDefault(); newStock(); });
+      on('complete-stock', 'click', (e)=>{ e.preventDefault(); submitStockIn(); });
+
+      // 添加药品
+      on('quick-add', 'click', (e)=>{ e.preventDefault(); openQuickAdd(); });
+      on('add-medicine', 'click', (e)=>{ e.preventDefault(); openMedDrawer(); });
+
+      // 右侧抽屉
+      on('close-med-drawer', 'click', (e)=>{ e.preventDefault(); closeMedDrawer(); });
+      on('fm-cancel', 'click', (e)=>{ e.preventDefault(); closeMedDrawer(); });
+      on('fm-submit', 'click', (e)=>{ e.preventDefault(); submitMedForm(); });
+
+      const backdrop = document.getElementById('drawer-backdrop');
+      if(backdrop){ backdrop.addEventListener('click', closeMedDrawer); }
+    }
+
+  // 初始化：默认填入日期 + 绑定事件 + 渲染空表
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>{ newStock(); bindUi(); });
+  }else{
+    newStock(); bindUi();
+  }
 })();
