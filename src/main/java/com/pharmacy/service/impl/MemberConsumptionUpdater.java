@@ -137,6 +137,10 @@ public class MemberConsumptionUpdater {
     @PreDestroy
     public void shutdown(){
         pool.shutdown();
-        try { pool.awaitTermination(3, TimeUnit.SECONDS); } catch (InterruptedException ignored) {}
+        try {
+            if (!pool.awaitTermination(3, TimeUnit.SECONDS)) {
+                pool.shutdownNow();
+            }
+        } catch (InterruptedException ignored) {}
     }
 }

@@ -157,8 +157,7 @@ public class MultiTenantDataSourceConfig implements InitializingBean {
         DataSource ds = buildHikari(url,user,pwd,id);
         dataSourceMap.put(id, ds);
         StoreRoutingDataSource routing = (StoreRoutingDataSource) routingDataSource();
-        Map<Object,Object> targetMap = new HashMap<>();
-        targetMap.putAll(dataSourceMap);
+        Map<Object,Object> targetMap = new HashMap<>(dataSourceMap);
         routing.setTargetDataSources(targetMap);
         routing.afterPropertiesSet();
     }

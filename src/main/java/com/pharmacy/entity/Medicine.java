@@ -167,7 +167,7 @@ public class Medicine {
     @PreUpdate
     public void preUpdate() {
         this.updateTime = LocalDateTime.now();
-        if (this.status == null || (this.status instanceof String && ((String)this.status).isBlank())) {
+        if (this.status == null || this.status.isBlank()) {
             this.status = "ACTIVE";
         }
     }

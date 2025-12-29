@@ -50,7 +50,7 @@ public class SettingController {
         return ResponseEntity.ok(Map.of("code",200,"data", s));
     }
 
-    @PostMapping(consumes = "*/*")
+    @PostMapping
     public ResponseEntity<?> updateSettings(@RequestBody Map<String,Object> settingsData) {
         try {
 

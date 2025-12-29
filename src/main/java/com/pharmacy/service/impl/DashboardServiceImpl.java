@@ -52,13 +52,13 @@ public class DashboardServiceImpl implements DashboardService {
             LocalDateTime yStart = todayStart.minusDays(1);
             LocalDateTime yEnd = todayStart;
             Double yesterdaySales = orderRepository.getPaidSalesBetween(yStart, yEnd);
-            Double salesChange = yesterdaySales != null && yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales) * 100 : 0.0;
+            double salesChange = yesterdaySales != null && yesterdaySales > 0 ? ((todaySales - yesterdaySales) / yesterdaySales) * 100 : 0.0;
             Integer todayOrders = getTodayOrders();
             Long yesterdayOrders = orderRepository.countPaidOrdersBetween(yStart, yEnd);
-            Double ordersChange = yesterdayOrders != null && yesterdayOrders > 0 ? ((todayOrders - yesterdayOrders) / (double) yesterdayOrders) * 100 : 0.0;
+            double ordersChange = yesterdayOrders != null && yesterdayOrders > 0 ? ((todayOrders - yesterdayOrders) / (double) yesterdayOrders) * 100 : 0.0;
             Integer memberConsumption = getMemberConsumption();
             Integer yesterdayMembers = orderRepository.countDistinctMembersPaidBetween(yStart, yEnd);
-            Double memberChange = yesterdayMembers != null && yesterdayMembers > 0 ? ((memberConsumption - yesterdayMembers) / (double) yesterdayMembers) * 100 : 0.0;
+            double memberChange = yesterdayMembers != null && yesterdayMembers > 0 ? ((memberConsumption - yesterdayMembers) / (double) yesterdayMembers) * 100 : 0.0;
             Integer lowStockCount = getLowStockCount();
             stats.put("todaySales", todaySales);
             stats.put("salesChange", Math.round(salesChange * 10) / 10.0);

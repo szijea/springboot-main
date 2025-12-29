@@ -345,9 +345,9 @@ public class InventoryServiceImpl implements InventoryService {
         }
         if (target == null) {
             String newBatch = preferredBatchNo != null && !preferredBatchNo.isBlank() ? preferredBatchNo : ("AUTO" + System.currentTimeMillis());
-            return createBatch(medicineId, newBatch, addQuantity != null ? addQuantity : 0, minStock, null, null, null, null);
+            return createBatch(medicineId, newBatch, addQuantity, minStock, null, null, null, null);
         }
-        if (addQuantity != null && addQuantity > 0) {
+        if (addQuantity > 0) {
             target.setStockQuantity(target.getStockQuantity() + addQuantity);
         }
         if (minStock != null) {

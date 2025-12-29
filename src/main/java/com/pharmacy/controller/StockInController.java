@@ -380,7 +380,7 @@ public class StockInController {
             for (SimpleImportRow r : rows) {
                 String medId = r.medicineId!=null? r.medicineId.trim() : "";
                 com.pharmacy.entity.Medicine med = null;
-                if (medId != null && !medId.isBlank()) {
+                if (!medId.isBlank()) {
                     Optional<com.pharmacy.entity.Medicine> medOpt = medicineRepository.findById(medId);
                     if (medOpt.isPresent()) med = medOpt.get();
                 }

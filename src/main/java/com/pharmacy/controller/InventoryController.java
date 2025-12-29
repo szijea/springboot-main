@@ -241,10 +241,7 @@ public class InventoryController {
             if(body.get("unitPrice")!=null){
                 try{ unitPrice = new java.math.BigDecimal(String.valueOf(body.get("unitPrice"))); }catch(Exception ignore){}
             }
-            java.time.LocalDate productionDate = null;
-            if(body.get("productionDate")!=null){
-                try{ productionDate = java.time.LocalDate.parse(String.valueOf(body.get("productionDate"))); }catch(Exception ignore){}
-            }
+            // java.time.LocalDate productionDate = null; // Unused
             java.time.LocalDate expiryDate = null;
             if(body.get("expiryDate")!=null){
                 try{ expiryDate = java.time.LocalDate.parse(String.valueOf(body.get("expiryDate"))); }catch(Exception ignore){}

@@ -53,7 +53,7 @@ public class OrderController {
             try (var is = request.getInputStream()){
                 bodyStr = new String(is.readAllBytes(), StandardCharsets.UTF_8);
             }
-            if(bodyStr==null || bodyStr.isBlank()){
+            if(bodyStr.isBlank()){
                 return ResponseEntity.badRequest().body(Map.of("code",400,"message","请求体为空"));
             }
             Map<String,Object> body = new ObjectMapper().readValue(bodyStr, Map.class);
