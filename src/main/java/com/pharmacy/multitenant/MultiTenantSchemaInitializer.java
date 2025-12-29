@@ -32,6 +32,7 @@ public class MultiTenantSchemaInitializer {
                     ensureInventoryTable(conn, catalog);
                     ensureOrderTable(conn, catalog);
                     ensureOrderItemTable(conn, catalog);
+                    ensureHangOrderTable(conn, catalog);
                     // 已有：供应商与入库相关
                     ensureSupplierTable(conn, catalog);
                     ensureStockInTable(conn, catalog);
@@ -277,6 +278,8 @@ public class MultiTenantSchemaInitializer {
                     "unit VARCHAR(20), " +
                     "description TEXT, " +
                     "supplier_id INT, " +
+                    "usage_dosage VARCHAR(255), " +
+                    "contraindication VARCHAR(255), " +
                     "create_time DATETIME DEFAULT CURRENT_TIMESTAMP, " +
                     "update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, " +
                     "KEY idx_category(category_id)" +
@@ -292,6 +295,8 @@ public class MultiTenantSchemaInitializer {
             addColumnIfMissing(conn, "medicine", "unit", "VARCHAR(20)");
             addColumnIfMissing(conn, "medicine", "description", "TEXT");
             addColumnIfMissing(conn, "medicine", "supplier_id", "INT");
+            addColumnIfMissing(conn, "medicine", "usage_dosage", "VARCHAR(255)");
+            addColumnIfMissing(conn, "medicine", "contraindication", "VARCHAR(255)");
         }
     }
     private void ensureInventoryTable(Connection conn, String catalog) throws SQLException {
@@ -356,6 +361,20 @@ public class MultiTenantSchemaInitializer {
                     "KEY idx_med(medicine_id)" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
             try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 order_item"); }
+        }
+    }
+
+    private void ensureHangOrderTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "hang_order")) {
+            String ddl = "CREATE TABLE hang_order (" +
+                    "hang_id VARCHAR(32) PRIMARY KEY, " +
+                    "hang_time DATETIME, " +
+                    "cart_json TEXT, " +
+                    "member_id VARCHAR(32), " +
+                    "member_name VARCHAR(50), " +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 hang_order"); }
         }
     }
 

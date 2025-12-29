@@ -50,4 +50,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
 
     // 查找最近注册的会员
     List<Member> findTop10ByOrderByCreateTimeDesc();
+
+    // 根据姓名或手机号模糊搜索
+    List<Member> findByNameContainingOrPhoneContaining(String name, String phone);
 }

@@ -81,7 +81,7 @@
             const orderId = o.orderId || o.id || '-';
             const time = o.orderTime ? new Date(o.orderTime).toLocaleString('zh-CN') : '-';
             const member = o.memberId || ''; const customer = o.customerName || '非会员';
-            const payType = (function(t){ const m={1:'现金',2:'微信',3:'支付宝',4:'医保'}; return m[t]||'未知'; })(o.paymentType);
+            const payType = (function(t){ const m={1:'现金',2:'微信',3:'支付宝',4:'医保',5:'银行卡'}; return m[t]||'未知'; })(o.paymentType);
             const payStatus = (function(s){ const m={0:'待支付',1:'已支付',2:'已退款'}; return m[s]||'未知'; })(o.paymentStatus);
             const total = (o.actualPayment!=null?o.actualPayment:(o.totalAmount||0));
             return `<tr>
@@ -222,6 +222,7 @@
                   <option value="2">微信</option>
                   <option value="3">支付宝</option>
                   <option value="4">医保</option>
+                  <option value="5">银行卡</option>
                 </select>
               </div>
               <div class="md:col-span-3">
@@ -423,8 +424,9 @@
         const ctrEl = document.getElementById('orders-pagination-controls');
         const tenant = localStorage.getItem('selectedTenant') || '';
         const toYYYYMMDD = (s)=>{ if(!s) return ''; return s.replaceAll('/', '-'); };
-        const day = toYYYYMMDD(dateEl?.value || new Date().toISOString().slice(0,10));
-        const startDate = day; const endDate = day;
+        const dateVal = dateEl?.value;
+        const startDate = dateVal ? toYYYYMMDD(dateVal) : '';
+        const endDate = dateVal ? toYYYYMMDD(dateVal) : '';
         const status = statusEl?.value || '';
         const paymentType = payEl?.value || '';
         const memberKeyword = (memberEl?.value || '').trim();
@@ -437,19 +439,30 @@
             const params = new URLSearchParams();
             if(startDate) params.append('startDate', startDate);
             if(endDate) params.append('endDate', endDate);
-            if(status) params.append('status', status);
-            if(paymentType) params.append('paymentType', paymentType);
+            // 只有当 status 不为空字符串时才添加。注意 "0" 是有效值。
+            if(status !== '') params.append('status', status);
+            if(paymentType !== '') params.append('paymentType', paymentType);
             if(memberKeyword) params.append('memberKeyword', memberKeyword);
             params.append('page', String(page||0));
             params.append('size', String(size||10));
+
+            console.log('[orders] searching:', params.toString());
             let resp = await fetch(`/api/orders/search?${params.toString()}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
-            let result;
+
             if(!resp.ok){
-                // 回退到 /api/orders 简单分页
-                resp = await fetch(`/api/orders?page=${page}&size=${size}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
-                if(!resp.ok) throw new Error('HTTP '+resp.status);
+                // 如果搜索接口失败，尝试回退到普通列表接口（仅当没有筛选条件时）
+                // 如果有筛选条件但搜索失败，应该报错而不是显示全部
+                const hasFilters = startDate || endDate || status!=='' || paymentType!=='' || memberKeyword;
+                if(!hasFilters && resp.status === 404) {
+                     console.warn('[orders] search api not found, fallback to list');
+                     resp = await fetch(`/api/orders?page=${page}&size=${size}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
+                } else {
+                     throw new Error('搜索请求失败: ' + resp.status);
+                }
             }
-            result = await resp.json();
+            if(!resp.ok) throw new Error('HTTP '+resp.status);
+
+            let result = await resp.json();
             const list = Array.isArray(result.content)? result.content : (Array.isArray(result.data)? result.data : []);
             serverTotalElements = result.totalElements ?? (result.total ?? list.length ?? 0);
             serverTotalPages = result.totalPages ?? Math.ceil(serverTotalElements / (size||10));
@@ -474,7 +487,7 @@
               const time = o.orderTime ? new Date(o.orderTime).toLocaleString('zh-CN') : '-';
               const customer = o.customerName || '非会员';
               const member = o.memberId || '';
-              const payType = {1:'现金',2:'微信',3:'支付宝',4:'医保'}[o.paymentType] || '未知';
+              const payType = {1:'现金',2:'微信',3:'支付宝',4:'医保',5:'银行卡'}[o.paymentType] || '未知';
               const payStatus = {0:'待支付',1:'已支付',2:'已退款'}[o.paymentStatus] || '未知';
               const total = (o.actualPayment!=null?o.actualPayment:(o.totalAmount||0));
               return `<tr>
@@ -500,6 +513,9 @@
             empty && empty.classList.remove('hidden');
             const infoEl = document.getElementById('orders-pagination-info');
             infoEl && (infoEl.textContent='显示 0-0 条，共 0 条');
+            // 显示错误提示
+            const emptyText = empty.querySelector('p');
+            if(emptyText) emptyText.textContent = '查询出错: ' + e.message;
         }
     }
 
@@ -645,6 +661,10 @@
         function safeBind(id, event, handler) {
             const element = document.getElementById(id);
             if (element) {
+                // 移除旧的监听器（如果可能，虽然 removeEventListener 需要函数引用，这里只能尽力覆盖）
+                // 更好的方式是使用 onclick 属性覆盖，或者确保只绑定一次
+                // 这里我们使用 addEventListener，但要注意避免重复绑定
+                element.removeEventListener(event, handler); // 尝试移除（虽然匿名函数无法移除，但如果是具名函数��有效）
                 element.addEventListener(event, handler);
                 console.log(`成功绑定事件到元素: #${id}`);
             } else {
@@ -652,33 +672,20 @@
             }
         }
 
-        // 绑定所有事件（使用安全调用，避免 loadOrders 未定义时报错）
-        safeBind('refresh-orders-btn', 'click', ()=> { if (typeof window.loadOrders === 'function') { window.loadOrders((currentOrdersPage-1)||0, ordersPageSize); } else { console.warn('loadOrders 未就绪'); } });
-        // 查询按钮：改为前端筛选，不再触发加载
-        safeBind('apply-filters-btn', 'click', ()=> { try { applyFilters && applyFilters(); } catch(e){ console.warn('applyFilters 失败', e); } });
+        // 绑定所有事件
+        safeBind('refresh-orders-btn', 'click', ()=> applyServerFilters(0, ordersPageSize));
+
+        // 查询按钮：使用服务端搜索
+        safeBind('apply-filters-btn', 'click', ()=> applyServerFilters(0, ordersPageSize));
+
         safeBind('reset-filters-btn', 'click', resetFilters);
         safeBind('export-orders-btn', 'click', exportOrders);
 
-        safeBind('order-date-filter', 'change', function() {
-            currentOrdersPage = 1;
-            applyFilters();
-        });
-
-        safeBind('order-status-filter', 'change', function() {
-            currentOrdersPage = 1;
-            applyFilters();
-        });
-
-        safeBind('payment-type-filter', 'change', function() {
-            currentOrdersPage = 1;
-            applyFilters();
-        });
-
-        safeBind('member-filter', 'input', function() {
-            currentOrdersPage = 1;
-            // 改为服务端过滤，确保会员关键字按后端规则匹配
-            applyServerFilters(0, ordersPageSize);
-        });
+        // 移除输入框的自动触发，改为只由查询按钮触发，避免频繁请求
+        // safeBind('order-date-filter', 'change', ...);
+        // safeBind('order-status-filter', 'change', ...);
+        // safeBind('payment-type-filter', 'change', ...);
+        // safeBind('member-filter', 'input', ...);
 
         // 模态框相关事件
         safeBind('close-order-detail', 'click', function() {
@@ -714,8 +721,8 @@
         if (paymentTypeFilter) paymentTypeFilter.value = '';
         if (memberFilter) memberFilter.value = '';
 
-        currentOrdersPage = 1;
-        applyFilters();
+        // 重置后重新加载
+        applyServerFilters(0, ordersPageSize);
     }
 
     // 获取筛选条件 - 完全重写，添加详细的安全检查

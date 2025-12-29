@@ -6,6 +6,12 @@
   let selectedMember = null;
   let hangOrders = []; // 简单前端缓存挂单
 
+  // Load hangOrders from localStorage
+  try {
+    const saved = localStorage.getItem('pharmacy_hang_orders');
+    if(saved) hangOrders = JSON.parse(saved);
+  } catch(e) { console.error('Failed to load hang orders', e); }
+
   // 工具函数
   function formatMoney(v){ return '¥' + (Number(v||0).toFixed(2)); }
   function $(id){ return document.getElementById(id); }
@@ -87,7 +93,9 @@
         price: Number(chosenPrice||0),
         quantity: 1,
         _retailPrice: baseRetail,
-        _memberPrice: baseMember
+        _memberPrice: baseMember,
+        usageDosage: med.usageDosage,
+        contraindication: med.contraindication
       });
     }
     renderCart();
@@ -260,15 +268,37 @@
     safeInner(box, msg);
   }
 
-  // 挂单（前端模拟）
-  function hangCurrentOrder(){
+  function saveHangOrders() {
+      // No-op for backend persistence, handled by API calls
+  }
+
+  // 挂单（后端持久化）
+  async function hangCurrentOrder(){
     if(cart.length === 0){ feedback('当前没有可挂起的购物车', 'error'); return; }
-    const snapshot = JSON.parse(JSON.stringify(cart));
-    const hangId = 'H' + Date.now();
-    hangOrders.push({ hangId, cart: snapshot, time: new Date() });
-    feedback(`<i class='fa fa-pause-circle text-blue-600'></i> 已挂单：${hangId}`, 'info');
-    renderHangOrders();
-    cart.length = 0; renderCart();
+
+    const hangData = {
+        cart: cart,
+        memberId: selectedMember ? selectedMember.memberId : null,
+        memberName: selectedMember ? selectedMember.name : null
+    };
+
+    try {
+        const res = await fetch('/api/hang-orders', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(hangData)
+        });
+        if(res.ok) {
+            const json = await res.json();
+            feedback(`<i class='fa fa-pause-circle text-blue-600'></i> 已挂单：${json.hangId}`, 'info');
+            loadHangOrders();
+            cart.length = 0; renderCart();
+        } else {
+            throw new Error('挂单失败');
+        }
+    } catch(e) {
+        feedback('挂单失败: ' + e.message, 'error');
+    }
   }
 
   function renderHangOrders(){
@@ -289,7 +319,7 @@
   function bindHangEvents(){
     const container = $('hang-orders-container');
     if(container){
-      container.addEventListener('click', e => {
+      container.addEventListener('click', async e => {
         const btn = e.target.closest('button');
         if(!btn) return;
         const action = btn.getAttribute('data-action');
@@ -300,19 +330,25 @@
           cart.length = 0;
           hang.cart.forEach(item => cart.push(item));
           renderCart();
-          hangOrders.splice(hangOrders.indexOf(hang),1);
-          renderHangOrders();
-          feedback(`<i class='fa fa-undo text-primary'></i> 已恢复挂单 ${id}`, 'success');
+
+          // Delete from backend after restore
+          try {
+              await fetch(`/api/hang-orders/${id}`, { method: 'DELETE' });
+              loadHangOrders();
+              feedback(`<i class='fa fa-undo text-primary'></i> 已恢复挂单 ${id}`, 'success');
+          } catch(e) { console.error(e); }
         }
         if(action === 'discard'){
-          hangOrders.splice(hangOrders.indexOf(hang),1);
-          renderHangOrders();
-          feedback(`<i class='fa fa-trash text-gray-600'></i> 已删除挂单 ${id}`, 'info');
+          try {
+              await fetch(`/api/hang-orders/${id}`, { method: 'DELETE' });
+              loadHangOrders();
+              feedback(`<i class='fa fa-trash text-gray-600'></i> 已删除挂单 ${id}`, 'info');
+          } catch(e) { console.error(e); }
         }
       });
     }
     $('hang-order-btn').addEventListener('click', hangCurrentOrder);
-    $('refresh-hang-btn').addEventListener('click', renderHangOrders);
+    $('refresh-hang-btn').addEventListener('click', loadHangOrders);
   }
 
   function initDiscountAndPoints(){
@@ -321,9 +357,123 @@
     const pts = $('use-points'); if(pts){ pts.value=''; pts.setAttribute('disabled','disabled'); }
   }
 
+  function printPreview(){
+    if(cart.length === 0){ feedback('购物车为空，无法预览', 'error'); return; }
+
+    const tenant = localStorage.getItem('selectedTenant') || localStorage.getItem('tenant') || 'wx';
+    let shopName = '智慧药房';
+    if(tenant === 'bht') shopName = '百和堂药店';
+    else if(tenant === 'rzt') shopName = '仁智堂药店';
+    else if(tenant === 'wx') shopName = '万欣药店';
+
+    const dateStr = new Date().toLocaleString();
+
+    // 收集医嘱和忌口
+    let adviceList = [];
+    let contraList = [];
+
+    const itemsHtml = cart.map(i => {
+      let extra = '';
+      if(i.usageDosage) {
+          extra += `<div><small>用法: ${i.usageDosage}</small></div>`;
+          adviceList.push({name: i.name, content: i.usageDosage});
+      }
+      if(i.contraindication) {
+          // 在单项中也显示，或者只在底部显示？这里保留单项显示
+          extra += `<div><small>忌口: ${i.contraindication}</small></div>`;
+          contraList.push({name: i.name, content: i.contraindication});
+      }
+      return `<tr>
+        <td style="padding-bottom: 5px;">
+            <div>${i.name} <span style="float:right;">x${i.quantity} &nbsp; ${formatMoney(i.price * i.quantity)}</span></div>
+            ${extra}
+        </td>
+      </tr>`;
+    }).join('');
+
+    const total = cart.reduce((s,i)=> s + i.price * i.quantity, 0);
+    const discount = Number($('discount-amount').value || 0);
+    const payable = Math.max(total - discount, 0);
+
+    // 构建医嘱/忌口汇总 HTML
+    let adviceHtml = '';
+    if(adviceList.length > 0 || contraList.length > 0) {
+        adviceHtml += '<div style="border-top: 1px dashed #000; margin-top: 10px; padding-top: 5px;">';
+        adviceHtml += '<div style="font-weight: bold; margin-bottom: 5px; text-align: center;">--- 温馨提示 ---</div>';
+
+        if(adviceList.length > 0) {
+             adviceHtml += '<div style="margin-top: 5px;"><strong>[用法用量]</strong></div>';
+             adviceList.forEach(item => {
+                 adviceHtml += `<div style="font-size: 12px; padding-left: 10px;">- ${item.name}: ${item.content}</div>`;
+             });
+        }
+
+        if(contraList.length > 0) {
+             adviceHtml += '<div style="margin-top: 5px;"><strong>[饮食禁忌]</strong></div>';
+             contraList.forEach(item => {
+                 adviceHtml += `<div style="font-size: 12px; padding-left: 10px;">- ${item.name}: ${item.content}</div>`;
+             });
+        }
+        adviceHtml += '</div>';
+    }
+
+    const ticketHtml = `
+      <html>
+      <head>
+        <title>小票预览</title>
+        <style>
+          body { font-family: 'Courier New', monospace; width: 300px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          th, td { text-align: left; font-size: 12px; }
+          td:last-child { text-align: right; }
+          .total { border-top: 1px dashed #000; padding-top: 10px; text-align: right; }
+          .footer { margin-top: 20px; text-align: center; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h3>${shopName}</h3>
+          <p>${dateStr}</p>
+        </div>
+        <table>
+          <thead><tr><th style="border-bottom:1px solid #eee;padding-bottom:5px;">商品详情</th></tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="total">
+          <p>总计: ${formatMoney(total)}</p>
+          <p>折扣: ${formatMoney(discount)}</p>
+          <h3>应付: ${formatMoney(payable)}</h3>
+        </div>
+
+        ${adviceHtml}
+
+        <div class="footer">
+          <p>谢谢惠顾！</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const win = window.open('', '_blank', 'width=400,height=600');
+    if(win){
+        win.document.write(ticketHtml);
+        win.document.close();
+        // 延迟打印，确保样式加载
+        setTimeout(() => {
+            win.focus();
+            win.print();
+        }, 500);
+    } else {
+        feedback('请允许弹出窗口以进行打印预览', 'error');
+    }
+  }
+
   function initSubmit(){
     $('submit-order-btn').addEventListener('click', submitOrder);
     $('quick-pay-btn').addEventListener('click', submitOrder);
+    const printBtn = $('print-preview-btn');
+    if(printBtn) printBtn.addEventListener('click', printPreview);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -334,5 +484,6 @@
     initDiscountAndPoints();
     initSubmit();
     renderCart();
+    loadHangOrders();
   });
 })();

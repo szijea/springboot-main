@@ -149,6 +149,8 @@ public class MedicineServiceImpl implements MedicineService {
                     dto.setIsRx(medicine.getIsRx());
                     dto.setUnit(medicine.getUnit());
                     dto.setDescription(medicine.getDescription());
+                    dto.setUsageDosage(medicine.getUsageDosage());
+                    dto.setContraindication(medicine.getContraindication());
 
                     // 获取库存信息 - 添加详细调试
                     System.out.println("正在查询药品 " + medicine.getMedicineId() + " 的库存...");
@@ -208,6 +210,8 @@ public class MedicineServiceImpl implements MedicineService {
                     dto.setIsRx(medicine.getIsRx());
                     dto.setUnit(medicine.getUnit());
                     dto.setDescription(medicine.getDescription());
+                    dto.setUsageDosage(medicine.getUsageDosage());
+                    dto.setContraindication(medicine.getContraindication());
 
                     // 获取库存信息
                     System.out.println("正在查询药品 " + medicine.getMedicineId() + " 的库存...");

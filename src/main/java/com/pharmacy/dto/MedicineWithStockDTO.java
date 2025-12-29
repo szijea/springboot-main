@@ -26,6 +26,8 @@ public class MedicineWithStockDTO {
     private String status;
     private String expiryStatus; // NORMAL / NEAR_EXPIRY / EXPIRED
     private String stockStatus;  // HIGH / MEDIUM / LOW / CRITICAL / OUT
+    private String usageDosage;
+    private String contraindication;
 
     // 构造函数
     public MedicineWithStockDTO() {}
@@ -90,4 +92,10 @@ public class MedicineWithStockDTO {
 
     public String getStockStatus() { return stockStatus; }
     public void setStockStatus(String stockStatus) { this.stockStatus = stockStatus; }
+
+    public String getUsageDosage() { return usageDosage; }
+    public void setUsageDosage(String usageDosage) { this.usageDosage = usageDosage; }
+
+    public String getContraindication() { return contraindication; }
+    public void setContraindication(String contraindication) { this.contraindication = contraindication; }
 }

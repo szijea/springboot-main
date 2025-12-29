@@ -11,8 +11,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface OrderRepository extends JpaRepository<Order, String> { // ID 类型改为 String 以匹配 Order.orderId
+public interface OrderRepository extends JpaRepository<Order, String>, JpaSpecificationExecutor<Order> { // ID 类型改为 String 以匹配 Order.orderId
 
     Optional<Order> findByOrderId(String orderId);
 

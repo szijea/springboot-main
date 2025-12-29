@@ -18,6 +18,8 @@ public class AutoSchemaPatch implements ApplicationRunner {
         patchColumn("production_date", "DATE NULL COMMENT '生产日期'", null);
         patchColumn("expiry_date", "DATE NULL COMMENT '到期日期'", null);
         patchColumn("deleted", "TINYINT(1) NOT NULL DEFAULT 0 COMMENT '软删除标记'", null);
+        patchColumn("contraindication", "VARCHAR(255) NULL COMMENT '禁忌症'", null);
+        patchColumn("usage_dosage", "VARCHAR(255) NULL COMMENT '用法用量'", null);
         System.out.println("[AUTO SCHEMA PATCH] 检测完成。");
     }
 

@@ -104,85 +104,41 @@ public class DashboardController {
                     break;
             }
 
-            // 执行查询
-            List<Object[]> rows = orderItemRepository.findTopProductsByDateRange(start, end);
+            List<Object[]> results = orderRepository.getHotProductsBetween(start, end);
+            // 截取 limit
+            if (results.size() > limit) {
+                results = results.subList(0, limit);
+            }
 
             List<Map<String,Object>> list = new ArrayList<>();
-            // 判空处理，防止 NPE
-            if (rows != null && !rows.isEmpty()) {
-                int c=0;
-                for(Object[] r: rows){
-                    if(c >= limit) break;
-                    // 数据完整性检查
-                    if(r == null || r.length < 3){ continue; }
-
-                    Map<String,Object> m = new HashMap<>();
-
-                    // 安全获取数据
-                    Object col0 = r[0]; // medicineId
-                    Object col1 = r[1]; // quantity
-                    Object col2 = r[2]; // subtotal
-
-                    String medicineId = col0 == null ? null : String.valueOf(col0);
-                    m.put("medicineId", medicineId);
-
-                    // 补充药品信息
-                    Medicine med = null;
-                    if (medicineId != null) {
-                        try {
-                            med = medicineRepository.findById(medicineId).orElse(null);
-                        } catch(Exception ignored) {}
-                    }
-
-                    // 填充显示字段
-                    m.put("name", med != null ? med.getGenericName() : (medicineId == null ? "未知药品" : medicineId));
-                    m.put("genericName", med != null ? med.getGenericName() : "");
-                    m.put("tradeName", med != null ? med.getTradeName() : "");
-                    m.put("spec", med != null ? med.getSpec() : "");
-                    m.put("retailPrice", med != null ? med.getRetailPrice() : 0.0);
-
-                    // 数量类型安全转换
-                    long qty = 0;
-                    if (col1 instanceof Number) {
-                        qty = ((Number) col1).longValue();
-                    } else if (col1 != null) {
-                        try { qty = Long.parseLong(String.valueOf(col1)); } catch(Exception e){}
-                    }
-                    m.put("totalQuantity", qty);
-
-                    // 金额类型安全转换
-                    BigDecimal revenue = BigDecimal.ZERO;
-                    if (col2 instanceof BigDecimal) {
-                        revenue = (BigDecimal) col2;
-                    } else if (col2 instanceof Number) {
-                        revenue = BigDecimal.valueOf(((Number) col2).doubleValue());
-                    } else if (col2 != null) {
-                        try { revenue = new BigDecimal(String.valueOf(col2)); } catch(Exception e){}
-                    }
-                    m.put("totalRevenue", revenue);
-
-                    // 当前库存
-                    try {
-                        m.put("currentStock", inventoryService.getCurrentStock(medicineId));
-                    } catch(Exception ignored){
-                        m.put("currentStock", 0);
-                    }
-
-                    list.add(m);
-                    c++;
+            for(Object[] row : results){
+                Map<String,Object> map = new HashMap<>();
+                map.put("medicineId", row[0]);
+                map.put("genericName", row[1]);
+                map.put("tradeName", row[2]);
+                map.put("spec", row[3]);
+                map.put("retailPrice", row[4]);
+                map.put("quantity", row[5]);
+                map.put("totalRevenue", row[6]);
+                // 补充库存信息
+                try {
+                    String mid = String.valueOf(row[0]);
+                    Integer stock = inventoryService.getCurrentStock(mid);
+                    map.put("currentStock", stock);
+                } catch (Exception e) {
+                    map.put("currentStock", 0);
                 }
+                list.add(map);
             }
-            return ResponseEntity.ok(Map.of("data", list));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            // 返回详细错误以便调试
-            return ResponseEntity.status(500).body(Map.of(
-                "code", 500,
-                "message", "获取热销药品失败: " + ex.getMessage(),
-                "error", ex.getClass().getSimpleName()
-            ));
+
+            return ResponseEntity.ok(Map.of("code", 200, "data", list));
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 返回空列表而不是 500，避免前端报错
+            return ResponseEntity.ok(Map.of("code", 200, "data", Collections.emptyList(), "error", e.getMessage()));
         }
     }
+
 
     private List<Map<String,Object>> computeStockAlerts(){
         List<Map<String,Object>> alerts = new ArrayList<>();

@@ -10,6 +10,18 @@
       if(window.api && typeof window.api.showMessage === 'function') return window.api.showMessage(msg, 'success');
       if(typeof window.showMessage === 'function') return window.showMessage(msg, 'success');
     }catch(e){}
+
+    let toast = document.getElementById('toast-message');
+    if(!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast-message';
+        toast.style.cssText = 'position:fixed;top:20px;right:20px;background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:4px;z-index:9999;transition:opacity 0.3s;';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.style.opacity = '1';
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(()=>toast.style.display='none', 300); }, 3000);
     console.log('[stock-in]', msg);
   }
   function calcKpis(){
@@ -170,7 +182,7 @@
     const name = prompt('输入药品关键词（名称/厂家/规格）');
     if(!name) return;
     searchMedicine(name).then(list=>{
-      if(!list.length){ showToast('未找到药品'); return; }
+      if(!list.length){ alert('未找到药品: ' + name); return; }
       const med = list[0];
       const qty = Number(prompt('入库数量', '10')||0);
       const suggestedUnit = (med.memberPrice!=null? med.memberPrice : (med.retailPrice||0));
@@ -199,7 +211,7 @@
     if(!drawer) return;
     drawer.style.transform = 'translateX(0)';
     if(backdrop) backdrop.style.display = 'block';
-    const fields = ['fm-genericName','fm-tradeName','fm-spec','fm-manufacturer','fm-unit','fm-isRx','fm-approvalNo','fm-barcode','fm-retailPrice','fm-memberPrice','fm-categoryId','fm-batch','fm-production','fm-expiry','fm-qty','fm-unitPrice'];
+    const fields = ['fm-genericName','fm-tradeName','fm-spec','fm-manufacturer','fm-unit','fm-isRx','fm-approvalNo','fm-barcode','fm-retailPrice','fm-memberPrice','fm-categoryId','fm-batch','fm-production','fm-expiry','fm-qty','fm-unitPrice','fm-usageDosage','fm-contraindication'];
     fields.forEach(id=>{ const el = qs(id); if(el) el.value = ''; });
     if(qs('fm-unit')) qs('fm-unit').value = '盒';
     if(qs('fm-isRx')) qs('fm-isRx').value = 'false';
@@ -227,8 +239,15 @@
       const memberPriceVal = qs('fm-memberPrice') && qs('fm-memberPrice').value;
       const memberPrice = (memberPriceVal!==undefined && memberPriceVal!=='')? Number(memberPriceVal) : null;
       const categoryId = Number((qs('fm-categoryId') && qs('fm-categoryId').value) || 1);
+      const usageDosage = (qs('fm-usageDosage') && qs('fm-usageDosage').value) || '';
+      const contraindication = (qs('fm-contraindication') && qs('fm-contraindication').value) || '';
+
       if(!genericName || !approvalNo){ alert('通用名与批准文号为必填项'); return; }
-      const med = await createMedicine({ genericName, tradeName, spec, manufacturer, unit, isRx, approvalNo, retailPrice, memberPrice, categoryId, barcode: barcode||undefined, status:'ACTIVE', deleted:false });
+      const med = await createMedicine({
+        genericName, tradeName, spec, manufacturer, unit, isRx, approvalNo, retailPrice, memberPrice, categoryId,
+        barcode: barcode||undefined, status:'ACTIVE', deleted:false,
+        usageDosage, contraindication
+      });
       const normalized = (med && med.data)? med.data : med;
       const medId = normalized.medicineId || String(normalized.id || ('M'+Date.now()));
       const batch = (qs('fm-batch') && qs('fm-batch').value) || ('B'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'001');
@@ -258,6 +277,15 @@
     state.items = [];
     if(qs('stock-date')) qs('stock-date').value = new Date().toISOString().slice(0,10);
     if(qs('remark-input')) qs('remark-input').value = '';
+
+    const tenant = localStorage.getItem('selectedTenant') || localStorage.getItem('tenant') || 'wx';
+    let shopName = '智慧药房';
+    if(tenant === 'bht') shopName = '百和堂药店';
+    else if(tenant === 'rzt') shopName = '仁智堂药店';
+    else if(tenant === 'wx') shopName = '万欣药店';
+
+    if(qs('org-name')) qs('org-name').value = shopName;
+
     renderTable();
   }
   function setImportProgress(percent, text){
@@ -272,6 +300,54 @@
     const box = document.getElementById('import-progress');
     if(box){ box.style.display = 'none'; }
   }
+
+  function parseCsvToRows(text){
+    if(!text) return [];
+    return text.split(/\r?\n/).map(line => line.split(','));
+  }
+
+  function processRowsArray(rows, filename){
+    if(!rows || !rows.length) return;
+    let start = 0;
+    // 简单判断首行是否标题
+    if(rows[0] && rows[0].some(c => String(c).includes('名称') || String(c).includes('Name'))) start = 1;
+
+    let count = 0;
+    for(let i=start; i<rows.length; i++){
+      const row = rows[i];
+      if(!row || row.length < 1) continue;
+      // 默认顺序：名称(0), 规格(1), 厂家(2), 数量(3), 进价(4), 售价(5), 批号(6), 有效期(7), 批准文号(8)
+      const name = row[0];
+      if(!name) continue;
+
+      const spec = row[1] || '';
+      const manufacturer = row[2] || '';
+      const qty = Number(row[3] || 10);
+      const unitPrice = Number(row[4] || 0);
+      const retailPrice = Number(row[5] || 0);
+      const batch = row[6] || ('B'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'001');
+      const expiry = row[7] || '';
+      const approvalNo = row[8] || ('TMP'+Date.now()+Math.floor(Math.random()*1000));
+
+      state.items.push({
+        internalId: 'IMP'+Date.now()+i,
+        medicineId: 'IMP'+Date.now()+i,
+        medicineName: name,
+        spec: spec,
+        manufacturer: manufacturer,
+        batchNumber: batch,
+        expiryDate: expiry,
+        quantity: qty,
+        unitPrice: unitPrice,
+        retailPrice: retailPrice,
+        approvalNo: approvalNo
+      });
+      count++;
+    }
+    showToast('已导入 ' + count + ' 条数据');
+    renderTable();
+  }
+
   // wrap heavy steps with progress updates
   async function handleBulkFileChange(e){
     try{
@@ -391,9 +467,10 @@
     }
 
     function bindUi(){
+      console.log('[stock-in] Binding UI events...');
       const on = (id, evt, fn) => {
         const el = qs(id);
-        if(!el) return;
+        if(!el) { console.warn('[stock-in] Element not found:', id); return; }
         el.addEventListener(evt, fn);
       };
 

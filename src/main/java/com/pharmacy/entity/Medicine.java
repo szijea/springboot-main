@@ -70,6 +70,12 @@ public class Medicine {
     @Column(name = "status", length = 20)
     private String status;
 
+    @Column(name = "usage_dosage", length = 255)
+    private String usageDosage;
+
+    @Column(name = "contraindication", length = 255)
+    private String contraindication;
+
     @Column(name = "deleted", nullable = false)
     private Boolean deleted = false;
 
@@ -136,6 +142,12 @@ public class Medicine {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getUsageDosage() { return usageDosage; }
+    public void setUsageDosage(String usageDosage) { this.usageDosage = usageDosage; }
+
+    public String getContraindication() { return contraindication; }
+    public void setContraindication(String contraindication) { this.contraindication = contraindication; }
 
     public Boolean getDeleted() { return deleted; }
     public void setDeleted(Boolean deleted) { this.deleted = deleted; }

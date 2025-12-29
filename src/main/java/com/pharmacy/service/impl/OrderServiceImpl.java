@@ -214,6 +214,7 @@ public class OrderServiceImpl implements OrderService {
             case "wechat": return 2;
             case "alipay": return 3;
             case "insurance": return 4;
+            case "card": return 5;
             default: return 1;
         }
     }
@@ -316,6 +317,51 @@ public class OrderServiceImpl implements OrderService {
         OrderResponse resp = convertToOrderResponse(orderRepository.save(order));
         triggerMemberStatsUpdate(order.getMemberId());
         return resp;
+    }
+
+    @Override
+    public Page<Order> searchOrders(LocalDate startDate, LocalDate endDate, Integer status, Integer paymentType, String keyword, Pageable pageable) {
+        org.springframework.data.jpa.domain.Specification<Order> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new java.util.ArrayList<>();
+
+            if (startDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("orderTime"), startDate.atStartOfDay()));
+            }
+            if (endDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("orderTime"), endDate.plusDays(1).atStartOfDay()));
+            }
+            if (status != null) {
+                predicates.add(cb.equal(root.get("paymentStatus"), status));
+            }
+            if (paymentType != null) {
+                predicates.add(cb.equal(root.get("paymentType"), paymentType));
+            }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                String k = keyword.trim();
+                String likePattern = "%" + k + "%";
+
+                List<jakarta.persistence.criteria.Predicate> keywordPredicates = new java.util.ArrayList<>();
+                keywordPredicates.add(cb.like(root.get("customerName"), likePattern));
+                keywordPredicates.add(cb.like(root.get("memberId"), likePattern));
+
+                // 查找匹配的会员
+                try {
+                    List<Member> members = memberRepository.findByNameContainingOrPhoneContaining(k, k);
+                    if (!members.isEmpty()) {
+                        List<String> memberIds = members.stream().map(Member::getMemberId).collect(Collectors.toList());
+                        keywordPredicates.add(root.get("memberId").in(memberIds));
+                    }
+                } catch (Exception e) {
+                    // ignore
+                }
+
+                predicates.add(cb.or(keywordPredicates.toArray(new jakarta.persistence.criteria.Predicate[0])));
+            }
+
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        return orderRepository.findAll(spec, pageable);
     }
 
     // 异步触发会员统计刷新

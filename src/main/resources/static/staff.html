@@ -66,6 +66,14 @@
         <h2 class="page-title font-bold page-title-decor">员工管理</h2>
         <p class="text-gray-500">人员档案与权限配置</p>
       </div>
+      <div class="flex gap-2 items-center">
+        <div class="relative">
+            <input type="text" id="staff-search" class="input text-xs py-1.5 pl-8 w-48" placeholder="搜索姓名/用户名/电话">
+            <i class="fa fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+        </div>
+        <button class="btn btn-outline text-xs" id="refresh-staff"><i class="fa fa-refresh"></i> 刷新</button>
+        <button class="btn btn-primary text-xs" id="add-staff"><i class="fa fa-plus"></i> 新增员工</button>
+      </div>
     </div>
 
     <div class="dashboard-kpis kpi-horizontal mb-6" id="staff-kpi-row">
@@ -75,37 +83,18 @@
       <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">请假/离岗</p><h3 class="text-xl font-bold" id="kpi-staff-leave">--</h3></div>
     </div>
 
-    <div class="layout-two-column">
-      <aside class="layout-sidebar">
-        <div class="card p-4 mb-4">
-          <h3 class="font-bold text-sm mb-3">搜索筛选</h3>
-          <div class="space-y-3 text-xs">
-            <label for="staff-search" class="block text-gray-700">员工搜索</label>
-            <input type="text" placeholder="搜索员工姓名、职位..." class="input text-sm" id="staff-search" name="staffSearch" aria-label="员工搜索">
-            <label for="shop-select" class="block text-gray-700">所属店铺</label>
-            <select id="shop-select" class="input text-sm" name="shopSelect" aria-label="所属店铺筛选">
-              <option value="">全部店铺</option>
-            </select>
-            <div class="flex justify-end gap-2 pt-2">
-              <button class="btn btn-outline text-xs" id="refresh-staff"><i class="fa fa-refresh"></i> 刷新</button>
-              <button class="btn btn-primary text-xs" id="add-staff"><i class="fa fa-plus"></i> 新增员工</button>
-            </div>
-          </div>
-        </div>
-      </aside>
-      <div class="layout-main space-y-6">
+    <div class="layout-main space-y-6">
         <div class="card">
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">所属店铺</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">员工ID</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户名</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">职位</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">联系电话</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入职日期</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最新体温</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
               </tr>
@@ -119,14 +108,14 @@
           </div>
         </div>
       </div>
-    </div>
   </div></div></div> <!-- close app-shell / container-fluid / main-content -->
 </main>
-<script>(function(){var nav=document.getElementById('common-nav');if(nav&&!nav.classList.contains('nav-glass'))nav.classList.add('nav-glass');})();</script>
-<script>
-// 防止缺失函数报错
-if(typeof initKeyInteractions!=='function'){ window.initKeyInteractions=function(){ console.log('initKeyInteractions 占位'); }; }
-</script>
+
+<!-- 引入通用脚本 -->
+<script src="js/common.js"></script>
+<script src="js/common-nav.js"></script>
+<script src="js/ui-global.js" defer></script>
+<script src="js/staff.js" defer></script>
 
 <div class="modal-backdrop" id="staff-modal-backdrop"></div>
 <div class="modal" id="staff-modal">
@@ -136,17 +125,38 @@ if(typeof initKeyInteractions!=='function'){ window.initKeyInteractions=function
             <button class="text-gray-400 hover:text-gray-600" id="close-staff-modal" aria-label="关闭员工编辑窗口"><span class="sr-only">关闭</span><i class="fa fa-times" aria-hidden="true"></i></button>
         </div>
         <form id="staff-form" class="space-y-4">
+            <input type="hidden" id="staff-id">
+            <div>
+                <label for="staff-username" class="block text-sm font-medium text-gray-700 mb-1">用户名 *</label>
+                <input type="text" class="input" id="staff-username" required name="username" aria-label="用户名">
+            </div>
+            <div>
+                <label for="staff-password" class="block text-sm font-medium text-gray-700 mb-1">密码 <span id="password-hint" class="text-xs text-gray-500 font-normal">(新增必填)</span></label>
+                <input type="password" class="input" id="staff-password" name="password" aria-label="密码">
+            </div>
             <div>
                 <label for="staff-name" class="block text-sm font-medium text-gray-700 mb-1">姓名 *</label>
-                <input type="text" class="input" id="staff-name" required name="staffName" aria-label="员工姓名">
+                <input type="text" class="input" id="staff-name" required name="name" aria-label="员工姓名">
             </div>
             <div>
                 <label for="staff-role" class="block text-sm font-medium text-gray-700 mb-1">职位 *</label>
-                <input type="text" class="input" id="staff-role" required name="staffRole" aria-label="员工职位">
+                <select class="input" id="staff-role" required name="roleId" aria-label="员工职位">
+                    <option value="1">管理员</option>
+                    <option value="2">店长</option>
+                    <option value="3">收银员</option>
+                    <option value="4">药剂师</option>
+                </select>
             </div>
             <div>
-                <label for="staff-phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话 *</label>
-                <input type="text" class="input" id="staff-phone" required name="staffPhone" aria-label="联系电话">
+                <label for="staff-phone" class="block text-sm font-medium text-gray-700 mb-1">联系电话</label>
+                <input type="text" class="input" id="staff-phone" name="phone" aria-label="联系电话">
+            </div>
+            <div>
+                <label for="staff-status" class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                <select class="input" id="staff-status" name="status" aria-label="状态">
+                    <option value="1">在岗</option>
+                    <option value="0">离职/禁用</option>
+                </select>
             </div>
             <div class="flex justify-end gap-3 pt-2">
                 <button type="button" class="btn btn-outline" id="cancel-staff">取消</button>
@@ -172,27 +182,6 @@ if(typeof initKeyInteractions!=='function'){ window.initKeyInteractions=function
       if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
   </script>
 <script src="js/a11y.js" defer></script>
-<script src="js/kpi.js"></script>
-<script>
-(function(){
-  function updateStaffKpis(){
-    const rows=[...document.querySelectorAll('#staff-table tr')];
-    const total=rows.length;
-    let active=0, leave=0, newMonth=0;
-    const monthStart=new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
-    rows.forEach(r=>{
-      const cells=r.children; if(!cells||cells.length<6) return;
-      const statusCell=cells[cells.length-3]; // heuristic
-      const dateCell=cells[5];
-      const statusText=statusCell?.textContent||'';
-      if(/在岗|正常/.test(statusText)) active++; else if(/请假|离岗|休/.test(statusText)) leave++;
-      try{ const d=new Date(dateCell.textContent.trim()); if(d>=monthStart) newMonth++; }catch(e){/* ignore */}
-    });
-    const set=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val+(id==='kpi-staff-total'||id==='kpi-staff-active'||id==='kpi-staff-new'||id==='kpi-staff-leave'?'');};
-    set('kpi-staff-total',total); set('kpi-staff-active',active); set('kpi-staff-new',newMonth); set('kpi-staff-leave',leave);
-  }
-  document.addEventListener('DOMContentLoaded',()=>{ updateStaffKpis(); setInterval(updateStaffKpis,3000); });
-})();
-</script>
+<!-- <script src="js/kpi.js"></script> -->
 </body>
 </html>

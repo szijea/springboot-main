@@ -47,4 +47,7 @@ public interface OrderService {
 
     // 新增：退单方法
     OrderResponse refundOrder(String orderId, String reason);
+
+    // 新增：多条件搜索订单
+    Page<Order> searchOrders(LocalDate startDate, LocalDate endDate, Integer status, Integer paymentType, String keyword, Pageable pageable);
 }
