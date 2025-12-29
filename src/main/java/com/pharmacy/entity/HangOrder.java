@@ -22,6 +22,15 @@ public class HangOrder {
     @Column(name = "member_name", length = 50)
     private String memberName;
 
+    @Column(name = "cashier_id")
+    private Integer cashierId;
+
+    @Column(name = "remark")
+    private String remark;
+
+    @Column(name = "status")
+    private Integer status;
+
     public String getHangId() { return hangId; }
     public void setHangId(String hangId) { this.hangId = hangId; }
 
@@ -36,5 +45,13 @@ public class HangOrder {
 
     public String getMemberName() { return memberName; }
     public void setMemberName(String memberName) { this.memberName = memberName; }
-}
 
+    public Integer getCashierId() { return cashierId; }
+    public void setCashierId(Integer cashierId) { this.cashierId = cashierId; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
+}
