@@ -135,10 +135,24 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
+    public Member updateMember(String id, Member memberDetails) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        member.setName(memberDetails.getName());
+        member.setPhone(memberDetails.getPhone());
+        member.setCardNo(memberDetails.getCardNo());
+        member.setAllergicHistory(memberDetails.getAllergicHistory());
+        member.setMedicalCardNo(memberDetails.getMedicalCardNo());
+
+        return memberRepository.save(member);
+    }
+
     // 删除会员
     public void deleteMember(String memberId) {
         memberRepository.deleteById(memberId);
     }
+
 
     // 增加积分
     public boolean addPoints(String memberId, int points) {
@@ -164,6 +178,19 @@ public class MemberService {
             return success;
         }
         return false;
+    }
+
+    // 积分兑换
+    public void exchangeReward(String memberId, Integer points) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("会员不存在"));
+
+        if (member.getPoints() < points) {
+            throw new RuntimeException("积分不足");
+        }
+
+        member.setPoints(member.getPoints() - points);
+        memberRepository.save(member);
     }
 
     // 检查手机号是否存在

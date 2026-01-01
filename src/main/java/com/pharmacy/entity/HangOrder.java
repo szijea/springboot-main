@@ -13,8 +13,8 @@ public class HangOrder {
     @Column(name = "hang_time")
     private LocalDateTime hangTime;
 
-    @Column(columnDefinition = "TEXT")
-    private String cart_json;
+    @Column(name = "cart_json", columnDefinition = "TEXT")
+    private String cartJson;
 
     @Column(name = "member_id", length = 32)
     private String memberId;
@@ -37,8 +37,8 @@ public class HangOrder {
     public LocalDateTime getHangTime() { return hangTime; }
     public void setHangTime(LocalDateTime hangTime) { this.hangTime = hangTime; }
 
-    public String getCartJson() { return cart_json; }
-    public void setCartJson(String cart_json) { this.cart_json = cart_json; }
+    public String getCartJson() { return cartJson; }
+    public void setCartJson(String cartJson) { this.cartJson = cartJson; }
 
     public String getMemberId() { return memberId; }
     public void setMemberId(String memberId) { this.memberId = memberId; }

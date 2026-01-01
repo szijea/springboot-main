@@ -172,6 +172,100 @@
       </div>
     </div></div></div> <!-- close app-shell / container-fluid / main-content -->
   </main>
+<!-- 积分兑换模态框 -->
+<div id="exchange-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col">
+    <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+      <h3 class="text-xl font-bold text-gray-800"><i class="fa fa-gift text-orange-500 mr-2"></i>积分兑换</h3>
+      <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="document.getElementById('exchange-modal').classList.add('hidden')">
+        <i class="fa fa-times text-xl"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="mb-4">
+        <p class="text-sm text-gray-600">会员: <span id="exchange-member-name" class="font-bold"></span></p>
+        <p class="text-sm text-gray-600">当前积分: <span id="exchange-member-points" class="font-bold text-primary"></span></p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">选择福利</label>
+        <select id="exchange-reward-select" class="input w-full text-sm">
+          <option value="">-- 请选择福利 --</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">或 自定义扣除积分</label>
+        <input type="number" id="exchange-custom-points" class="input w-full text-sm" placeholder="输入要扣除的积分">
+      </div>
+    </div>
+    <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-3">
+      <button class="btn btn-outline" onclick="document.getElementById('exchange-modal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" id="confirm-exchange-btn">确认兑换</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 积分兑换逻辑 (Cashier)
+(function(){
+  window.showExchangeModal = function(member, rewards) {
+    if (!member) return;
+
+    document.getElementById('exchange-member-name').textContent = member.name;
+    document.getElementById('exchange-member-points').textContent = member.points || 0;
+    document.getElementById('exchange-custom-points').value = '';
+
+    const select = document.getElementById('exchange-reward-select');
+    select.innerHTML = '<option value="">-- 请选择福利 --</option>' +
+      rewards.map(r => `<option value="${r.id}" data-points="${r.pointsRequired}">${r.name} (${r.pointsRequired}分)</option>`).join('');
+
+    select.onchange = function() {
+      const opt = this.options[this.selectedIndex];
+      if (opt.value) {
+        document.getElementById('exchange-custom-points').value = opt.getAttribute('data-points');
+      }
+    };
+
+    document.getElementById('exchange-modal').classList.remove('hidden');
+
+    // 绑定确认按钮
+    const btn = document.getElementById('confirm-exchange-btn');
+    btn.onclick = async function() {
+        const points = parseInt(document.getElementById('exchange-custom-points').value);
+        if (!points || points <= 0) {
+          alert('请输入有效的积分数值');
+          return;
+        }
+        if ((member.points || 0) < points) {
+          alert('会员积分不足');
+          return;
+        }
+        if (!confirm(`确定要扣除 ${points} 积分进行兑换吗？`)) return;
+
+        try {
+          const res = await fetch(`/api/members/${member.memberId}/exchange`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ points })
+          });
+
+          if (!res.ok) {
+            const err = await res.text();
+            throw new Error(err);
+          }
+
+          alert('兑换成功');
+          document.getElementById('exchange-modal').classList.add('hidden');
+          // 刷新会员信息
+          if(window.refreshMemberInfo) window.refreshMemberInfo(member.memberId);
+        } catch (e) {
+          alert('兑换失败: ' + e.message);
+        }
+    };
+  };
+})();
+</script>
 <script src="js/cashier.js" defer></script>
 <script src="js/a11y.js" defer></script>
 <script src="js/ui-global.js" defer></script>

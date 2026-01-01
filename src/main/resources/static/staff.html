@@ -67,6 +67,18 @@
         <p class="text-gray-500">人员档案与权限配置</p>
       </div>
       <div class="flex gap-2 items-center">
+        <select id="filter-role" class="input text-xs py-1.5 w-24">
+            <option value="">所有职位</option>
+            <option value="1">管理员</option>
+            <option value="2">店长</option>
+            <option value="3">收银员</option>
+            <option value="4">药剂师</option>
+        </select>
+        <select id="filter-status" class="input text-xs py-1.5 w-24">
+            <option value="">所有状态</option>
+            <option value="1">在岗</option>
+            <option value="0">离职/禁用</option>
+        </select>
         <div class="relative">
             <input type="text" id="staff-search" class="input text-xs py-1.5 pl-8 w-48" placeholder="搜索姓名/用户名/电话">
             <i class="fa fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>

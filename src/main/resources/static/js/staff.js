@@ -1,5 +1,5 @@
 (function() {
-    const API_BASE = '/api/employees';
+    const API_BASE = '/employees'; // apiCall adds /api prefix
     let allStaff = [];
 
     // DOM Elements
@@ -10,48 +10,37 @@
     const modalTitle = document.getElementById('modal-title');
     const searchInput = document.getElementById('staff-search');
     const shopSelect = document.getElementById('shop-select');
+    const filterRole = document.getElementById('filter-role');
+    const filterStatus = document.getElementById('filter-status');
 
     // API Functions
     async function fetchStaff() {
         try {
-            const response = await fetch(API_BASE);
-            if (!response.ok) throw new Error('Failed to fetch staff');
-            return await response.json();
+            return await apiCall(API_BASE);
         } catch (error) {
             console.error('Error fetching staff:', error);
-            // alert('加载员工列表失败');
             return [];
         }
     }
 
     async function createStaff(data) {
-        const response = await fetch(API_BASE, {
+        return await apiCall(API_BASE, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: data
         });
-        if (!response.ok) {
-            const err = await response.text();
-            throw new Error(err || '创建失败');
-        }
-        return await response.json();
     }
 
     async function updateStaff(id, data) {
-        const response = await fetch(`${API_BASE}/${id}`, {
+        return await apiCall(`${API_BASE}/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: data
         });
-        if (!response.ok) throw new Error('更新失败');
-        return await response.json();
     }
 
     async function deleteStaffApi(id) {
-        const response = await fetch(`${API_BASE}/${id}`, {
+        return await apiCall(`${API_BASE}/${id}`, {
             method: 'DELETE'
         });
-        if (!response.ok) throw new Error('删除失败');
     }
 
     // Render Functions
@@ -250,9 +239,11 @@
             });
         }
 
-        // Search
+        // Search & Filter
         if(searchInput) searchInput.addEventListener('input', filterStaff);
         if(shopSelect) shopSelect.addEventListener('change', filterStaff);
+        if(filterRole) filterRole.addEventListener('change', filterStaff);
+        if(filterStatus) filterStatus.addEventListener('change', filterStaff);
     }
 
     async function loadStaff() {
@@ -270,14 +261,19 @@
     }
 
     function filterStaff() {
-        if(!searchInput) return;
-        const keyword = searchInput.value.toLowerCase();
+        const keyword = searchInput ? searchInput.value.toLowerCase() : '';
+        const role = filterRole ? filterRole.value : '';
+        const status = filterStatus ? filterStatus.value : '';
 
         const filtered = allStaff.filter(s => {
-            const matchKeyword = (s.name && s.name.toLowerCase().includes(keyword)) ||
-                                 (s.username && s.username.toLowerCase().includes(keyword)) ||
-                                 (s.phone && s.phone.includes(keyword));
-            return matchKeyword;
+            const matchKeyword = !keyword || (
+                (s.name && s.name.toLowerCase().includes(keyword)) ||
+                (s.username && s.username.toLowerCase().includes(keyword)) ||
+                (s.phone && s.phone.includes(keyword))
+            );
+            const matchRole = role === '' || s.roleId == role;
+            const matchStatus = status === '' || s.status == status;
+            return matchKeyword && matchRole && matchStatus;
         });
         renderTable(filtered);
     }
@@ -286,4 +282,3 @@
     document.addEventListener('DOMContentLoaded', initEvents);
 
 })();
-

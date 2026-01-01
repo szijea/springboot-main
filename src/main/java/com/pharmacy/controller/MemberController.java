@@ -10,6 +10,13 @@ import com.pharmacy.multitenant.TenantContext; // 新增导入
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList; // 添加这个导入
@@ -236,58 +243,26 @@ public class MemberController {
         }
     }
 
-    @DeleteMapping("/{memberId}")
-    public ResponseEntity<?> deleteMember(@PathVariable String memberId) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMember(@PathVariable String id) {
+        memberService.deleteMember(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/exchange")
+    public ResponseEntity<?> exchangeReward(@PathVariable String id, @RequestBody Map<String, Integer> body) {
+        Integer points = body.get("points");
+        if (points == null || points <= 0) {
+            return ResponseEntity.badRequest().body("无效的积分值");
+        }
         try {
-            memberService.deleteMember(memberId);
+            memberService.exchangeReward(id, points);
             return ResponseEntity.ok().build();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PostMapping("/{memberId}/points/add")
-    public ResponseEntity<?> addPoints(@PathVariable String memberId, @RequestParam int points) {
-        boolean success = memberService.addPoints(memberId, points);
-        if (success) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    @PostMapping("/{memberId}/points/use")
-    public ResponseEntity<?> usePoints(@PathVariable String memberId, @RequestParam int points) {
-        boolean success = memberService.usePoints(memberId, points);
-        if (success) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.badRequest().body("积分不足或会员不存在");
-        }
-    }
-
-    @GetMapping("/check-phone")
-    public ResponseEntity<Boolean> checkPhoneExists(@RequestParam String phone) {
-        boolean exists = memberService.isPhoneExists(phone);
-        return ResponseEntity.ok(exists);
-    }
-
-
-    // 在现有的 MemberController 中添加以下端点：
-
-    // 获取会员统计数据
-    @GetMapping("/stats")
-    public ResponseEntity<MemberStatsDTO> getMemberStats() {
-        try {
-            MemberStatsDTO stats = memberService.getMemberStats();
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            System.err.println("获取会员统计失败: " + e.getMessage());
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    // 批量删除会员
     @PostMapping("/batch-delete")
     public ResponseEntity<?> batchDeleteMembers(@RequestBody List<String> memberIds) {
         try {
@@ -299,6 +274,18 @@ public class MemberController {
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("删除失败: " + e.getMessage());
+        }
+    }
+
+    // 获取会员统计数据
+    @GetMapping("/stats")
+    public ResponseEntity<MemberStatsDTO> getMemberStats() {
+        try {
+            MemberStatsDTO stats = memberService.getMemberStats();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            System.err.println("获取会员统计失败: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
     }
 
@@ -563,6 +550,148 @@ public class MemberController {
             res.put("message", "advanced query failed: "+e.getMessage());
             res.put("error", e.toString());
             return ResponseEntity.internalServerError().body(res);
+        }
+    }
+
+    // 导出会员
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportMembers() {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Members");
+            Row header = sheet.createRow(0);
+            String[] columns = {"ID", "姓名", "手机号", "会员卡号", "等级", "积分", "过敏史", "医保卡号", "注册时间"};
+            for (int i = 0; i < columns.length; i++) {
+                header.createCell(i).setCellValue(columns[i]);
+            }
+
+            List<Member> members = memberService.findAll();
+            int rowNum = 1;
+            for (Member member : members) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(member.getMemberId());
+                row.createCell(1).setCellValue(member.getName());
+                row.createCell(2).setCellValue(member.getPhone());
+                row.createCell(3).setCellValue(member.getCardNo());
+                row.createCell(4).setCellValue(member.getLevel() != null ? member.getLevel() : 0);
+                row.createCell(5).setCellValue(member.getPoints() != null ? member.getPoints() : 0);
+                row.createCell(6).setCellValue(member.getAllergicHistory());
+                row.createCell(7).setCellValue(member.getMedicalCardNo());
+                row.createCell(8).setCellValue(member.getCreateTime() != null ? member.getCreateTime().toString() : "");
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "members.xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(out.toByteArray());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 导入会员
+    @PostMapping("/import")
+    public ResponseEntity<?> importMembers(@RequestParam("file") MultipartFile file) {
+        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            List<String> errors = new ArrayList<>();
+            int successCount = 0;
+
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // Skip header
+
+                try {
+                    String name = getCellValue(row.getCell(1));
+                    String phone = getCellValue(row.getCell(2));
+
+                    if (name == null || name.isEmpty() || phone == null || phone.isEmpty()) {
+                        continue; // Skip invalid rows
+                    }
+
+                    Member member = new Member();
+                    member.setMemberId(memberService.generateNextMemberId());
+                    member.setName(name);
+                    member.setPhone(phone);
+                    member.setCardNo(getCellValue(row.getCell(3)));
+
+                    String levelStr = getCellValue(row.getCell(4));
+                    if (levelStr != null && !levelStr.isEmpty()) {
+                        try {
+                            member.setLevel((int) Double.parseDouble(levelStr));
+                        } catch (NumberFormatException e) {
+                            member.setLevel(0);
+                        }
+                    } else {
+                        member.setLevel(0);
+                    }
+
+                    String pointsStr = getCellValue(row.getCell(5));
+                    if (pointsStr != null && !pointsStr.isEmpty()) {
+                        try {
+                            member.setPoints((int) Double.parseDouble(pointsStr));
+                        } catch (NumberFormatException e) {
+                            member.setPoints(0);
+                        }
+                    } else {
+                        member.setPoints(0);
+                    }
+
+                    member.setAllergicHistory(getCellValue(row.getCell(6)));
+                    member.setMedicalCardNo(getCellValue(row.getCell(7)));
+
+                    // Check if phone exists
+                    if (memberService.findByPhone(phone).isPresent()) {
+                        errors.add("Row " + (row.getRowNum() + 1) + ": Phone " + phone + " already exists.");
+                        continue;
+                    }
+
+                    memberService.createMember(member.getMemberId(), member.getName(), member.getPhone());
+                    // Update other fields that createMember might not handle if it only takes basic info
+                    // Re-fetch or update
+                    Member saved = memberService.findById(member.getMemberId()).orElse(null);
+                    if(saved != null) {
+                        saved.setCardNo(member.getCardNo());
+                        saved.setLevel(member.getLevel());
+                        saved.setPoints(member.getPoints());
+                        saved.setAllergicHistory(member.getAllergicHistory());
+                        saved.setMedicalCardNo(member.getMedicalCardNo());
+                        memberService.updateMember(saved);
+                    }
+
+                    successCount++;
+                } catch (Exception e) {
+                    errors.add("Row " + (row.getRowNum() + 1) + ": " + e.getMessage());
+                }
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", successCount);
+            response.put("errors", errors);
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Import failed: " + e.getMessage());
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return null;
+        switch (cell.getCellType()) {
+            case STRING: return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                }
+                // Avoid scientific notation for phone numbers
+                return new java.text.DecimalFormat("#").format(cell.getNumericCellValue());
+            case BOOLEAN: return String.valueOf(cell.getBooleanCellValue());
+            default: return "";
         }
     }
 }

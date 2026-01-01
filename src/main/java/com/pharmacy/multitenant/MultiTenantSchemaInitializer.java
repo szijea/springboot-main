@@ -33,6 +33,7 @@ public class MultiTenantSchemaInitializer {
                     ensureOrderTable(conn, catalog);
                     ensureOrderItemTable(conn, catalog);
                     ensureHangOrderTable(conn, catalog);
+                    ensurePointRewardTable(conn, catalog);
                     // 已有：供应商与入库相关
                     ensureSupplierTable(conn, catalog);
                     ensureStockInTable(conn, catalog);
@@ -372,9 +373,34 @@ public class MultiTenantSchemaInitializer {
                     "cart_json TEXT, " +
                     "member_id VARCHAR(32), " +
                     "member_name VARCHAR(50), " +
+                    "cashier_id INT, " +
+                    "remark VARCHAR(255), " +
+                    "status INT DEFAULT 1, " +
                     "create_time DATETIME DEFAULT CURRENT_TIMESTAMP" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
             try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 hang_order"); }
+        } else {
+            addColumnIfMissing(conn, "hang_order", "cart_json", "TEXT");
+            addColumnIfMissing(conn, "hang_order", "member_id", "VARCHAR(32)");
+            addColumnIfMissing(conn, "hang_order", "member_name", "VARCHAR(50)");
+            addColumnIfMissing(conn, "hang_order", "cashier_id", "INT");
+            addColumnIfMissing(conn, "hang_order", "remark", "VARCHAR(255)");
+            addColumnIfMissing(conn, "hang_order", "status", "INT DEFAULT 1");
+        }
+    }
+
+    private void ensurePointRewardTable(Connection conn, String catalog) throws SQLException {
+        if (!tableExists(conn, catalog, "point_reward")) {
+            String ddl = "CREATE TABLE point_reward (" +
+                    "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                    "name VARCHAR(255) NOT NULL, " +
+                    "points_required INT NOT NULL, " +
+                    "description VARCHAR(500), " +
+                    "is_active BOOLEAN NOT NULL DEFAULT TRUE, " +
+                    "create_time DATETIME(6), " +
+                    "update_time DATETIME(6)" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            try (Statement st = conn.createStatement()) { st.executeUpdate(ddl); System.out.println("[SchemaInit] 已创建表 point_reward"); }
         }
     }
 

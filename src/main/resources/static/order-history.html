@@ -451,12 +451,12 @@
 
             if(!resp.ok){
                 // 如果搜索接口失败，尝试回退到普通列表接口（仅当没有筛选条件时）
-                // 如果有筛选条件但搜索失败，应该报错而不是显示全部
                 const hasFilters = startDate || endDate || status!=='' || paymentType!=='' || memberKeyword;
                 if(!hasFilters && resp.status === 404) {
                      console.warn('[orders] search api not found, fallback to list');
                      resp = await fetch(`/api/orders?page=${page}&size=${size}`, { headers:{ 'Accept':'application/json','X-Shop-Id': tenant } });
                 } else {
+                     // 如果有筛选条件但搜索失败，抛出错误
                      throw new Error('搜索请求失败: ' + resp.status);
                 }
             }

@@ -5,12 +5,35 @@
   const cart = []; // { medicineId, name, spec, price, quantity }
   let selectedMember = null;
   let hangOrders = []; // 简单前端缓存挂单
+  let activeRewards = []; // 积分福利
 
   // Load hangOrders from localStorage
   try {
     const saved = localStorage.getItem('pharmacy_hang_orders');
     if(saved) hangOrders = JSON.parse(saved);
   } catch(e) { console.error('Failed to load hang orders', e); }
+
+  // 加载可用的积分福利
+  async function loadActiveRewards() {
+    try {
+      const res = await fetch('/api/point-rewards/active');
+      if(res.ok) {
+        activeRewards = await res.json();
+      }
+    } catch(e) { console.error('Failed to load rewards', e); }
+  }
+  loadActiveRewards();
+
+  function checkPointRewards(member) {
+    if(!member || !activeRewards.length) return;
+    const points = member.points || 0;
+    const eligibleRewards = activeRewards.filter(r => points >= r.pointsRequired);
+
+    if(eligibleRewards.length > 0) {
+      const rewardNames = eligibleRewards.map(r => `${r.name}(${r.pointsRequired}分)`).join(', ');
+      alert(`【积分福利提醒】\n会员 ${member.name} 当前积分 ${points}，可兑换以下福利：\n${rewardNames}`);
+    }
+  }
 
   // 工具函数
   function formatMoney(v){ return '¥' + (Number(v||0).toFixed(2)); }
@@ -197,6 +220,17 @@
     }
   }
 
+  function updateMemberUI(member){
+    const infoBox = $('selected-member-info');
+    if(!infoBox) return;
+    show(infoBox);
+    safeInner(infoBox, `
+      <div class="font-bold">${member.name} <span class="text-xs font-normal text-gray-500">(${member.levelName||'会员'})</span></div>
+      <div class="text-xs text-gray-500">积分: ${member.points||0} | 余额: ${formatMoney(member.balance)}</div>
+    `);
+    checkPointRewards(member);
+  }
+
   function bindMemberSearchEvents(){
     const resultBox = $('member-search-result');
     if(resultBox){
@@ -207,11 +241,9 @@
         memberAPI.getById(memberId).then(m => {
           selectedMember = m;
           hide(resultBox);
-          const info = $('selected-member-info');
-          if(info){
-            info.classList.remove('hidden');
-            safeInner(info, `<i class='fa fa-user text-primary mr-1'></i> 已选择会员：<span class='font-medium'>${m.name}</span> (积分:${m.points||0})`);
-          }
+
+          updateMemberUI(m);
+
           const clearBtn = $('clear-member-btn');
           if(clearBtn){ clearBtn.classList.remove('hidden'); }
           // 选中会员后，按规则重定价购物车：优先 memberPrice，否则零售价*等级倍率
@@ -270,6 +302,24 @@
 
   function saveHangOrders() {
       // No-op for backend persistence, handled by API calls
+  }
+
+  // 加载挂单列表
+  async function loadHangOrders() {
+    try {
+      const res = await fetch('/api/hang-orders');
+      if(res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json)) {
+            hangOrders = json;
+        } else if (json.data && Array.isArray(json.data)) {
+            hangOrders = json.data;
+        } else {
+            hangOrders = [];
+        }
+        renderHangOrders();
+      }
+    } catch(e) { console.error('Failed to load hang orders', e); }
   }
 
   // 挂单（后端持久化）
@@ -333,14 +383,14 @@
 
           // Delete from backend after restore
           try {
-              await fetch(`/api/hang-orders/${id}`, { method: 'DELETE' });
+              await apiCall(`/hang-orders/${id}`, { method: 'DELETE' });
               loadHangOrders();
               feedback(`<i class='fa fa-undo text-primary'></i> 已恢复挂单 ${id}`, 'success');
           } catch(e) { console.error(e); }
         }
         if(action === 'discard'){
           try {
-              await fetch(`/api/hang-orders/${id}`, { method: 'DELETE' });
+              await apiCall(`/hang-orders/${id}`, { method: 'DELETE' });
               loadHangOrders();
               feedback(`<i class='fa fa-trash text-gray-600'></i> 已删除挂单 ${id}`, 'info');
           } catch(e) { console.error(e); }

@@ -63,7 +63,9 @@
           </div>
           <div class="flex gap-3">
               <button class="btn btn-tonal btn-pill" id="import-btn"><i class="fa fa-upload"></i> 导入会员</button>
+              <input type="file" id="import-file" class="hidden" accept=".xlsx">
               <button class="btn btn-tonal btn-pill" id="export-btn"><i class="fa fa-download"></i> 导出会员</button>
+              <button class="btn btn-tonal btn-pill" id="reward-settings-btn"><i class="fa fa-gift"></i> 积分福利设置</button>
               <button class="btn btn-primary btn-pill" id="add-member"><i class="fa fa-plus"></i> 新增会员</button>
               <!-- 已移除宽度切换与下拉菜单 -->
           </div>
@@ -166,7 +168,252 @@
   <button class="btn btn-outline btn-pill text-xs" id="batch-export-xlsx"><i class="fa fa-file-excel-o"></i> Excel</button>
   <button class="btn btn-outline btn-pill text-xs" id="batch-clear"><i class="fa fa-times"></i> 清空</button>
 </div>
-<!-- 会员页脚本在下面主脚本中 -->
+<!-- 积分福利设置模态框 -->
+<div id="reward-settings-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+    <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+      <h3 class="text-xl font-bold text-gray-800"><i class="fa fa-gift text-primary mr-2"></i>积分福利设置</h3>
+      <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="document.getElementById('reward-settings-modal').classList.add('hidden')">
+        <i class="fa fa-times text-xl"></i>
+      </button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1">
+      <!-- 添加新福利表单 -->
+      <div class="bg-blue-50 p-4 rounded-lg mb-6 border border-blue-100">
+        <h4 class="font-bold text-blue-800 mb-3 text-sm">添加新福利</h4>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <input type="text" id="new-reward-name" class="input text-sm" placeholder="福利名称 (如: 保温杯)">
+          <input type="number" id="new-reward-points" class="input text-sm" placeholder="所需积分 (如: 1000)">
+          <input type="text" id="new-reward-desc" class="input text-sm" placeholder="描述 (可选)">
+        </div>
+        <div class="flex justify-end">
+          <button class="btn btn-primary btn-sm" onclick="createNewReward()">添加福利</button>
+        </div>
+      </div>
+
+      <!-- 现有福利列表 -->
+      <h4 class="font-bold text-gray-700 mb-3 text-sm">现有福利列表</h4>
+      <div class="overflow-x-auto rounded-lg border">
+        <table class="w-full text-sm text-left">
+          <thead class="bg-gray-50 text-gray-600 font-medium border-b">
+            <tr>
+              <th class="px-4 py-3">名称</th>
+              <th class="px-4 py-3">所需积分</th>
+              <th class="px-4 py-3">描述</th>
+              <th class="px-4 py-3">状态</th>
+              <th class="px-4 py-3 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="rewards-tbody" class="divide-y divide-gray-100">
+            <!-- 动态填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
+      <button class="btn btn-outline" onclick="document.getElementById('reward-settings-modal').classList.add('hidden')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 积分兑换模态框 -->
+<div id="exchange-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col">
+    <div class="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+      <h3 class="text-xl font-bold text-gray-800"><i class="fa fa-gift text-orange-500 mr-2"></i>积分兑换</h3>
+      <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="document.getElementById('exchange-modal').classList.add('hidden')">
+        <i class="fa fa-times text-xl"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="mb-4">
+        <p class="text-sm text-gray-600">会员: <span id="exchange-member-name" class="font-bold"></span></p>
+        <p class="text-sm text-gray-600">当前积分: <span id="exchange-member-points" class="font-bold text-primary"></span></p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">选择福利</label>
+        <select id="exchange-reward-select" class="input w-full text-sm">
+          <option value="">-- 请选择福利 --</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">或 自定义扣除积分</label>
+        <input type="number" id="exchange-custom-points" class="input w-full text-sm" placeholder="输入要扣除的积分">
+      </div>
+    </div>
+    <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-3">
+      <button class="btn btn-outline" onclick="document.getElementById('exchange-modal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="confirmExchange()">确认兑换</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 积分福利相关逻辑
+(function(){
+  const modal = document.getElementById('reward-settings-modal');
+  const btn = document.getElementById('reward-settings-btn');
+  const tbody = document.getElementById('rewards-tbody');
+
+  if(btn){
+    btn.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      loadRewards();
+    });
+  }
+
+  window.loadRewards = async function() {
+    try {
+      const rewards = await apiCall('/point-rewards');
+      renderRewards(rewards);
+    } catch (e) {
+      console.error(e);
+      api.showMessage('加载福利列表失败', 'error');
+    }
+  };
+
+  function renderRewards(rewards) {
+    if(!tbody) return;
+    tbody.innerHTML = rewards.map(r => `
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-4 py-3 font-medium">${r.name}</td>
+        <td class="px-4 py-3 text-primary font-bold">${r.pointsRequired}</td>
+        <td class="px-4 py-3 text-gray-500 truncate max-w-[150px]">${r.description || '-'}</td>
+        <td class="px-4 py-3">
+          <span class="px-2 py-1 rounded-full text-xs ${r.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+            ${r.isActive ? '启用' : '禁用'}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-right space-x-2">
+          <button class="text-xs ${r.isActive ? 'text-orange-500' : 'text-green-600'} hover:underline" onclick="toggleReward(${r.id})">
+            ${r.isActive ? '禁用' : '启用'}
+          </button>
+          <button class="text-xs text-red-500 hover:underline" onclick="deleteReward(${r.id})">删除</button>
+        </td>
+      </tr>
+    `).join('');
+    if (rewards.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无福利设置</td></tr>';
+    }
+  }
+
+  window.createNewReward = async function() {
+    const name = document.getElementById('new-reward-name').value.trim();
+    const points = parseInt(document.getElementById('new-reward-points').value);
+    const desc = document.getElementById('new-reward-desc').value.trim();
+
+    if (!name || !points) {
+      api.showMessage('请填写名称和所需积分', 'warning');
+      return;
+    }
+
+    try {
+      await apiCall('/point-rewards', {
+        method: 'POST',
+        body: { name, pointsRequired: points, description: desc, isActive: true }
+      });
+
+      document.getElementById('new-reward-name').value = '';
+      document.getElementById('new-reward-points').value = '';
+      document.getElementById('new-reward-desc').value = '';
+
+      api.showMessage('福利添加成功', 'success');
+      loadRewards();
+    } catch (e) {
+      console.error(e);
+      api.showMessage('添加失败', 'error');
+    }
+  };
+
+  window.deleteReward = async function(id) {
+    if (!confirm('确定要删除这个福利吗？')) return;
+    try {
+      await apiCall(`/point-rewards/${id}`, { method: 'DELETE' });
+      api.showMessage('删除成功', 'success');
+      loadRewards();
+    } catch (e) {
+      api.showMessage('删除失败', 'error');
+    }
+  };
+
+  window.toggleReward = async function(id) {
+    try {
+      await apiCall(`/point-rewards/${id}/toggle`, { method: 'POST' });
+      loadRewards();
+    } catch (e) {
+      api.showMessage('操作失败', 'error');
+    }
+  };
+})();
+
+// 积分兑换逻辑
+(function(){
+  let currentExchangeMemberId = null;
+  let activeRewards = [];
+
+  window.showExchangeModal = async function(memberId) {
+    const member = membersData.find(m => String(m.memberId) === String(memberId));
+    if (!member) return;
+
+    currentExchangeMemberId = memberId;
+    document.getElementById('exchange-member-name').textContent = member.name;
+    document.getElementById('exchange-member-points').textContent = member.points || 0;
+    document.getElementById('exchange-custom-points').value = '';
+
+    // 加载可用福利
+    try {
+      activeRewards = await apiCall('/point-rewards/active');
+      const select = document.getElementById('exchange-reward-select');
+      select.innerHTML = '<option value="">-- 请选择福利 --</option>' +
+        activeRewards.map(r => `<option value="${r.id}" data-points="${r.pointsRequired}">${r.name} (${r.pointsRequired}分)</option>`).join('');
+
+      // 监听选择变化
+      select.onchange = function() {
+        const opt = this.options[this.selectedIndex];
+        if (opt.value) {
+          document.getElementById('exchange-custom-points').value = opt.getAttribute('data-points');
+        }
+      };
+    } catch (e) {
+      console.error(e);
+    }
+
+    document.getElementById('exchange-modal').classList.remove('hidden');
+  };
+
+  window.confirmExchange = async function() {
+    const points = parseInt(document.getElementById('exchange-custom-points').value);
+    if (!points || points <= 0) {
+      api.showMessage('请输入有效的积分数值', 'warning');
+      return;
+    }
+
+    const member = membersData.find(m => String(m.memberId) === String(currentExchangeMemberId));
+    if (member && (member.points || 0) < points) {
+      api.showMessage('会员积分不足', 'error');
+      return;
+    }
+
+    if (!confirm(`确定要扣除 ${points} 积分进行兑换吗？`)) return;
+
+    try {
+      await apiCall(`/members/${currentExchangeMemberId}/exchange`, {
+        method: 'POST',
+        body: { points }
+      });
+
+      api.showMessage('兑换成功', 'success');
+      document.getElementById('exchange-modal').classList.add('hidden');
+      loadMembers(currentPage); // 刷新列表
+    } catch (e) {
+      api.showMessage('兑换失败: ' + e.message, 'error');
+    }
+  };
+})();
+</script>
+
 <script>
 // --- API & Utilities (restored) ---
 const tenant = localStorage.getItem('selectedTenant') || '';
@@ -244,7 +491,79 @@ function getLevelBadge(level){ const lv=Number(level); let text='普通会员', 
 function resetFilter(){ ['filter-name','filter-phone','filter-level','filter-date','points-min','points-max','cons-min','cons-max'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';}); loadMembers(1); api.showMessage('筛选已重置','info'); }
 function applyAllFilters(){ const name=document.getElementById('filter-name')?.value||''; const phone=document.getElementById('filter-phone')?.value||''; const level=document.getElementById('filter-level')?.value||''; const date=document.getElementById('filter-date')?.value||''; const ptsMin=parseInt(document.getElementById('points-min')?.value)||0; const ptsMax=parseInt(document.getElementById('points-max')?.value)||999999; const consMin=parseInt(document.getElementById('cons-min')?.value)||0; const consMax=parseInt(document.getElementById('cons-max')?.value)||999999; let filtered=membersData.filter(m=>{ if(name && !String(m.name||'').includes(name)) return false; if(phone && !String(m.phone||'').includes(phone)) return false; if(level && String(m.level)!==level) return false; if(date && !String(m.createTime||'').startsWith(date)) return false; const pts=m.points||0; if(pts<ptsMin||pts>ptsMax) return false; const cons=m.consumptionCount||0; if(cons<consMin||cons>consMax) return false; return true; }); renderMemberTable(filtered.slice(0,pageSize)); updatePagination(filtered.length,1); api.showMessage(`筛选结果：${filtered.length} 条`,'success'); }
 async function initApp(){ try{ await loadMembers(); await loadMemberStats(); setupEventListeners(); }catch(e){ console.error('[Init]失败',e);} }
-function setupEventListeners(){ elements.addMemberBtn?.addEventListener('click',showAddMemberModal); elements.closeModalBtn?.addEventListener('click',hideMemberModal); elements.cancelMemberBtn?.addEventListener('click',hideMemberModal); elements.saveMemberBtn?.addEventListener('click',handleSaveMember); document.getElementById('reset-filter')?.addEventListener('click',resetFilter); document.getElementById('apply-filter')?.addEventListener('click',()=>{ applyAllFilters&&applyAllFilters(); }); document.getElementById('toggle-advanced')?.addEventListener('click',()=>document.getElementById('advanced-filters').classList.toggle('open')); document.getElementById('advanced-reset')?.addEventListener('click',()=>{ ['points-min','points-max','cons-min','cons-max'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';}); applyAllFilters&&applyAllFilters(); }); document.getElementById('advanced-apply')?.addEventListener('click',()=>applyAllFilters&&applyAllFilters()); elements.importBtn?.addEventListener('click',()=>api.showMessage('导入功能开发中','warning')); elements.exportBtn?.addEventListener('click',()=>api.showMessage('导出功能开发中','warning')); }
+function setupEventListeners(){
+  elements.addMemberBtn?.addEventListener('click',showAddMemberModal);
+  elements.closeModalBtn?.addEventListener('click',hideMemberModal);
+  elements.cancelMemberBtn?.addEventListener('click',hideMemberModal);
+  elements.saveMemberBtn?.addEventListener('click',handleSaveMember);
+  document.getElementById('reset-filter')?.addEventListener('click',resetFilter);
+  document.getElementById('apply-filter')?.addEventListener('click',()=>{ applyAllFilters&&applyAllFilters(); });
+  document.getElementById('toggle-advanced')?.addEventListener('click',()=>document.getElementById('advanced-filters').classList.toggle('open'));
+  document.getElementById('advanced-reset')?.addEventListener('click',()=>{ ['points-min','points-max','cons-min','cons-max'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';}); applyAllFilters&&applyAllFilters(); });
+  document.getElementById('advanced-apply')?.addEventListener('click',()=>applyAllFilters&&applyAllFilters());
+  elements.importBtn?.addEventListener('click',()=>document.getElementById('import-file').click());
+  document.getElementById('import-file')?.addEventListener('change', handleImport);
+  elements.exportBtn?.addEventListener('click',handleExport);
+}
+async function handleImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    api.showMessage('正在导入...', 'info');
+    const res = await api.request('/import', {
+      method: 'POST',
+      body: formData,
+      headers: {} // Let browser set Content-Type for FormData
+    });
+
+    if (res.success > 0) {
+      api.showMessage(`成功导入 ${res.success} 条会员数据`, 'success');
+      loadMembers(1);
+    }
+    if (res.errors && res.errors.length > 0) {
+      console.warn('Import errors:', res.errors);
+      api.showMessage(`导入完成，但有 ${res.errors.length} 条错误，请查看控制台`, 'warning');
+    }
+  } catch (err) {
+    api.showMessage('导入失败: ' + err.message, 'error');
+  }
+  e.target.value = ''; // Reset input
+}
+
+async function handleExport() {
+  try {
+    api.showMessage('正在导出...', 'info');
+    const token = localStorage.getItem('token');
+    const tenant = localStorage.getItem('selectedTenant') || '';
+
+    const response = await fetch('/api/members/export', {
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'X-Shop-Id': tenant
+      }
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'members.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+    api.showMessage('导出成功', 'success');
+  } catch (err) {
+    api.showMessage('导出失败: ' + err.message, 'error');
+  }
+}
 async function loadMembers(page=1){
   try{
     const resp=await api.memberAPI.getAll();
