@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/theme-premium.css" />
     <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
+    <link rel="stylesheet" href="css/ui-modern.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
 
@@ -21,17 +22,6 @@
         .sidebar-item { display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:.5rem;transition:.2s;cursor:pointer; }
         .sidebar-item.active { background:var(--color-primary);color:#fff; }
         .sidebar-item:not(.active):hover { background:#f3f4f6; }
-        .card { background:#fff;border:1px solid #f1f1f1;border-radius:.75rem;box-shadow:0 1px 2px rgba(0,0,0,.05);overflow:hidden;transition:.3s; }
-        .card:hover { box-shadow:0 4px 12px rgba(0,0,0,.08); }
-        .btn { display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:.5rem;font-weight:500;transition:.2s;line-height:1.25; }
-        .btn-primary { background:var(--color-primary);color:#fff; }
-        .btn-primary:hover { background:#0f4bcc; }
-        .btn-outline { background:#fff;color:#374151;border:1px solid #d1d5db; }
-        .btn-outline:hover { background:#f9fafb; }
-        .btn-danger { background:var(--color-accent);color:#fff; }
-        .btn-danger:hover { background:#e13f1d; }
-        .input { width:100%;padding:.5rem .75rem;border:1px solid #d1d5db;border-radius:.5rem;outline:none;transition:.15s; }
-        .input:focus { border-color:var(--color-primary);box-shadow:0 0 0 3px rgba(22,93,255,.15); }
         .badge { display:inline-flex;align-items:center;padding:.25rem .5rem;border-radius:999px;font-size:.75rem;font-weight:500; }
         .temperature-normal { background:#dcfce7;color:#166534; }
         .temperature-high { background:rgba(255,171,0,.15);color:#b45309; }
@@ -50,8 +40,10 @@
         .layout-sidebar { flex: 0 0 250px; }
         .layout-main { flex: 1; }
     </style>
+    <script src="js/common.js" defer></script>
+    <script src="js/common-nav.js" defer></script>
 </head>
-<body class="modern-ui density-comfortable console-spacing">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="staff"></div>
@@ -67,20 +59,20 @@
         <p class="text-gray-500">人员档案与权限配置</p>
       </div>
       <div class="flex gap-2 items-center">
-        <select id="filter-role" class="input text-xs py-1.5 w-24">
+        <select id="filter-role" class="input-modern text-xs py-1.5 w-24" aria-label="职位筛选">
             <option value="">所有职位</option>
             <option value="1">管理员</option>
             <option value="2">店长</option>
             <option value="3">收银员</option>
             <option value="4">药剂师</option>
         </select>
-        <select id="filter-status" class="input text-xs py-1.5 w-24">
+        <select id="filter-status" class="input-modern text-xs py-1.5 w-24" aria-label="状态筛选">
             <option value="">所有状态</option>
             <option value="1">在岗</option>
             <option value="0">离职/禁用</option>
         </select>
         <div class="relative">
-            <input type="text" id="staff-search" class="input text-xs py-1.5 pl-8 w-48" placeholder="搜索姓名/用户名/电话">
+            <input type="text" id="staff-search" class="input-modern text-xs py-1.5 pl-8 w-48" placeholder="搜索姓名/用户名/电话" aria-label="员工搜索">
             <i class="fa fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
         </div>
         <button class="btn btn-outline text-xs" id="refresh-staff"><i class="fa fa-refresh"></i> 刷新</button>
@@ -89,16 +81,16 @@
     </div>
 
     <div class="dashboard-kpis kpi-horizontal mb-6" id="staff-kpi-row">
-      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">员工总数</p><h3 class="text-xl font-bold" id="kpi-staff-total">--</h3></div>
-      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">在岗</p><h3 class="text-xl font-bold" id="kpi-staff-active">--</h3></div>
-      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">本月新增</p><h3 class="text-xl font-bold" id="kpi-staff-new">--</h3></div>
-      <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">请假/离岗</p><h3 class="text-xl font-bold" id="kpi-staff-leave">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">员工总数</p><h3 class="text-xl font-bold" id="kpi-staff-total">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">在岗</p><h3 class="text-xl font-bold" id="kpi-staff-active">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">本月新增</p><h3 class="text-xl font-bold" id="kpi-staff-new">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">请假/离岗</p><h3 class="text-xl font-bold" id="kpi-staff-leave">--</h3></div>
     </div>
 
     <div class="layout-main space-y-6">
-        <div class="card">
+        <div class="card-modern">
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 table-modern-compact">
               <thead class="bg-gray-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">员工ID</th>
@@ -178,13 +170,7 @@
     </div>
 </div>
 
-<div class="sr-only" aria-hidden="true" id="a11y-hidden-labels-staff">
-  <label for="shop-select">所属店铺筛选</label>
-  <label for="staff-search">员工搜索</label>
-  <label for="staff-name">姓名</label>
-  <label for="staff-role">职位</label>
-  <label for="staff-phone">联系电话</label>
-</div>
+
 
 <script>
     (function(){

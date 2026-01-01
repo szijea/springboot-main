@@ -11,8 +11,9 @@
   <link rel="stylesheet" href="css/theme-premium.css" />
   <link rel="stylesheet" href="css/theme-lightwide.css" />
   <link rel="stylesheet" href="css/ui-enhanced.css" />
+  <link rel="stylesheet" href="css/ui-modern.css" />
 </head>
-<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="test"></div>
@@ -35,18 +36,18 @@
         </div>
 
         <div class="cozy-grid cols-3">
-          <div class="card card-interactive elevation-2 p-6"><h3 class="font-bold mb-2 text-sm">基础连通性</h3><p class="text-xs text-gray-500 mb-4">测试 /api/health</p><button class="btn btn-primary text-xs" onclick="testHealth()">测试</button></div>
-          <div class="card card-interactive elevation-2 p-6"><h3 class="font-bold mb-2 text-sm">数据库连接</h3><p class="text-xs text-gray-500 mb-4">测试 /api/test/db</p><button class="btn btn-primary text-xs" onclick="testDatabase()">测试</button></div>
-          <div class="card card-interactive elevation-2 p-6"><h3 class="font-bold mb-2 text-sm">药品搜索</h3><p class="text-xs text-gray-500 mb-4">测试 /api/medicines/search</p><button class="btn btn-primary text-xs" onclick="testMedicineSearch()">测试</button></div>
+          <div class="card-modern p-6"><h3 class="font-bold mb-2 text-sm">基础连通性</h3><p class="text-xs text-gray-500 mb-4">测试 /api/health</p><button class="btn btn-primary text-xs" onclick="testHealth()">测试</button></div>
+          <div class="card-modern p-6"><h3 class="font-bold mb-2 text-sm">数据库连接</h3><p class="text-xs text-gray-500 mb-4">测试 /api/test/db</p><button class="btn btn-primary text-xs" onclick="testDatabase()">测试</button></div>
+          <div class="card-modern p-6"><h3 class="font-bold mb-2 text-sm">药品搜索</h3><p class="text-xs text-gray-500 mb-4">测试 /api/medicines/search</p><button class="btn btn-primary text-xs" onclick="testMedicineSearch()">测试</button></div>
         </div>
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <h3 class="font-bold mb-4 text-lg">测试结果</h3>
           <div id="result" class="text-sm whitespace-pre-wrap bg-gray-50 border border-gray-200 rounded p-4 min-h-[120px]"></div>
         </div>
         <div class="dashboard-kpis kpi-horizontal mb-6" id="test-kpi-row">
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">健康检查</p><h3 class="text-xl font-bold" id="kpi-health">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">数据库连接</p><h3 class="text-xl font-bold" id="kpi-db">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">药品搜索</p><h3 class="text-xl font-bold" id="kpi-search">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">健康检查</p><h3 class="text-xl font-bold" id="kpi-health">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">数据库连接</p><h3 class="text-xl font-bold" id="kpi-db">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">药品搜索</p><h3 class="text-xl font-bold" id="kpi-search">--</h3></div>
         </div>
       </div> <!-- end app-shell -->
     </div> <!-- end container-fluid -->

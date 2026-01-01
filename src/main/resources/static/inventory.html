@@ -17,28 +17,28 @@
     /* 覆盖旧样式为现代布局 */
     .inventory-grid { display:grid; gap:1.25rem; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
     .search-section-modern { display:flex; flex-direction:column; gap:.6rem; }
-    .main-content{flex:1;padding:1.25rem;} .main-content > .container-fluid{max-width:1400px;margin:0 auto;}
+    .main-content{flex:1;padding:1.25rem;} .main-content > .container-fluid{max-width:100% !important;margin:0 auto;width:100%;}
     .badge{display:inline-block;padding:.25rem .5rem;border-radius:.25rem;font-size:.75rem} .btn{display:inline-flex;align-items:center;gap:.25rem}
     .spinner{border:2px solid #eee;border-top-color:#3b82f6;border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
 
     /* 搜索输入与筛选收紧 */
-    .input-modern{ min-height: 34px; padding: 0.35rem 0.55rem; font-size: 0.9rem; }
-    .btn-modern{ min-height: 34px; padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+    .input-modern{ min-height: 42px; padding: 0.35rem 0.75rem; font-size: 0.9rem; border-radius: 8px; }
+    .btn-modern{ min-height: 42px; padding: 0.4rem 1rem; font-size: 0.9rem; border-radius: 8px; }
 
     /* 修复分页区重叠与拥挤 */
     .pagination-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
     .pagination-controls .input-modern { min-width: 80px; }
     .inventory-card { margin-bottom: 1rem; }
-    .table-wrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .table-wrapper { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius: 8px; border: 1px solid #e2e8f0; }
 
     /* 修复编辑面板被覆盖：提高层级 */
     #inventory-edit-modal, #inventory-move-modal, .inventory-modal-backdrop { z-index: 9999 !important; }
     body.modal-open { overflow: hidden; }
 
     /* 顶部编辑卡片增强：粘性、滚动、层级更高 */
-    #edit-inline-panel { position: sticky; top: 64px; z-index: 1000; max-height: 50vh; overflow-y: auto; }
-    #edit-inline-panel .input-modern { min-height: 36px; }
+    #edit-inline-panel { position: sticky; top: 80px; z-index: 1000; max-height: 60vh; overflow-y: auto; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    #edit-inline-panel .input-modern { min-height: 38px; }
   </style>
   <script src="js/common-nav.js" defer></script>
   <script src="js/common.js"></script>
@@ -47,58 +47,65 @@
   <div id="common-nav" data-active="inventory"></div>
   <main class="flex-1 flex flex-col pt-16">
     <div class="main-content" id="main-content">
-      <div class="container-fluid">
-        <h2 class="page-title font-bold page-title-decor mb-4">库存管理</h2>
-        <p class="text-gray-500 mb-3">分页查看所有药品的当前库存</p>
+      <div class="container-fluid section-gap">
+        <div class="app-shell">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">库存管理</h2>
+            <p class="text-gray-500 mt-1">分页查看所有药品的当前库存</p>
+          </div>
+        </div>
+
+
 
         <!-- 新增：顶部搜索与筛选 -->
-        <div class="card-modern p-4 mb-4">
-          <div class="grid grid-cols-1 lg:grid-cols-5 gap-3 search-section-modern">
+        <div class="card-modern p-6 mb-6">
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 search-section-modern">
             <div class="flex flex-col">
-              <label class="text-xs text-gray-500" for="inv-search-keyword">药品关键字/条码</label>
+              <label class="text-xs font-medium text-gray-700 mb-1" for="inv-search-keyword">药品关键字/条码</label>
               <input id="inv-search-keyword" class="input-modern" placeholder="输入名称、规格、厂家或条码" />
             </div>
             <div class="flex flex-col">
-              <label class="text-xs text-gray-500" for="inv-filter-stock">库存筛选</label>
+              <label class="text-xs font-medium text-gray-700 mb-1" for="inv-filter-stock">库存筛选</label>
               <select id="inv-filter-stock" class="input-modern">
                 <option value="">全部</option>
                 <option value="gt0">库存>0</option>
                 <option value="eq0">库存=0</option>
               </select>
             </div>
-            <div class="flex items-end gap-2">
-              <button id="inv-btn-search" class="btn-modern" style="background:#2563eb;color:#fff"><i class="fa fa-search"></i> 搜索</button>
-              <button id="inv-btn-reset" class="btn-modern"><i class="fa fa-undo"></i> 重置</button>
+            <div class="flex items-end gap-2 lg:col-span-2">
+              <button id="inv-btn-search" class="btn-modern bg-blue-600 text-white hover:bg-blue-700"><i class="fa fa-search"></i> 搜索</button>
+              <button id="inv-btn-reset" class="btn-modern bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"><i class="fa fa-undo"></i> 重置</button>
             </div>
-            <div class="flex items-end text-xs text-gray-500">提示：搜索走药品库，结果会显示当前库存；入库后可立即通过关键字或条码搜索到。</div>
+            <div class="flex items-end text-xs text-gray-500 lg:col-span-1">提示：搜索走药品库，结果会显示当前库存；入库后可立即通过关键字或条码搜索到。</div>
           </div>
           <div id="inv-search-status" class="text-xs text-gray-500 mt-2 hidden"></div>
         </div>
 
         <!-- 顶部内联编辑卡片（默认隐藏） -->
-        <div id="edit-inline-panel" class="card-modern p-4 mb-4 hidden">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="section-title-modern">编辑药品信息（顶部）</h3>
+        <div id="edit-inline-panel" class="card-modern p-6 mb-6 hidden bg-white">
+          <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+            <h3 class="font-bold text-lg text-gray-800">编辑药品信息</h3>
             <div class="flex gap-2 items-center">
               <span id="inline-loading" class="text-xs text-gray-400 hidden"><i class="fa fa-spinner fa-spin mr-1"></i>加载中...</span>
-              <button class="btn btn-outline btn-xs" id="inline-close"><i class="fa fa-times"></i> 收起</button>
+              <button class="btn btn-outline btn-sm rounded-full" id="inline-close"><i class="fa fa-times"></i> 收起</button>
             </div>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs mb-3">
-            <div class="flex flex-col"><span class="text-gray-500">药品ID</span><input id="inline-id" class="input-modern w-full" disabled></div>
-            <div class="flex flex-col"><span class="text-gray-500">批准文号</span><input id="inline-approvalNo" class="input-modern w-full" placeholder="例如 国药准字H0000"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">条形码</span><input id="inline-barcode" class="input-modern w-full" placeholder="扫描或输入条码"/></div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-sm mb-4">
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">药品ID</span><input id="inline-id" class="input-modern w-full bg-gray-50" disabled></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">批准文号</span><input id="inline-approvalNo" class="input-modern w-full" placeholder="例如 国药准字H0000"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">条形码</span><input id="inline-barcode" class="input-modern w-full" placeholder="扫描或输入条码"/></div>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 text-xs mb-3">
-            <div class="flex flex-col"><span class="text-gray-500">通用名</span><input id="inline-gn" class="input-modern w-full" placeholder="例如 阿司匹林"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">商品名</span><input id="inline-tn" class="input-modern w-full" placeholder="例如 某品牌"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">规格</span><input id="inline-spec" class="input-modern w-full" placeholder="例如 100mg*100片"/></div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 text-sm mb-4">
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">通用名</span><input id="inline-gn" class="input-modern w-full" placeholder="例如 阿司匹林"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">商品名</span><input id="inline-tn" class="input-modern w-full" placeholder="例如 某品牌"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">规格</span><input id="inline-spec" class="input-modern w-full" placeholder="例如 100mg*100片"/></div>
           </div>
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
-            <div class="flex flex-col"><span class="text-gray-500">零售价(¥)</span><input id="inline-retailPrice" type="number" step="0.01" class="input-modern w-full" placeholder="19.90"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">会员价(¥)</span><input id="inline-memberPrice" type="number" step="0.01" class="input-modern w-full" placeholder="18.00"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">折扣%</span><input id="inline-discountPercent" type="number" step="0.01" class="input-modern w-full" placeholder="自动"/></div>
-            <div class="flex flex-col"><span class="text-gray-500">分类ID</span><input id="inline-categoryId" type="number" class="input-modern w-full" placeholder="数字"/></div>
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 text-sm mb-4">
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">零售价(¥)</span><input id="inline-retailPrice" type="number" step="0.01" class="input-modern w-full" placeholder="19.90"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">会员价(¥)</span><input id="inline-memberPrice" type="number" step="0.01" class="input-modern w-full" placeholder="18.00"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">折扣%</span><input id="inline-discountPercent" type="number" step="0.01" class="input-modern w-full" placeholder="自动"/></div>
+            <div class="flex flex-col"><span class="text-gray-500 mb-1">分类ID</span><input id="inline-categoryId" type="number" class="input-modern w-full" placeholder="数字"/></div>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 text-xs mb-3">
             <div class="flex flex-col"><span class="text-gray-500">生产日期</span><input id="inline-productionDate" type="date" class="input-modern w-full"/></div>
@@ -149,6 +156,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   </main>

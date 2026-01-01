@@ -1,104 +1,40 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+  <script>(function(){if(!window.tailwind){window.tailwind={config:{}};} if(!window.tailwind.config){window.tailwind.config={};}})();</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>智慧药房收银系统 - 毛利率分析</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="css/font-awesome.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-  
-  <!-- 配置Tailwind -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#165DFF',
-            secondary: '#36B37E',
-            accent: '#FF5630',
-          },
-          fontFamily: {
-            inter: ['Inter', 'system-ui', 'sans-serif'],
-          },
-        },
-      }
-    }
-  </script>
-  
-  <style type="text/tailwindcss">
-    @layer utilities {
-      .sidebar-item {
-        @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 cursor-pointer;
-      }
-      .sidebar-item.active {
-        @apply bg-primary text-white;
-      }
-      .sidebar-item:not(.active):hover {
-        @apply bg-gray-100;
-      }
-      .card {
-        @apply bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md;
-      }
-      .btn {
-        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2;
-      }
-      .btn-primary {
-        @apply bg-primary text-white hover:bg-primary/90;
-      }
-      .btn-outline {
-        @apply border border-gray-300 hover:bg-gray-50;
-      }
-      .input {
-        @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all;
-      }
-      .badge {
-        @apply px-2 py-1 rounded-full text-xs font-medium;
-      }
-    }
+  <link rel="stylesheet" href="css/tailwind.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/theme-enhanced.css" />
+  <link rel="stylesheet" href="css/theme-premium.css" />
+  <link rel="stylesheet" href="css/theme-lightwide.css" />
+  <link rel="stylesheet" href="css/ui-enhanced.css" />
+  <link rel="stylesheet" href="css/ui-modern.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* 统一主内容滚动样式 */
+    .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
+    .main-content::-webkit-scrollbar{width:8px}
+    .main-content::-webkit-scrollbar-track{background:#f5f5f5;border-radius:4px}
+    .main-content::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+    .main-content::-webkit-scrollbar-thumb:hover{background:#9ca3af}
   </style>
+  <script src="js/common.js" defer></script>
+  <script src="js/common-nav.js" defer></script>
 </head>
 
-<body class="font-inter bg-gray-50 text-gray-800 min-h-screen flex overflow-hidden">
-  <!-- 侧边栏（添加收银台导航项） -->
-  <aside class="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-full transition-all duration-300 ease-in-out z-10">
-    <div class="p-4 border-b border-gray-200">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-          <i class="fa fa-medkit text-primary"></i>
-        </div>
-        <h1 class="font-bold text-lg">智慧药房系统</h1>
-      </div>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto py-4 px-3">
-      <nav class="space-y-1">
-        <!-- 新增：核心操作区（含收银台入口） -->
-        <p class="text-xs font-medium text-gray-500 px-4 mb-2">核心操作</p>
-        
-        <a href="cashier.html" class="sidebar-item block">
-          <i class="fa fa-shopping-cart w-5 text-center"></i>
-          <span>收银台</span>
-        </a>
-        
-        <!-- 原有：数据分析区 -->
-        <p class="text-xs font-medium text-gray-500 px-4 mb-2 mt-6">数据分析</p>
-        
-        <a href="profit.html" class="sidebar-item active block">
-          <i class="fa fa-line-chart w-5 text-center"></i>
-          <span>毛利率分析</span>
-        </a>
-        
-        <a href="sales.html" class="sidebar-item block">
-          <i class="fa fa-bar-chart w-5 text-center"></i>
-          <span>销售统计</span>
-        </a>
-      </nav>
-    </div>
-    
-    <div class="p-4 border-t border-gray-200">
-      <div class="flex items-center gap-3">
-        <img src="https://picsum.photos/200/200?random=1" alt="用户头像" class="w-10 h-10 rounded-full object-cover">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
+  <div id="common-nav" data-active="profit"></div>
+  <div id="notification-panel" class="hidden absolute top-20 right-6 bg-white shadow-lg rounded-lg p-4 w-64 text-sm">
+    <div class="font-medium mb-2">通知面板</div>
+    <p class="text-gray-500">暂无通知</p>
+  </div>
+  <main class="flex-1 flex flex-col pt-16">
+    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
         <div>
           <p class="font-medium text-sm">张药师</p>
           <p class="text-xs text-gray-500">管理员</p>
@@ -167,7 +103,7 @@
       
       <!-- 利润概览卡片 -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <div class="flex justify-between items-start mb-4">
             <div>
               <p class="text-gray-500 text-sm">总销售额</p>
@@ -185,7 +121,7 @@
           </div>
         </div>
         
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <div class="flex justify-between items-start mb-4">
             <div>
               <p class="text-gray-500 text-sm">总成本</p>
@@ -203,7 +139,7 @@
           </div>
         </div>
         
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <div class="flex justify-between items-start mb-4">
             <div>
               <p class="text-gray-500 text-sm">平均毛利率</p>
@@ -224,7 +160,7 @@
       
       <!-- 图表区域 -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold">毛利率趋势</h3>
             <div class="flex gap-2">
@@ -238,7 +174,7 @@
           </div>
         </div>
         
-        <div class="card p-6">
+        <div class="card-modern p-6">
           <div class="flex justify-between items-center mb-6">
             <h3 class="font-bold">各类别毛利率</h3>
             <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
@@ -251,7 +187,7 @@
       
       <!-- 高利润与低利润药品 -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="card">
+        <div class="card-modern">
           <div class="p-6 border-b border-gray-100">
             <div class="flex justify-between items-center">
               <h3 class="font-bold">高毛利率药品 TOP10</h3>
@@ -439,5 +375,7 @@
     // 页面加载完成后初始化图表
     window.addEventListener('load', initCharts);
   </script>
+    </div>
+  </main>
 </body>
 </html>

@@ -56,7 +56,7 @@
         <!-- 数据统计卡片 -->
         <div class="dashboard-kpis kpi-horizontal mb-6" id="dashboard-kpi-row">
             <!-- 今日销售额 -->
-            <div class="card card-interactive elevation-2 p-6">
+            <div class="card-modern p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <p class="text-gray-500 text-sm">今日销售额</p>
@@ -75,7 +75,7 @@
             </div>
 
             <!-- 今日订单 -->
-            <div class="card card-interactive elevation-2 p-6">
+            <div class="card-modern p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <p class="text-gray-500 text-sm">今日订单</p>
@@ -94,7 +94,7 @@
             </div>
 
             <!-- 会员消费 -->
-            <div class="card card-interactive elevation-2 p-6">
+            <div class="card-modern p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <p class="text-gray-500 text-sm">会员消费</p>
@@ -113,7 +113,7 @@
             </div>
 
             <!-- 库存预警 (原第4卡) -->
-            <div class="card card-interactive elevation-2 p-6">
+            <div class="card-modern p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <p class="text-gray-500 text-sm">库存预警</p>
@@ -132,7 +132,7 @@
             </div>
 
             <!-- 新增: 近效期药品 -->
-            <div class="card card-interactive elevation-2 p-6" id="nearExpiryCard">
+            <div class="card-modern p-6" id="nearExpiryCard">
                 <div class="flex justify-between items-start mb-4">
                     <div>
                         <p class="text-gray-500 text-sm">近效期药品</p>
@@ -154,7 +154,7 @@
         <!-- 图表区域 -->
         <div class="dashboard-charts grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             <!-- 销售趋势图表 -->
-            <div class="card p-6 lg:col-span-2">
+            <div class="card-modern p-6 lg:col-span-2" id="sales-trend-card">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold">销售趋势</h3>
                     <div class="flex gap-2">
@@ -169,7 +169,7 @@
             </div>
 
             <!-- 药品分类占比图表 -->
-            <div class="card p-6">
+            <div class="card-modern p-6" id="category-pie-card">
                 <h3 class="font-bold mb-6">药品分类占比</h3>
                 <div class="h-80">
                     <canvas id="category-pie-canvas"></canvas>
@@ -181,7 +181,7 @@
           <button id="open-audit-btn" type="button" class="btn btn-outline"><i class="fa fa-list"></i> 查看盘点详情</button>
         </div>
         <!-- 今日热销药品 -->
-        <div class="card mb-6" id="hot-products-card">
+        <div class="card-modern mb-6" id="hot-products-card">
             <div class="p-6 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
                 <div class="flex items-center gap-3">
                     <h3 class="font-bold" id="hot-products-title">今日热销药品</h3>
@@ -195,7 +195,7 @@
                 <a href="inventory.html" class="text-primary hover:underline text-sm">查看全部</a>
             </div>
             <div class="overflow-x-auto">
-                <table class="table-modern w-full" id="hot-products-table">
+                <table class="table-modern-compact w-full" id="hot-products-table">
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">药品名称</th>

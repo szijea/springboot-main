@@ -12,14 +12,15 @@
     <link rel="stylesheet" href="css/theme-premium.css" />
     <link rel="stylesheet" href="css/theme-lightwide.css" />
     <link rel="stylesheet" href="css/ui-enhanced.css" />
+    <link rel="stylesheet" href="css/ui-modern.css" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/layout.css" />
     <style>
         /* 统一主内容区滚动条样式 */
-        .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;}
+        .main-content{flex:1 1 auto;padding:1.5rem;min-height:calc(100vh - 64px);overflow-y:auto;scrollbar-width:thin;width:100%;}
         /* 让容器在大屏铺满，避免右侧空白 */
-        .container-fluid{max-width:100%; width:100%;}
-        .app-shell{width:100%;}
+        .container-fluid{max-width:100% !important; width:100%;}
+        .app-shell{width:100% !important; max-width: 100% !important;}
         .main-content::-webkit-scrollbar{width:8px}
         .main-content::-webkit-scrollbar-track{background:#f5f5f5;border-radius:4px}
         .main-content::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
@@ -36,7 +37,7 @@
         #order-date-filter{ min-width: 150px; }
         /* 过滤条可用性增强（整体收紧） */
         #order-filter-bar { padding: 1rem; }
-        #order-filter-bar .input { min-height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+        #order-filter-bar .input-modern { min-height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
         #order-filter-bar label { font-size: 0.78rem; }
         #order-filter-bar .btn { min-height: 34px; padding: 0.4rem 0.7rem; }
         @media (min-width: 768px) {
@@ -160,7 +161,7 @@
       }
     </script>
 </head>
-<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
 <a href="#main-content" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <!-- 注入统一导航（侧边栏 + 顶部） -->
@@ -171,7 +172,10 @@
 </div>
 
 <main class="flex-1 flex flex-col pt-16">
-    <div class="main-content" id="main-content"><div class="container-fluid section-gap"><div class="app-shell">
+    <div class="main-content" id="main-content">
+      <div class="container-fluid section-gap">
+        <div class="app-shell">
+
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 action-bar">
             <div>
                 <h2 class="page-title font-bold page-title-decor heading-accent">历史订单</h2>
@@ -189,25 +193,25 @@
 
         <!-- KPI 横向展示条 -->
         <div class="dashboard-kpis kpi-horizontal mb-6 max-w-none" id="order-kpi-row">
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日订单数</p><h3 class="text-xl font-bold" id="kpi-orders-today">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">今日销售额</p><h3 class="text-xl font-bold" id="kpi-sales-today">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">待支付订单</p><h3 class="text-xl font-bold" id="kpi-pending-count">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">已退款订单</p><h3 class="text-xl font-bold" id="kpi-refund-count">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">平均客单价</p><h3 class="text-xl font-bold" id="kpi-avg-ticket">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">今日订单数</p><h3 class="text-xl font-bold" id="kpi-orders-today">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">今日销售额</p><h3 class="text-xl font-bold" id="kpi-sales-today">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">待支付订单</p><h3 class="text-xl font-bold" id="kpi-pending-count">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">已退款订单</p><h3 class="text-xl font-bold" id="kpi-refund-count">--</h3></div>
+          <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">平均客单价</p><h3 class="text-xl font-bold" id="kpi-avg-ticket">--</h3></div>
         </div>
 
         <!-- 订单筛选与列表 -->
         <div class="space-y-6" id="order-history-content">
           <!-- 新增横向过滤条 -->
-          <div class="card p-4 card-interactive" id="order-filter-bar">
+          <div class="card-modern p-4" id="order-filter-bar">
             <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               <div class="md:col-span-3">
                 <label class="block text-xs font-medium text-gray-700 mb-1" for="order-date-filter">订单日期</label>
-                <input type="date" class="input text-sm w-full" id="order-date-filter">
+                <input type="date" class="input-modern text-sm w-full" id="order-date-filter">
               </div>
               <div class="md:col-span-2">
                 <label class="block text-xs font-medium text-gray-700 mb-1" for="order-status-filter">订单状态</label>
-                <select class="input text-sm w-full" id="order-status-filter">
+                <select class="input-modern text-sm w-full" id="order-status-filter">
                   <option value="">全部状态</option>
                   <option value="1">已支付</option>
                   <option value="2">已退款</option>
@@ -216,7 +220,7 @@
               </div>
               <div class="md:col-span-2">
                 <label class="block text-xs font-medium text-gray-700 mb-1" for="payment-type-filter">支付方式</label>
-                <select class="input text-sm w-full" id="payment-type-filter">
+                <select class="input-modern text-sm w-full" id="payment-type-filter">
                   <option value="">全部方式</option>
                   <option value="1">现金</option>
                   <option value="2">微信</option>
@@ -227,7 +231,7 @@
               </div>
               <div class="md:col-span-3">
                 <label class="block text-xs font-medium text-gray-700 mb-1" for="member-filter">会员信息</label>
-                <input type="text" class="input text-sm w-full" placeholder="姓名或手机号" id="member-filter">
+                <input type="text" class="input-modern text-sm w-full" placeholder="姓名或手机号" id="member-filter">
               </div>
               <div class="md:col-span-2 flex gap-2 justify-end">
                 <button class="btn btn-outline text-xs" id="reset-filters-btn">重置</button>
@@ -236,7 +240,7 @@
             </div>
           </div>
           <!-- 订单列表卡片保留 -->
-          <div class="card card-interactive elevation-2" id="orders-list-card">
+          <div class="card-modern" id="orders-list-card">
               <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                 <h3 class="font-bold">订单列表</h3>
                 <div class="text-sm text-gray-500" id="orders-count">共 0 条订单</div>
@@ -244,7 +248,7 @@
               <div id="loading-orders" class="hidden text-center py-8"><i class="fa fa-spinner fa-spin text-2xl text-primary mb-2"></i><p class="text-gray-500">加载中...</p></div>
               <div id="empty-orders" class="hidden text-center py-12"><i class="fa fa-file-text-o text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">暂时无订单数据</p><p class="text-sm text-gray-400 mt-1">请尝试其它筛选条件</p></div>
               <div class="overflow-x-auto">
-                <table class="table-modern w-full">
+                <table class="table-modern-compact w-full">
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">订单信息</th>
@@ -264,7 +268,8 @@
             </div>
           </div>
         </div>
-    </div></div>
+      </div>
+    </div>
 </main>
 
 <!-- 订单详情模态框（修复层级） -->

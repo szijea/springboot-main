@@ -61,6 +61,7 @@ body.theme-lightwide .card h3.font-bold { letter-spacing:.3px; }
 body.theme-lightwide.theme-premium { background: var(--lw-bg); color:#334155; }
 /* 超宽屏适配 */
 body.theme-lightwide .container-fluid { width:100%; padding-left:1.25rem; padding-right:1.25rem; }
+body.theme-lightwide .app-shell { max-width: 100%; width: 100%; }
 @media (min-width:1920px){ body.theme-lightwide .container-fluid { padding-left:3rem; padding-right:3rem; } body.theme-lightwide.ultra-wide .dashboard-kpis { max-width:2400px; margin-left:auto; margin-right:auto; } }
 /* KPI 卡片统一高度 (B) */
 body.theme-lightwide .dashboard-kpis .card { min-height:148px; display:flex; flex-direction:column; justify-content:space-between; }

@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="css/theme-enhanced.css" />
   <link rel="stylesheet" href="css/theme-premium.css" />
   <link rel="stylesheet" href="css/theme-lightwide.css" />
+  <link rel="stylesheet" href="css/ui-enhanced.css" />
+  <link rel="stylesheet" href="css/ui-modern.css" />
 
   <!-- 高级感配色配置 (安全包装，避免 tailwind 未定义时报错) -->
   <script>
@@ -36,69 +38,124 @@
     .login-shell { display:grid; grid-template-columns: 1fr; min-height: 100vh; }
     @media(min-width:1024px){ .login-shell{ grid-template-columns: 1fr 1fr; } }
     .hero-side { display:none; }
-    @media(min-width:1024px){ .hero-side{ display:block; background:linear-gradient(120deg,#1e3a8a 0%,#3b82f6 50%,#1e3a8a 100%); position:relative; }
-      .hero-side .overlay { position:absolute; inset:0; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.12), transparent 50%), radial-gradient(circle at 70% 70%, rgba(255,255,255,.12), transparent 52%); }
-      .hero-side .brand { position:absolute; top:2rem; left:2rem; color:#fff; font-weight:700; letter-spacing:.5px; }
-      .hero-side .hero-content { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:3rem; color:#fff; }
-      .hero-side .hero-content .title { font-size: clamp(2rem,4.2vw,3rem); font-weight:800; line-height:1.1; }
-      .hero-side .hero-content .subtitle { opacity:.9; margin-top: .75rem; }
+    @media(min-width:1024px){
+      .hero-side{
+        display:block;
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        position:relative;
+        overflow: hidden;
+      }
+      .hero-side::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 25%),
+                    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 25%);
+        pointer-events: none;
+      }
+      .hero-side .brand { position:absolute; top:2.5rem; left:2.5rem; color:#fff; font-weight:700; letter-spacing:1px; font-size: 1.1rem; opacity: 0.9; }
+      .hero-side .hero-content { position:absolute; inset:0; display:flex; flex-direction: column; align-items:center; justify-content:center; padding:4rem; color:#fff; text-align: center; }
+      .hero-side .hero-content .title { font-size: clamp(2.5rem, 5vw, 3.5rem); font-weight:800; line-height:1.2; margin-bottom: 1rem; text-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+      .hero-side .hero-content .subtitle { font-size: 1.1rem; opacity:.85; max-width: 80%; line-height: 1.6; font-weight: 300; }
     }
-    .login-side { display:flex; align-items:center; justify-content:center; padding:2rem; background:#f8fafc; }
-    .login-card { max-width:960px; border-radius:26px; border:none; background:rgba(255,255,255,0.94); backdrop-filter:blur(6px); box-shadow:0 18px 50px -15px rgba(30,58,138,.25),0 6px 18px -8px rgba(0,0,0,.12); }
-    .login-card header { padding:2rem 2.6rem 1.6rem; }
-    .login-card .body { padding:1.6rem 2.6rem 2.4rem; }
-    .login-card .foot { padding:1.4rem 2.6rem 1.8rem; }
-    .login-card header .title { font-size:clamp(3.2rem,7.5vw,4.2rem); }
-    /* 统一字段宽度与对齐：所有输入容器固定最大宽度居中 */
-    .form-fields-wrap { max-width:720px; margin:0 auto; }
-    @media (min-width:1200px){ .form-fields-wrap { max-width:780px; } }
-    .field { width:100%; }
-    /* 统一 select 与 input 的高度、行高、字体、边框 */
-    .input-modern { box-sizing:border-box; line-height:1.25; height:auto; min-height:58px; display:flex; align-items:center; }
-    select.input-modern { -webkit-appearance:none; appearance:none; background-image:linear-gradient(45deg,transparent 50%,#64748b 50%),linear-gradient(135deg,#64748b 50%,transparent 50%),linear-gradient(to right,#d8dee6,#d8dee6); background-position:calc(100% - 24px) calc(50% - 8px),calc(100% - 16px) calc(50% - 8px),100% 0; background-size:8px 8px,8px 8px,2.6rem 100%; background-repeat:no-repeat; padding-right:3.2rem; }
-    select.input-modern:focus { background-image:linear-gradient(45deg,transparent 50%,#25478f 50%),linear-gradient(135deg,#25478f 50%,transparent 50%),linear-gradient(to right,#e2e8f0,#e2e8f0); }
-    /* 标签与输入间距微调，确保纵向节奏一致 */
-    .label { margin-bottom:.45rem; }
-    .field + .field { margin-top:1.05rem; }
-    /* 记住状态与按钮与其上方字段的间距 */
-    .actions { margin-top:1.4rem; }
-    .actions .meta { padding-left:.15rem; }
-    /* 调整按钮与输入在统一宽度下的视觉居中 */
-    .btn-modern { min-height:60px; border-radius:24px; }
-    /* 消息框与输入区间距 */
-    .message-area { margin-top:.4rem; margin-bottom:.2rem; }
-    /* 低分辨率时缩放字号避免过度溢出 */
-    @media (max-width:420px){
-      .login-card header .title { font-size:2.4rem; }
-      .input-modern { min-height:54px; padding:0.85rem 1.1rem; }
-      .btn-modern { min-height:56px; }
+    .login-side { display:flex; align-items:center; justify-content:center; padding:2rem; background:#f8fafc; position: relative; }
+
+    .login-card {
+      width: 100%;
+      max-width: 520px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 40px -10px rgba(30,58,138,0.1), 0 10px 20px -10px rgba(0,0,0,0.05);
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    /* 字体柔化增强 */
-    body, .login-card { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-    .login-card header .title { font-weight:700; color:#223f7e; }
-    .login-card header .text-dim, .login-card header .text-sm { color:#4b5d7a; font-weight:500; }
-    .label { font-weight:500; color:#53657f; letter-spacing:.3px; }
-    .input-modern { color:#263b55; }
-    .input-modern::placeholder { color:#94a3b8; font-weight:400; }
-    .btn-modern { font-weight:600; background:linear-gradient(135deg,#25478f,#1e3a8a); box-shadow:0 4px 14px -4px rgba(30,58,138,.35); }
-    .btn-modern:hover { filter:brightness(1.08); }
-    .message-box { font-weight:500; }
-    /* 扩展：更大的卡片与圆角输入 */
-    .login-card { max-width:960px; border-radius:26px; }
-    .login-card header { padding:2rem 2.6rem 1.6rem; }
-    .login-card .body { padding:1.6rem 2.6rem 2.4rem; }
-    .login-card .foot { padding:1.4rem 2.6rem 1.8rem; }
-    .login-card header .title { font-size:clamp(3.2rem,7.5vw,4.2rem); }
-    .form-fields-wrap .input-modern { border-radius:22px; }
-    /* 租户选择增加图标 */
-    .select-wrap { position:relative; }
-    .select-wrap .field-icon { position:absolute; left:18px; top:50%; transform:translateY(-50%); color:#64748b; pointer-events:none; font-size:1.05rem; }
-    .select-wrap select.input-modern { padding-left:3.1rem; }
-    /* 输入与按钮统一更柔和的圆角 */
-    .btn-modern { border-radius:24px; }
-    @media (max-width:480px){ .login-card { max-width:100%; } }
-    @media (min-width:1200px){ .login-card { max-width: 72%; } }
-    @media (min-width:1400px){ .login-card { max-width: 66%; } }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-card header { padding: 2.5rem 3rem 1rem; text-align: center; }
+    .login-card .body { padding: 1rem 3rem 2.5rem; }
+    .login-card .foot { padding: 1rem 3rem 2rem; text-align: center; border-top: 1px solid #f1f5f9; background: rgba(248,250,252,0.5); border-radius: 0 0 24px 24px; }
+
+    .login-card header .title { font-size: 2rem; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+    .login-card header .subtitle { color: #64748b; font-size: 0.95rem; }
+
+    .form-fields-wrap { width: 100%; }
+    .field { margin-bottom: 1.25rem; }
+
+    .label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 600; color: #475569; margin-left: 0.25rem; }
+
+    .input-modern {
+      width: 100%;
+      box-sizing: border-box;
+      height: 52px;
+      padding: 0 1.25rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      background: #fff;
+      color: #1e293b;
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .input-modern:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      outline: none;
+    }
+
+    .input-modern::placeholder { color: #94a3b8; }
+
+    select.input-modern {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 1rem center;
+      background-repeat: no-repeat;
+      background-size: 1.5em 1.5em;
+      padding-right: 2.5rem;
+    }
+
+    .btn-modern {
+      width: 100%;
+      height: 54px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-modern:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+      filter: brightness(1.05);
+    }
+
+    .btn-modern:active { transform: translateY(0); }
+
+    .message-area { min-height: 1.5rem; margin-bottom: 1rem; font-size: 0.9rem; text-align: center; }
+    .message-box { padding: 0.75rem; border-radius: 10px; background: #fee2e2; color: #991b1b; display: none; }
+    .message-box.success { background: #dcfce7; color: #166534; }
+
+    /* 响应式调整 */
+    @media (max-width: 640px){
+      .login-card { border-radius: 0; height: 100vh; max-width: none; display: flex; flex-direction: column; justify-content: center; border: none; box-shadow: none; }
+      .login-card header { padding-top: 0; }
+      .login-side { padding: 0; background: #fff; }
+    }
+
     @media (min-width:1600px){ .login-card { max-width: 60%; } }
     /* 调整：缩小“欢迎登录”标题 */
     .login-card header .title { font-size: clamp(2.6rem,6vw,3.6rem); }
@@ -109,14 +166,14 @@
     @media (max-width: 420px) { .form-fields-wrap .input-modern { min-height: 46px; padding: 0.7rem 0.95rem; font-size: .98rem; } }
   </style>
 </head>
-<body class="modern-ui density-comfortable console-spacing">
+<body class="font-inter text-gray-800 min-h-screen enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
   <div class="login-shell">
     <aside class="hero-side">
       <div class="overlay"></div>
       <div class="brand">Pharmacy Cloud</div>
       <div class="hero-content">
         <div>
-          <div class="title">智慧药房 · 经营加速平台</div>
+          <div class="title">智能药品 · 经营平台</div>
           <div class="subtitle">高效安全的数字药房运营套件</div>
         </div>
       </div>
@@ -131,19 +188,15 @@
           <div id="message-container" class="message-area" aria-live="polite" aria-atomic="true"></div>
           <form id="login-form" novalidate class="form-fields-wrap">
             <div class="field">
-              <label class="label" for="tenant-select">店铺 / 租户</label>
+              <label class="label" for="tenant-select">店铺</label>
               <div class="select-wrap">
                 <span class="field-icon"><i class="fa fa-building"></i></span>
                 <select id="tenant-select" class="input-modern" required>
                   <option value="" disabled selected>请选择店铺</option>
                   <optgroup label="标准租户">
-                    <option value="bht">🏥 bht</option>
-                    <option value="wx">💊 wx</option>
-                    <option value="rzt">🏬 rzt</option>
-                  </optgroup>
-                  <optgroup label="测试/演示">
-                    <option value="demo1">🧪 demo1</option>
-                    <option value="demo2">🧪 demo2</option>
+                    <option value="bht">🏥 百和堂药店</option>
+                    <option value="wx">💊 万欣药店</option>
+                    <option value="rzt">🏬 仁智堂药店</option>
                   </optgroup>
                 </select>
               </div>
@@ -163,8 +216,8 @@
           </form>
         </div>
         <div class="foot">
-          <div>© 2023 智慧药房收银系统</div>
-          <div><a href="#">隐私政策</a> · <a href="#">服务条款</a></div>
+          <div>© 2026 智能药房收银系统</div>
+          <div><a href="privacy-policy.html">隐私政策</a> · <a href="terms-of-service.html">服务条款</a></div>
         </div>
       </div>
     </main>

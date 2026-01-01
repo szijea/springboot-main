@@ -60,15 +60,15 @@
           </div>
         </div>
         <div class="dashboard-kpis kpi-horizontal mb-6" id="products-kpi-row">
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">总药品数</p><h3 class="text-xl font-bold" id="kpi-prod-total">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">处方药</p><h3 class="text-xl font-bold" id="kpi-prod-prescription">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">OTC药品</p><h3 class="text-xl font-bold" id="kpi-prod-otc">--</h3></div>
-          <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">中药</p><h3 class="text-xl font-bold" id="kpi-prod-chinese">--</h3></div>
+          <div class="card-modern p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">总药品数</p><h3 class="text-xl font-bold" id="kpi-prod-total">--</h3></div>
+          <div class="card-modern p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">处方药</p><h3 class="text-xl font-bold" id="kpi-prod-prescription">--</h3></div>
+          <div class="card-modern p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">OTC药品</p><h3 class="text-xl font-bold" id="kpi-prod-otc">--</h3></div>
+          <div class="card-modern p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">中药</p><h3 class="text-xl font-bold" id="kpi-prod-chinese">--</h3></div>
         </div>
         <div class="layout-two-column">
           <aside class="layout-sidebar">
-            <div class="card p-4 mb-4">
-              <div class="sidebar-section-title mb-2">统计概览</div>
+            <div class="card-modern p-4 mb-4">
+              <div class="sidebar-section-title mb-2 font-bold text-gray-700">统计概览</div>
               <div class="space-y-3 text-sm">
                 <div class="flex justify-between"><span class="text-gray-500">总药品数</span><span id="total-medicines" class="font-semibold">0 种</span></div>
                 <div class="flex justify-between"><span class="text-gray-500">处方药</span><span id="prescription-count" class="font-semibold">0 种</span></div>
@@ -76,19 +76,19 @@
                 <div class="flex justify-between"><span class="text-gray-500">中药</span><span id="chinese-count" class="font-semibold">0 种</span></div>
               </div>
             </div>
-            <div class="card p-4" id="filter-panel">
+            <div class="card-modern p-4" id="filter-panel">
               <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-sm">筛选条件</h3>
+                <h3 class="font-bold text-sm text-gray-700">筛选条件</h3>
                 <button type="button" id="toggle-filters" class="btn btn-outline btn-pill text-xs"><i class="fa fa-filter"></i> 展开/收起</button>
               </div>
               <div class="grid grid-cols-1 gap-3" id="filter-fields">
                 <div>
                   <label id="lbl-medicine-name-filter" for="medicine-name-filter" class="block text-xs font-medium text-gray-700 mb-1">药品名称</label>
-                  <input type="text" class="input" id="medicine-name-filter" name="medicineNameFilter" aria-labelledby="lbl-medicine-name-filter" placeholder="输入药品名称">
+                  <input type="text" class="input-modern" id="medicine-name-filter" name="medicineNameFilter" aria-labelledby="lbl-medicine-name-filter" placeholder="输入药品名称">
                 </div>
                 <div>
                   <label id="lbl-category-filter" for="category-filter" class="block text-xs font-medium text-gray-700 mb-1">药品分类</label>
-                  <select class="input" id="category-filter" name="categoryFilter" aria-labelledby="lbl-category-filter">
+                  <select class="input-modern" id="category-filter" name="categoryFilter" aria-labelledby="lbl-category-filter">
                     <option value="">全部分类</option>
                     <option value="otc">非处方药(OTC)</option>
                     <option value="prescription">处方药</option>
@@ -97,7 +97,7 @@
                 </div>
                 <div>
                   <label id="lbl-status-filter" for="status-filter" class="block text-xs font-medium text-gray-700 mb-1">药品状态</label>
-                  <select class="input" id="status-filter" name="statusFilter" aria-labelledby="lbl-status-filter">
+                  <select class="input-modern" id="status-filter" name="statusFilter" aria-labelledby="lbl-status-filter">
                     <option value="">全部状态</option>
                     <option value="active">在售</option>
                     <option value="inactive">停售</option>
@@ -105,25 +105,25 @@
                 </div>
                 <div>
                   <label id="lbl-manufacturer-filter" for="manufacturer-filter" class="block text-xs font-medium text-gray-700 mb-1">生产厂家</label>
-                  <input type="text" class="input" id="manufacturer-filter" name="manufacturerFilter" aria-labelledby="lbl-manufacturer-filter" placeholder="输入生产厂家">
+                  <input type="text" class="input-modern" id="manufacturer-filter" name="manufacturerFilter" aria-labelledby="lbl-manufacturer-filter" placeholder="输入生产厂家">
                 </div>
               </div>
               <div class="flex justify-end gap-2 mt-4">
-                <button class="btn btn-outline" id="reset-filters">重置</button>
-                <button class="btn btn-primary" id="apply-filters">查询</button>
+                <button class="btn btn-outline btn-sm" id="reset-filters">重置</button>
+                <button class="btn btn-primary btn-sm" id="apply-filters">查询</button>
               </div>
             </div>
           </aside>
           <section class="layout-main space-y-6">
-            <div class="card">
+            <div class="card-modern">
               <div class="p-6 border-b border-gray-100">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <h3 class="font-bold">药品档案列表</h3>
+                  <h3 class="font-bold text-lg text-gray-800">药品档案列表</h3>
                   <div class="flex items-center gap-4">
                     <div id="medicines-total-text" class="text-sm text-gray-500">共 0 种药品</div>
                     <div class="flex items-center gap-2">
                       <label id="lbl-page-size-select" for="page-size-select" class="text-sm text-gray-500">每页显示</label>
-                      <select id="page-size-select" name="pageSizeSelect" aria-labelledby="lbl-page-size-select" class="input py-1 text-sm w-20">
+                      <select id="page-size-select" name="pageSizeSelect" aria-labelledby="lbl-page-size-select" class="input-modern py-1 text-sm w-20">
                         <option value="10">10</option>
                         <option value="20">20</option>
                         <option value="50">50</option>
@@ -143,7 +143,7 @@
                 <button class="btn btn-primary mt-4" id="add-first-medicine"><i class="fa fa-plus"></i> 添加第一个药品</button>
               </div>
               <div class="overflow-x-auto">
-                <table class="table-modern w-full" id="medicines-table">
+                <table class="table-modern-compact w-full" id="medicines-table">
                   <thead class="bg-gray-50">
                     <tr>
                       <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -169,7 +169,7 @@
                     <div class="flex items-center gap-2">
                       <span class="text-sm text-gray-500" id="page-jump-label">跳至</span>
                       <label for="page-jump-input" class="sr-only">跳转页码</label>
-                      <input type="number" id="page-jump-input" class="input py-1 text-sm w-16" min="1" placeholder="页" aria-labelledby="page-jump-label">
+                      <input type="number" id="page-jump-input" class="input-modern py-1 text-sm w-16" min="1" placeholder="页" aria-labelledby="page-jump-label">
                       <button id="page-jump-btn" class="btn btn-outline py-1 text-sm">跳转</button>
                     </div>
                     <div class="flex gap-1" id="medicines-pagination-controls"></div>
@@ -211,37 +211,37 @@
 
                   <div>
                       <label id="lbl-medicine-name" for="medicine-name" class="block text-sm font-medium text-gray-700 mb-1">药品名称 *</label>
-                      <input type="text" class="input" id="medicine-name" name="medicineName" aria-labelledby="lbl-medicine-name" required>
+                      <input type="text" class="input-modern" id="medicine-name" name="medicineName" aria-labelledby="lbl-medicine-name" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-generic-name" for="medicine-generic-name" class="block text-sm font-medium text-gray-700 mb-1">通用名</label>
-                      <input type="text" class="input" id="medicine-generic-name" name="genericName" aria-labelledby="lbl-medicine-generic-name">
+                      <input type="text" class="input-modern" id="medicine-generic-name" name="genericName" aria-labelledby="lbl-medicine-generic-name">
                   </div>
 
                   <div>
                       <label id="lbl-medicine-spec" for="medicine-spec" class="block text-sm font-medium text-gray-700 mb-1">规格 *</label>
-                      <input type="text" class="input" id="medicine-spec" name="medicineSpec" aria-labelledby="lbl-medicine-spec" required>
+                      <input type="text" class="input-modern" id="medicine-spec" name="medicineSpec" aria-labelledby="lbl-medicine-spec" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-unit" for="medicine-unit" class="block text-sm font-medium text-gray-700 mb-1">单位 *</label>
-                      <input type="text" class="input" id="medicine-unit" name="medicineUnit" aria-labelledby="lbl-medicine-unit" required>
+                      <input type="text" class="input-modern" id="medicine-unit" name="medicineUnit" aria-labelledby="lbl-medicine-unit" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-approval-no" for="medicine-approval-no" class="block text-sm font-medium text-gray-700 mb-1">批准文号 *</label>
-                      <input type="text" class="input" id="medicine-approval-no" name="approvalNo" aria-labelledby="lbl-medicine-approval-no" required>
+                      <input type="text" class="input-modern" id="medicine-approval-no" name="approvalNo" aria-labelledby="lbl-medicine-approval-no" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-manufacturer" for="medicine-manufacturer" class="block text-sm font-medium text-gray-700 mb-1">生产厂家 *</label>
-                      <input type="text" class="input" id="medicine-manufacturer" name="manufacturer" aria-labelledby="lbl-medicine-manufacturer" required>
+                      <input type="text" class="input-modern" id="medicine-manufacturer" name="manufacturer" aria-labelledby="lbl-medicine-manufacturer" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-category" for="medicine-category" class="block text-sm font-medium text-gray-700 mb-1">药品分类 *</label>
-                      <select class="input" id="medicine-category" name="medicineCategory" aria-labelledby="lbl-medicine-category" required>
+                      <select class="input-modern" id="medicine-category" name="medicineCategory" aria-labelledby="lbl-medicine-category" required>
                           <option value="">请选择分类</option>
                           <option value="otc">非处方药(OTC)</option>
                           <option value="prescription">处方药</option>
@@ -251,17 +251,17 @@
 
                   <div>
                       <label id="lbl-medicine-retail-price" for="medicine-retail-price" class="block text-sm font-medium text-gray-700 mb-1">零售价 *</label>
-                      <input type="number" class="input" id="medicine-retail-price" name="retailPrice" aria-labelledby="lbl-medicine-retail-price" step="0.01" min="0" required>
+                      <input type="number" class="input-modern" id="medicine-retail-price" name="retailPrice" aria-labelledby="lbl-medicine-retail-price" step="0.01" min="0" required>
                   </div>
 
                   <div>
                       <label id="lbl-medicine-member-price" for="medicine-member-price" class="block text-sm font-medium text-gray-700 mb-1">会员价</label>
-                      <input type="number" class="input" id="medicine-member-price" name="memberPrice" aria-labelledby="lbl-medicine-member-price" step="0.01" min="0">
+                      <input type="number" class="input-modern" id="medicine-member-price" name="memberPrice" aria-labelledby="lbl-medicine-member-price" step="0.01" min="0">
                   </div>
 
                   <div>
                       <label id="lbl-medicine-status" for="medicine-status" class="block text-sm font-medium text-gray-700 mb-1">药品状态</label>
-                      <select class="input" id="medicine-status" name="medicineStatus" aria-labelledby="lbl-medicine-status">
+                      <select class="input-modern" id="medicine-status" name="medicineStatus" aria-labelledby="lbl-medicine-status">
                           <option value="active">在售</option>
                           <option value="inactive">停售</option>
                       </select>
@@ -269,21 +269,21 @@
 
                   <div>
                       <label id="lbl-medicine-barcode" for="medicine-barcode" class="block text-sm font-medium text-gray-700 mb-1">条形码</label>
-                      <input type="text" class="input" id="medicine-barcode" name="medicineBarcode" aria-labelledby="lbl-medicine-barcode">
+                      <input type="text" class="input-modern" id="medicine-barcode" name="medicineBarcode" aria-labelledby="lbl-medicine-barcode">
                   </div>
                   <div>
                       <label id="lbl-medicine-production-date" for="medicine-production-date" class="block text-sm font-medium text-gray-700 mb-1">生产日期</label>
-                      <input type="date" class="input" id="medicine-production-date" name="productionDate" aria-labelledby="lbl-medicine-production-date">
+                      <input type="date" class="input-modern" id="medicine-production-date" name="productionDate" aria-labelledby="lbl-medicine-production-date">
                   </div>
                   <div>
                       <label id="lbl-medicine-expiry-date" for="medicine-expiry-date" class="block text-sm font-medium text-gray-700 mb-1">到期日期</label>
-                      <input type="date" class="input" id="medicine-expiry-date" name="expiryDate" aria-labelledby="lbl-medicine-expiry-date" aria-describedby="expiry-remaining">
+                      <input type="date" class="input-modern" id="medicine-expiry-date" name="expiryDate" aria-labelledby="lbl-medicine-expiry-date" aria-describedby="expiry-remaining">
                       <p id="expiry-remaining" class="text-xs mt-1 text-gray-500"></p>
                   </div>
 
                   <div class="md:col-span-2">
                       <label id="lbl-medicine-description" for="medicine-description" class="block text-sm font-medium text-gray-700 mb-1">药品说明</label>
-                      <textarea class="input" id="medicine-description" name="medicineDescription" aria-labelledby="lbl-medicine-description" rows="3"></textarea>
+                      <textarea class="input-modern" id="medicine-description" name="medicineDescription" aria-labelledby="lbl-medicine-description" rows="3"></textarea>
                   </div>
               </form>
           </div>

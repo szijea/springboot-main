@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/theme-premium.css" />
   <link rel="stylesheet" href="css/theme-lightwide.css" />
   <link rel="stylesheet" href="css/ui-enhanced.css" />
+  <link rel="stylesheet" href="css/ui-modern.css" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <style>
     /* 统一主内容滚动样式 */
@@ -26,7 +27,7 @@
   <script src="js/common.js" defer></script>
   <script src="js/common-nav.js" defer></script>
 </head>
-<body class="modern-ui density-comfortable console-spacing">
+<body class="font-inter text-gray-800 min-h-screen flex enhanced-ui theme-modern theme-lightwide page-enter modern-ui density-comfortable console-spacing">
 <a href="#settings-main" class="skip-link">跳到主内容</a>
 <div class="scroll-progress" id="scroll-progress"></div>
 <div id="common-nav" data-active="settings"></div>
@@ -43,11 +44,17 @@
         <p class="text-gray-500">业务参数与系统配置</p>
       </div>
     </div>
+    <div class="dashboard-kpis kpi-horizontal mb-6" id="settings-kpi-row">
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">设置分类</p><h3 class="text-xl font-bold" id="kpi-settings-cats">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">支付方式</p><h3 class="text-xl font-bold" id="kpi-settings-pay">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">库存策略(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-inv">--</h3></div>
+      <div class="card-modern p-4"><p class="text-xs text-gray-500 mb-1">打印模板(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-print">--</h3></div>
+    </div>
     <!-- 主栅格 -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 section-gap">
       <!-- 左侧导航 -->
       <div class="lg:col-span-1">
-        <div class="card sticky top-6">
+        <div class="card-modern sticky top-6">
           <div class="p-4 border-b border-gray-100">
             <h3 class="font-bold">设置分类</h3>
           </div>
@@ -88,13 +95,13 @@
       <div class="lg:col-span-2 space-y-6 section-gap">
         <!-- 基本设置 -->
         <div class="setting-tab active" id="basic-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">店铺基本信息</h3>
             <form id="basic-settings-form" class="space-y-6">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="form-group">
                   <label class="block text-sm font-medium text-gray-700 mb-1">店铺名称 <span class="text-accent">*</span></label>
-                  <input type="text" id="store-name" class="input" placeholder="请输入店铺名称" required>
+                  <input type="text" id="store-name" class="input-modern" placeholder="请输入店铺名称" required>
                   <div class="error-message" id="store-name-error">请输入店铺名称</div>
                 </div>
                 <div class="form-group">
@@ -136,13 +143,13 @@
 
         <!-- 库存设置 -->
         <div class="setting-tab hidden" id="inventory-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">库存预警设置</h3>
             <form id="inventory-settings-form" class="space-y-6">
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1">低库存预警阈值 <span class="text-accent">*</span></label>
                 <div class="flex items-center gap-3">
-                  <input type="number" id="low-stock-threshold" class="input max-w-xs" min="1" placeholder="例如：10" required>
+                  <input type="number" id="low-stock-threshold" class="input-modern max-w-xs" min="1" placeholder="例如：10" required>
                   <span class="text-gray-500">当药品库存低于此值时触发预警</span>
                 </div>
                 <div class="error-message" id="threshold-error">请输入有效的阈值</div>
@@ -151,7 +158,7 @@
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1">效期预警天数 <span class="text-accent">*</span></label>
                 <div class="flex items-center gap-3">
-                  <input type="number" id="expiry-warning-days" class="input max-w-xs" min="1" placeholder="例如：30" value="30" required>
+                  <input type="number" id="expiry-warning-days" class="input-modern max-w-xs" min="1" placeholder="例如：30" value="30" required>
                   <span class="text-gray-500">提前多少天提醒药品即将过期</span>
                 </div>
                 <div class="error-message" id="expiry-warning-error">请输入有效的天数（>=1）</div>
@@ -323,7 +330,7 @@
 
         <!-- 支付设置 -->
         <div class="setting-tab hidden" id="payment-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">支付方式设置</h3>
             <form id="payment-settings-form" class="space-y-6">
               <div class="space-y-4">
@@ -352,11 +359,11 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-1">商户ID</label>
-                      <input type="text" id="wechat-mch-id" class="input" placeholder="微信支付商户ID">
+                      <input type="text" id="wechat-mch-id" class="input-modern" placeholder="微信支付商户ID">
                     </div>
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-1">API密钥</label>
-                      <input type="password" id="wechat-api-key" class="input" placeholder="微信支付API密钥">
+                      <input type="password" id="wechat-api-key" class="input-modern" placeholder="微信支付API密钥">
                     </div>
                   </div>
                 </div>
@@ -375,11 +382,11 @@
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-1">APP ID</label>
-                      <input type="text" id="alipay-app-id" class="input" placeholder="支付宝APP ID">
+                      <input type="text" id="alipay-app-id" class="input-modern" placeholder="支付宝APP ID">
                     </div>
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-1">商户私钥</label>
-                      <textarea id="alipay-private-key" class="input h-16" placeholder="支付宝商户私钥"></textarea>
+                      <textarea id="alipay-private-key" class="input-modern h-16" placeholder="支付宝商户私钥"></textarea>
                     </div>
                   </div>
                 </div>
@@ -400,7 +407,7 @@
                 <h4 class="font-medium mb-4">找零设置</h4>
                 <div class="form-group">
                   <label class="block text-sm font-medium text-gray-700 mb-1">最小找零单位</label>
-                  <select id="change-unit" class="input">
+                  <select id="change-unit" class="input-modern">
                     <option value="0.01">1分</option>
                     <option value="0.10" selected>1角</option>
                     <option value="1.00">1元</option>
@@ -420,12 +427,12 @@
 
         <!-- 打印设置 -->
         <div class="setting-tab hidden" id="print-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">打印设置</h3>
             <form id="print-settings-form" class="space-y-6">
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1">默认打印机</label>
-                <select id="default-printer" class="input">
+                <select id="default-printer" class="input-modern">
                   <option value="local">本地打印机</option>
                   <option value="network">网络打印机</option>
                   <option value="thermal">热敏打印机</option>
@@ -434,7 +441,7 @@
 
               <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700 mb-1">打印纸张大小</label>
-                <select id="paper-size" class="input">
+                <select id="paper-size" class="input-modern">
                   <option value="a4">A4纸</option>
                   <option value="pos80" selected>POS-80mm</option>
                   <option value="pos58">POS-58mm</option>
@@ -473,7 +480,7 @@
                 <div id="footer-text-container" class="mt-4 hidden">
                   <div class="form-group">
                     <label class="block text-sm font-medium text-gray-700 mb-1">底部广告内容</label>
-                    <textarea id="footer-text" class="input h-16" placeholder="请输入底部广告信息"></textarea>
+                    <textarea id="footer-text" class="input-modern h-16" placeholder="请输入底部广告信息"></textarea>
                   </div>
                 </div>
               </div>
@@ -483,11 +490,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div class="form-group">
                     <label class="block text-sm font-medium text-gray-700 mb-1">销售小票打印份数</label>
-                    <input type="number" id="receipt-copies" class="input max-w-xs" min="1" max="5" value="1">
+                    <input type="number" id="receipt-copies" class="input-modern max-w-xs" min="1" max="5" value="1">
                   </div>
                   <div class="form-group">
                     <label class="block text-sm font-medium text-gray-700 mb-1">处方单打印份数</label>
-                    <input type="number" id="prescription-copies" class="input max-w-xs" min="1" max="5" value="2">
+                    <input type="number" id="prescription-copies" class="input-modern max-w-xs" min="1" max="5" value="2">
                   </div>
                 </div>
               </div>
@@ -507,7 +514,7 @@
 
         <!-- 安全设置 -->
         <div class="setting-tab hidden" id="security-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">账户安全设置</h3>
             <div class="space-y-6">
               <div class="flex justify-between items-center p-4 border rounded-lg">
@@ -533,7 +540,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div class="form-group">
                     <label class="block text-sm font-medium text-gray-700 mb-1">日志保留时长</label>
-                    <select id="log-retention" class="input">
+                    <select id="log-retention" class="input-modern">
                       <option value="30">30天</option>
                       <option value="90" selected>90天</option>
                       <option value="180">180天</option>
@@ -556,7 +563,7 @@
                       <p class="text-sm">密码有效期</p>
                       <p class="text-xs text-gray-500">设置密码自动过期时间</p>
                     </div>
-                    <select id="pwd-expiry" class="input max-w-xs">
+                    <select id="pwd-expiry" class="input-modern max-w-xs">
                       <option value="0">永不失效</option>
                       <option value="30">30天</option>
                       <option value="90" selected>90天</option>
@@ -569,7 +576,7 @@
                       <p class="text-sm">登录失败限制</p>
                       <p class="text-xs text-gray-500">连续失败后锁定账户</p>
                     </div>
-                    <select id="login-attempts" class="input max-w-xs">
+                    <select id="login-attempts" class="input-modern max-w-xs">
                       <option value="5" selected>5次</option>
                       <option value="10">10次</option>
                       <option value="15">15次</option>
@@ -595,7 +602,7 @@
 
         <!-- 数据备份 -->
         <div class="setting-tab hidden" id="backup-tab">
-          <div class="card p-6">
+          <div class="card-modern p-6">
             <h3 class="font-bold text-lg mb-6">数据备份与恢复</h3>
             <div class="space-y-6">
               <div class="p-4 border rounded-lg">
@@ -917,12 +924,6 @@ function showTempMsg(msg,type){ const d=document.createElement('div'); d.classNa
       if(!document.getElementById('theme-toggle')){const btn=document.createElement('button');btn.id='theme-toggle';btn.className='theme-toggle';btn.innerHTML='<i class="fa fa-moon-o"></i>';btn.onclick=()=>{const dark=document.documentElement.classList.toggle('dark');btn.innerHTML='<i class="fa '+(dark?'fa-sun-o':'fa-moon-o')+'"></i>';};document.body.appendChild(btn);} })();
   </script>
 <script src="js/a11y.js" defer></script>
-<div class="dashboard-kpis kpi-horizontal mb-6" id="settings-kpi-row">
-  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">设置分类</p><h3 class="text-xl font-bold" id="kpi-settings-cats">--</h3></div>
-  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">支付方式</p><h3 class="text-xl font-bold" id="kpi-settings-pay">--</h3></div>
-  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">库存策略(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-inv">--</h3></div>
-  <div class="card p-4 card-interactive"><p class="text-xs text-gray-500 mb-1">打印模板(占位)</p><h3 class="text-xl font-bold" id="kpi-settings-print">--</h3></div>
-</div>
 <script src="js/kpi.js"></script>
 <script>
 (function(){
